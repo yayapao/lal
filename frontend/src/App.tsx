@@ -24,6 +24,7 @@ import {
     DeleteService,
     GetAppState,
     GetLogs,
+    GetResourceUsage,
     OpenServiceURL,
     RevealService,
     StartAll,
@@ -39,12 +40,14 @@ import {EventsOn} from '../wailsjs/runtime/runtime';
 
 type ServiceView = main.ServiceView;
 type LogEntry = main.LogEntry;
+type ResourceUsage = main.ResourceUsage;
 type DialogState = {mode: 'create'} | {mode: 'edit'; service: ServiceView};
 type ServiceForm = {name: string; directory: string; command: string; url: string};
 type ToastState = {kind: 'success' | 'error'; message: string};
 type MenuState = {service: ServiceView; left: number; top: number};
 
 const emptyForm: ServiceForm = {name: '', directory: '', command: 'npm run dev', url: ''};
+const resourceHistoryLength = 60;
 const timeFormatter = new Intl.DateTimeFormat('zh-CN', {
     hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false,
 });
@@ -54,6 +57,8 @@ function App() {
     const [selectedId, setSelectedId] = useState('');
     const [checkedIds, setCheckedIds] = useState<Set<string>>(new Set());
     const [logs, setLogs] = useState<LogEntry[]>([]);
+    const [resourceUsage, setResourceUsage] = useState<Record<string, ResourceUsage>>({});
+    const [resourceHistory, setResourceHistory] = useState<Record<string, ResourceUsage[]>>({});
     const [query, setQuery] = useState('');
     const [loading, setLoading] = useState(true);
     const [busyIds, setBusyIds] = useState<Set<string>>(new Set());
@@ -126,6 +131,32 @@ function App() {
     }, []);
 
     useEffect(() => {
+        let current = true;
+        let polling = false;
+        const poll = async () => {
+            if (polling) return;
+            polling = true;
+            try {
+                const entries = await GetResourceUsage();
+                if (!current) return;
+                const nextUsage = Object.fromEntries((entries ?? []).map(usage => [usage.serviceId, usage]));
+                setResourceUsage(nextUsage);
+                setResourceHistory(history => Object.fromEntries((entries ?? []).map(usage => [
+                    usage.serviceId,
+                    [...(history[usage.serviceId] ?? []), usage].slice(-resourceHistoryLength),
+                ])));
+            } catch {
+                if (current) setResourceUsage({});
+            } finally {
+                polling = false;
+            }
+        };
+        void poll();
+        const timer = window.setInterval(() => void poll(), 2000);
+        return () => { current = false; window.clearInterval(timer); };
+    }, []);
+
+    useEffect(() => {
         const onKeyDown = (event: globalThis.KeyboardEvent) => {
             if (event.key !== 'Escape') return;
             setMenu(null); setDialog(null); setDeleteTarget(null);
@@ -144,6 +175,8 @@ function App() {
     }, []);
 
     const selectedService = services.find(service => service.id === selectedId) ?? null;
+    const selectedUsage = selectedService ? resourceUsage[selectedService.id] : undefined;
+    const selectedResourceHistory = selectedService ? resourceHistory[selectedService.id] ?? [] : [];
     const runningCount = services.filter(isActive).length;
     const readyCount = services.filter(service => service.health === 'ready').length;
     const filteredServices = useMemo(() => {
@@ -336,6 +369,7 @@ function App() {
                             </div>
                         ) : filteredServices.map(service => (
                             <ServiceRow key={service.id} service={service} selected={service.id === selectedId} checked={checkedIds.has(service.id)}
+                                usage={resourceUsage[service.id]}
                                 busy={busyIds.has(service.id) || batchBusy?.startsWith('all') === true || (batchBusy?.startsWith('selected') === true && checkedIds.has(service.id))}
                                 onSelect={() => setSelectedId(service.id)} onToggle={() => void toggleService(service)}
                                 onCheck={() => toggleChecked(service.id)} selectionDisabled={batchBusy !== null}
@@ -356,6 +390,7 @@ function App() {
                             <button className="icon-button subtle" type="button" onClick={() => void clearSelectedLogs()} aria-label="清空日志" title="清空日志" disabled={!selectedService || logs.length === 0}><Trash2 size={16}/></button>
                         </div>
                     </div>
+                    <ResourceMonitor service={selectedService} usage={selectedUsage} history={selectedResourceHistory}/>
                     <div className="log-viewport" ref={logViewportRef}>
                         {!selectedService ? <div className="console-empty">未选择服务</div>
                             : logs.length === 0 ? <div className="console-empty">暂无日志</div>
@@ -401,8 +436,8 @@ function App() {
     );
 }
 
-function ServiceRow({service, selected, checked, busy, selectionDisabled, onSelect, onCheck, onToggle, onOpenURL, onMenu}: {
-    service: ServiceView; selected: boolean; checked: boolean; busy: boolean; selectionDisabled: boolean;
+function ServiceRow({service, usage, selected, checked, busy, selectionDisabled, onSelect, onCheck, onToggle, onOpenURL, onMenu}: {
+    service: ServiceView; usage?: ResourceUsage; selected: boolean; checked: boolean; busy: boolean; selectionDisabled: boolean;
     onSelect: () => void; onCheck: () => void; onToggle: () => void;
     onOpenURL: () => void;
     onMenu: (event: React.MouseEvent<HTMLButtonElement>) => void;
@@ -418,7 +453,9 @@ function ServiceRow({service, selected, checked, busy, selectionDisabled, onSele
             <input className="selection-checkbox service-selector" type="checkbox" checked={checked} disabled={selectionDisabled}
                 onClick={event => event.stopPropagation()} onChange={onCheck} aria-label={`选择 ${service.name}`}/>
             <div className="service-copy">
-                <div className="service-name-line"><h3>{service.name}</h3>{service.pid > 0 && <span className="pid">PID {service.pid}</span>}{service.startedAt && isActive(service) && <span className="uptime">{formatUptime(service.startedAt)}</span>}</div>
+                <div className="service-name-line"><h3>{service.name}</h3>{service.pid > 0 && <span className="pid">PID {service.pid}</span>}{service.startedAt && isActive(service) && <span className="uptime">{formatUptime(service.startedAt)}</span>}
+                    {isActive(service) && <span className="service-resources"><span>CPU {formatCPU(usage?.cpuPercent ?? 0)}</span><span>MEM {formatMemory(usage?.memoryBytes ?? 0)}</span></span>}
+                </div>
                 <div className={service.pathExists ? 'service-path' : 'service-path path-invalid'} title={service.directory}>{!service.pathExists && <CircleAlert size={12}/>}<span>{service.directory}</span></div>
                 <div className="service-meta">
                     <code className="service-command" title={service.command}>{service.command}</code>
@@ -442,6 +479,43 @@ function ServiceRow({service, selected, checked, busy, selectionDisabled, onSele
             </div>
         </article>
     );
+}
+
+function ResourceMonitor({service, usage, history}: {service: ServiceView | null; usage?: ResourceUsage; history: ResourceUsage[]}) {
+    const cpuValues = history.map(sample => sample.cpuPercent);
+    const memoryValues = history.map(sample => sample.memoryBytes);
+    const active = service ? isActive(service) : false;
+    return <section className="resource-monitor" aria-label={service ? `${service.name} 资源趋势` : '资源趋势'}>
+        <div className="resource-identity">
+            <span className="resource-kicker">TELEMETRY</span>
+            <span className={active ? 'resource-live is-active' : 'resource-live'}><span/>{active ? 'LIVE' : 'IDLE'}</span>
+            <span className="resource-processes">PROC {usage?.processCount ?? 0}</span>
+            <span className="resource-window">120 SEC</span>
+        </div>
+        <TrendMetric label="CPU" value={usage?.cpuPercent ?? 0} values={cpuValues} kind="cpu"/>
+        <TrendMetric label="RSS" value={usage?.memoryBytes ?? 0} values={memoryValues} kind="memory"/>
+    </section>;
+}
+
+function TrendMetric({label, value, values, kind}: {label: string; value: number; values: number[]; kind: 'cpu' | 'memory'}) {
+    const scale = kind === 'cpu' ? cpuScale(values) : memoryScale(values);
+    const chartValues = values.length === 1 ? [values[0], values[0]] : values;
+    const points = chartValues.map((point, index) => {
+        const x = chartValues.length <= 1 ? 240 : index * 240 / (chartValues.length - 1);
+        const y = 45 - Math.min(point / scale, 1) * 39;
+        return `${x.toFixed(1)},${y.toFixed(1)}`;
+    }).join(' ');
+    const currentPoint = points.split(' ').at(-1)?.split(',') ?? ['240', '45'];
+    const formattedValue = kind === 'cpu' ? formatCPU(value) : formatMemory(value);
+    const formattedScale = kind === 'cpu' ? formatCPU(scale) : formatMemory(scale);
+    return <div className={`trend-metric is-${kind}`}>
+        <div className="trend-heading"><span>{label}</span><strong>{formattedValue}</strong><small>CEIL {formattedScale}</small></div>
+        <svg className="trend-chart" viewBox="0 0 240 50" preserveAspectRatio="none" role="img" aria-label={`${label} 当前 ${formattedValue}`}>
+            <g className="trend-grid"><line x1="0" y1="12" x2="240" y2="12"/><line x1="0" y1="25" x2="240" y2="25"/><line x1="0" y1="38" x2="240" y2="38"/><line x1="60" y1="0" x2="60" y2="50"/><line x1="120" y1="0" x2="120" y2="50"/><line x1="180" y1="0" x2="180" y2="50"/></g>
+            {points && <polyline className="trend-line" points={points}/>}
+            {points && <circle className="trend-point" cx={currentPoint[0]} cy={currentPoint[1]} r="2.2"/>}
+        </svg>
+    </div>;
 }
 
 function SelectionCheckbox({checked, indeterminate, disabled, onChange, ariaLabel}: {
@@ -535,6 +609,24 @@ function formatUptime(startedAt: string) {
     if (hours > 0) return `${hours}h ${minutes}m`;
     if (minutes > 0) return `${minutes}m`;
     return `${seconds}s`;
+}
+
+function formatCPU(value: number) {
+    return `${value >= 100 ? value.toFixed(0) : value.toFixed(1)}%`;
+}
+
+function formatMemory(bytes: number) {
+    if (bytes >= 1024 ** 3) return `${(bytes / 1024 ** 3).toFixed(1)} GB`;
+    return `${Math.round(bytes / 1024 ** 2)} MB`;
+}
+
+function cpuScale(values: number[]) {
+    return Math.max(100, Math.ceil(Math.max(0, ...values) / 100) * 100);
+}
+
+function memoryScale(values: number[]) {
+    const step = 128 * 1024 ** 2;
+    return Math.max(256 * 1024 ** 2, Math.ceil(Math.max(0, ...values) / step) * step);
 }
 
 function displayURL(value: string) {

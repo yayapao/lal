@@ -193,6 +193,29 @@ func TestSelectedBatchKeepsServiceOrderStable(t *testing.T) {
 	}
 }
 
+func TestParseResourceUsageAggregatesProcessGroups(t *testing.T) {
+	usage := parseResourceUsage(`
+  100  12.5  100
+  100   0.5  200
+  200   3.0  512
+  999  40.0  999
+  invalid row
+`, map[int]string{100: "alpha", 200: "beta"}, []string{"stopped", "beta", "alpha"})
+
+	if len(usage) != 3 {
+		t.Fatalf("usage count = %d, want 3", len(usage))
+	}
+	if usage[0].ServiceID != "alpha" || usage[0].CPUPercent != 13 || usage[0].MemoryBytes != 300*1024 || usage[0].ProcessCount != 2 {
+		t.Fatalf("unexpected alpha usage: %#v", usage[0])
+	}
+	if usage[1].ServiceID != "beta" || usage[1].CPUPercent != 3 || usage[1].MemoryBytes != 512*1024 || usage[1].ProcessCount != 1 {
+		t.Fatalf("unexpected beta usage: %#v", usage[1])
+	}
+	if usage[2].ServiceID != "stopped" || usage[2].CPUPercent != 0 || usage[2].MemoryBytes != 0 || usage[2].ProcessCount != 0 {
+		t.Fatalf("unexpected stopped usage: %#v", usage[2])
+	}
+}
+
 func TestStopKillsProcessGroupAfterTimeout(t *testing.T) {
 	app := testApp(t)
 	app.stopTimeout = 120 * time.Millisecond
@@ -238,6 +261,14 @@ func TestProcessLifecycleCapturesLogsAndStopsGroup(t *testing.T) {
 	running := serviceState(t, app, service.ID)
 	if running.Status != "running" || running.PID == 0 {
 		t.Fatalf("unexpected running state: %#v", running)
+	}
+	usage, err := app.GetResourceUsage()
+	if err != nil {
+		t.Fatalf("get resource usage: %v", err)
+	}
+	resources := resourceState(t, usage, service.ID)
+	if resources.ProcessCount == 0 || resources.MemoryBytes == 0 {
+		t.Fatalf("process group resources were not collected: %#v", resources)
 	}
 	pid := running.PID
 
@@ -312,6 +343,17 @@ func serviceState(t *testing.T, app *App, id string) ServiceView {
 	}
 	t.Fatalf("service %s not found", id)
 	return ServiceView{}
+}
+
+func resourceState(t *testing.T, usage []ResourceUsage, id string) ResourceUsage {
+	t.Helper()
+	for _, resource := range usage {
+		if resource.ServiceID == id {
+			return resource
+		}
+	}
+	t.Fatalf("resource usage for %s not found", id)
+	return ResourceUsage{}
 }
 
 func logContains(entries []LogEntry, text string) bool {

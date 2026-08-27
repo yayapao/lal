@@ -10,6 +10,7 @@ const api = vi.hoisted(() => ({
     DeleteService: vi.fn(),
     GetAppState: vi.fn(),
     GetLogs: vi.fn(),
+    GetResourceUsage: vi.fn(),
     OpenServiceURL: vi.fn(),
     RevealService: vi.fn(),
     StartAll: vi.fn(),
@@ -24,28 +25,31 @@ const api = vi.hoisted(() => ({
 vi.mock('../wailsjs/go/main/App', () => api);
 vi.mock('../wailsjs/runtime/runtime', () => ({EventsOn: vi.fn(() => () => undefined)}));
 
+const alphaService = {
+    id: 'alpha',
+    name: 'Alpha',
+    directory: '/tmp/alpha',
+    command: 'npm run dev',
+    url: '',
+    status: 'stopped',
+    pid: 0,
+    startedAt: '',
+    lastError: '',
+    pathExists: true,
+    health: '',
+    healthInfo: '',
+};
+
 describe('selected service actions', () => {
     beforeEach(() => {
         vi.clearAllMocks();
         api.GetAppState.mockResolvedValue({
-            services: [{
-                id: 'alpha',
-                name: 'Alpha',
-                directory: '/tmp/alpha',
-                command: 'npm run dev',
-                url: '',
-                status: 'stopped',
-                pid: 0,
-                startedAt: '',
-                lastError: '',
-                pathExists: true,
-                health: '',
-                healthInfo: '',
-            }],
+            services: [alphaService],
             configPath: '/tmp/lal.json',
             warning: '',
         });
         api.GetLogs.mockResolvedValue([]);
+        api.GetResourceUsage.mockResolvedValue([]);
         api.StartServices.mockResolvedValue({changed: 1, skipped: 0, errors: []});
     });
 
@@ -60,5 +64,22 @@ describe('selected service actions', () => {
 
         await waitFor(() => expect(api.StartServices).toHaveBeenCalledWith(['alpha']));
         expect(api.StartAll).not.toHaveBeenCalled();
+    });
+
+    it('renders sampled CPU, memory, and process count', async () => {
+        api.GetAppState.mockResolvedValue({
+            services: [{...alphaService, status: 'running', pid: 42, startedAt: new Date().toISOString()}],
+            configPath: '/tmp/lal.json',
+            warning: '',
+        });
+        api.GetResourceUsage.mockResolvedValue([{
+            serviceId: 'alpha', cpuPercent: 12.5, memoryBytes: 128 * 1024 ** 2, processCount: 2,
+        }]);
+
+        render(<App/>);
+
+        expect(await screen.findByText('12.5%')).toBeDefined();
+        expect(screen.getByText('PROC 2')).toBeDefined();
+        expect(screen.getAllByText('128 MB').length).toBeGreaterThan(0);
     });
 });

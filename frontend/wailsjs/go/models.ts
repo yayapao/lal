@@ -102,6 +102,24 @@ export namespace main {
 	        this.text = source["text"];
 	    }
 	}
+	export class ResourceUsage {
+	    serviceId: string;
+	    cpuPercent: number;
+	    memoryBytes: number;
+	    processCount: number;
+
+	    static createFrom(source: any = {}) {
+	        return new ResourceUsage(source);
+	    }
+
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.serviceId = source["serviceId"];
+	        this.cpuPercent = source["cpuPercent"];
+	        this.memoryBytes = source["memoryBytes"];
+	        this.processCount = source["processCount"];
+	    }
+	}
 	export class ServiceInput {
 	    name: string;
 	    directory: string;
