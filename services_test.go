@@ -178,6 +178,14 @@ func TestSelectedBatchKeepsServiceOrderStable(t *testing.T) {
 	if state := serviceState(t, app, services["Alpha"].ID); state.Status != "stopped" {
 		t.Fatalf("unselected service changed state: %#v", state)
 	}
+	repeated := app.StartServices([]string{services["Middle"].ID, "missing"})
+	if repeated.Changed != 0 || repeated.Skipped != 1 || len(repeated.Errors) != 1 {
+		t.Fatalf("unexpected repeated start result: %#v", repeated)
+	}
+	unstarted := app.StopServices([]string{services["Alpha"].ID, "missing"})
+	if unstarted.Changed != 0 || unstarted.Skipped != 1 || len(unstarted.Errors) != 1 {
+		t.Fatalf("unexpected unstarted stop result: %#v", unstarted)
+	}
 
 	stopped := app.StopServices([]string{services["Zulu"].ID, services["Middle"].ID})
 	if stopped.Changed != 2 || stopped.Skipped != 0 || len(stopped.Errors) != 0 {

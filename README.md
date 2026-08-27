@@ -43,7 +43,7 @@ LAL（Local App Launcher）是一个基于 Wails v2 的 macOS 本地开发服务
 
 ## 本地开发
 
-环境要求：Go 1.25+、Node.js 15+、npm 和 Xcode Command Line Tools。
+环境要求：Go 1.25+、Node.js 20.19+（20.x）或 22.12+、npm 和 Xcode Command Line Tools。
 
 ```bash
 go install github.com/wailsapp/wails/v2/cmd/wails@latest
@@ -63,7 +63,7 @@ open build/bin/LAL.app
 ```bash
 go test -race ./...
 go vet ./...
-cd frontend && npm exec tsc -- --noEmit
+cd frontend && npm test && npm run build
 ```
 
 ## 后续规划
