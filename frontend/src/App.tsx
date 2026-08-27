@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import {FormEvent, KeyboardEvent, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState} from 'react';
 import './App.css';
+import LogLine from './LogLine';
 import {
     ChooseDirectory,
     ClearLogs,
@@ -51,10 +52,6 @@ type OperationIssue = {title: string; message: string};
 
 const emptyForm: ServiceForm = {name: '', directory: '', command: 'npm run dev', url: ''};
 const resourceHistoryLength = 60;
-const timeFormatter = new Intl.DateTimeFormat('zh-CN', {
-    hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false,
-});
-
 function App() {
     const [services, setServices] = useState<ServiceView[]>([]);
     const [selectedId, setSelectedId] = useState('');
@@ -418,11 +415,7 @@ function App() {
                         {!selectedService ? <div className="console-empty">未选择服务</div>
                             : logs.length === 0 ? <div className="console-empty">暂无日志</div>
                                 : <div className="log-lines">{logs.map((entry, index) => (
-                                    <div className={`log-line stream-${entry.stream}`} key={`${entry.timestamp}-${index}`}>
-                                        <time>{formatLogTime(entry.timestamp)}</time>
-                                        <span className="stream-mark">{entry.stream === 'stderr' ? 'ERR' : entry.stream === 'system' ? 'LAL' : 'OUT'}</span>
-                                        <span className="log-text">{entry.text || ' '}</span>
-                                    </div>
+                                    <LogLine entry={entry} fallbackService={selectedService.name} key={`${entry.timestamp}-${index}`}/>
                                 ))}</div>}
                     </div>
                     {selectedService && <div className="console-footer"><span>{selectedService.directory}</span><span>{logs.length} 行</span></div>}
@@ -628,11 +621,6 @@ function isActive(service: ServiceView) {
 
 function isStoppable(service: ServiceView) {
     return service.status === 'running' || service.status === 'starting';
-}
-
-function formatLogTime(timestamp: string) {
-    const time = new Date(timestamp);
-    return Number.isNaN(time.getTime()) ? '--:--:--' : timeFormatter.format(time);
 }
 
 function formatUptime(startedAt: string) {

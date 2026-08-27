@@ -107,11 +107,11 @@ export namespace main {
 	    cpuPercent: number;
 	    memoryBytes: number;
 	    processCount: number;
-
+	
 	    static createFrom(source: any = {}) {
 	        return new ResourceUsage(source);
 	    }
-
+	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.serviceId = source["serviceId"];
