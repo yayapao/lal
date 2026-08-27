@@ -22,8 +22,12 @@ export function StartAll():Promise<main.BatchResult>;
 
 export function StartService(arg1:string):Promise<void>;
 
+export function StartServices(arg1:Array<string>):Promise<main.BatchResult>;
+
 export function StopAll():Promise<main.BatchResult>;
 
 export function StopService(arg1:string):Promise<void>;
+
+export function StopServices(arg1:Array<string>):Promise<main.BatchResult>;
 
 export function UpdateService(arg1:string,arg2:main.ServiceInput):Promise<main.ServiceView>;

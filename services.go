@@ -419,9 +419,16 @@ func (m *serviceManager) StopService(id string) error {
 }
 
 func (m *serviceManager) StartAll() BatchResult {
-	ids := m.serviceIDs()
+	return m.StartServices(m.serviceIDs())
+}
+
+func (m *serviceManager) StartServices(ids []string) BatchResult {
 	result := BatchResult{}
-	for _, id := range ids {
+	for _, id := range uniqueIDs(ids) {
+		if _, err := m.serviceByID(id); err != nil {
+			result.Errors = append(result.Errors, err.Error())
+			continue
+		}
 		if m.isRunningOrStarting(id) {
 			result.Skipped++
 			continue
@@ -436,9 +443,20 @@ func (m *serviceManager) StartAll() BatchResult {
 }
 
 func (m *serviceManager) StopAll() BatchResult {
-	ids := m.runningIDs()
-	result := BatchResult{Skipped: len(m.serviceIDs()) - len(ids)}
-	for _, id := range ids {
+	return m.StopServices(m.serviceIDs())
+}
+
+func (m *serviceManager) StopServices(ids []string) BatchResult {
+	result := BatchResult{}
+	for _, id := range uniqueIDs(ids) {
+		if _, err := m.serviceByID(id); err != nil {
+			result.Errors = append(result.Errors, err.Error())
+			continue
+		}
+		if !m.isStoppable(id) {
+			result.Skipped++
+			continue
+		}
 		if err := m.StopService(id); err != nil {
 			result.Errors = append(result.Errors, err.Error())
 			continue
@@ -504,11 +522,6 @@ func (m *serviceManager) serviceViewsLocked() []ServiceView {
 		views = append(views, m.serviceViewLocked(service))
 	}
 	sort.SliceStable(views, func(i, j int) bool {
-		leftRunning := views[i].PID > 0 || views[i].Status == "starting"
-		rightRunning := views[j].PID > 0 || views[j].Status == "starting"
-		if leftRunning != rightRunning {
-			return leftRunning
-		}
 		return strings.ToLower(views[i].Name) < strings.ToLower(views[j].Name)
 	})
 	return views
@@ -793,6 +806,13 @@ func (m *serviceManager) isRunningOrStarting(id string) bool {
 	return ok || m.lastStatus[id] == "starting"
 }
 
+func (m *serviceManager) isStoppable(id string) bool {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+	_, running := m.processes[id]
+	return running && m.lastStatus[id] != "stopping"
+}
+
 func (m *serviceManager) runningCount() int {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
@@ -829,6 +849,19 @@ func validateService(service Service) error {
 		}
 	}
 	return nil
+}
+
+func uniqueIDs(ids []string) []string {
+	unique := make([]string, 0, len(ids))
+	seen := make(map[string]struct{}, len(ids))
+	for _, id := range ids {
+		if _, exists := seen[id]; exists {
+			continue
+		}
+		seen[id] = struct{}{}
+		unique = append(unique, id)
+	}
+	return unique
 }
 
 func isDirectory(path string) bool {

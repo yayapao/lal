@@ -42,12 +42,20 @@ export function StartService(arg1) {
   return window['go']['main']['App']['StartService'](arg1);
 }
 
+export function StartServices(arg1) {
+  return window['go']['main']['App']['StartServices'](arg1);
+}
+
 export function StopAll() {
   return window['go']['main']['App']['StopAll']();
 }
 
 export function StopService(arg1) {
   return window['go']['main']['App']['StopService'](arg1);
+}
+
+export function StopServices(arg1) {
+  return window['go']['main']['App']['StopServices'](arg1);
 }
 
 export function UpdateService(arg1, arg2) {

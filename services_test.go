@@ -154,6 +154,37 @@ func TestDefaultShellRunsWithoutInteractiveJobControl(t *testing.T) {
 	}
 }
 
+func TestSelectedBatchKeepsServiceOrderStable(t *testing.T) {
+	app := testApp(t)
+	services := make(map[string]ServiceView)
+	for _, name := range []string{"Zulu", "Alpha", "Middle"} {
+		service, err := app.CreateService(ServiceInput{
+			Name:      name,
+			Directory: t.TempDir(),
+			Command:   "trap 'exit 0' TERM; while :; do sleep 1; done",
+		})
+		if err != nil {
+			t.Fatalf("create %s: %v", name, err)
+		}
+		services[name] = service
+	}
+
+	assertServiceNames(t, app.GetAppState().Services, []string{"Alpha", "Middle", "Zulu"})
+	started := app.StartServices([]string{services["Zulu"].ID, services["Middle"].ID, services["Zulu"].ID})
+	if started.Changed != 2 || started.Skipped != 0 || len(started.Errors) != 0 {
+		t.Fatalf("unexpected start result: %#v", started)
+	}
+	assertServiceNames(t, app.GetAppState().Services, []string{"Alpha", "Middle", "Zulu"})
+	if state := serviceState(t, app, services["Alpha"].ID); state.Status != "stopped" {
+		t.Fatalf("unselected service changed state: %#v", state)
+	}
+
+	stopped := app.StopServices([]string{services["Zulu"].ID, services["Middle"].ID})
+	if stopped.Changed != 2 || stopped.Skipped != 0 || len(stopped.Errors) != 0 {
+		t.Fatalf("unexpected stop result: %#v", stopped)
+	}
+}
+
 func TestStopKillsProcessGroupAfterTimeout(t *testing.T) {
 	app := testApp(t)
 	app.stopTimeout = 120 * time.Millisecond
@@ -282,6 +313,18 @@ func logContains(entries []LogEntry, text string) bool {
 		}
 	}
 	return false
+}
+
+func assertServiceNames(t *testing.T, services []ServiceView, want []string) {
+	t.Helper()
+	if len(services) != len(want) {
+		t.Fatalf("service count = %d, want %d", len(services), len(want))
+	}
+	for index, service := range services {
+		if service.Name != want[index] {
+			t.Fatalf("service %d = %q, want %q", index, service.Name, want[index])
+		}
+	}
 }
 
 func waitFor(t *testing.T, timeout time.Duration, condition func() bool) {

@@ -287,7 +287,7 @@
 }
 
 .services-pane {
-    grid-template-rows: 40px minmax(0, 1fr);
+    grid-template-rows: 38px minmax(0, 1fr);
     border-right: 1px solid var(--line-strong);
     background: var(--panel);
 }
@@ -301,18 +301,106 @@
 
 .pane-heading {
     justify-content: space-between;
-    padding: 0 16px 0 20px;
+    gap: 10px;
+    padding: 0 10px 0 14px;
     color: var(--muted);
     font-size: 11px;
     font-weight: 650;
 }
 
-.pane-heading span:last-child {
+.service-count {
     color: var(--faint);
     font-family: var(--mono);
     font-size: 10px;
     font-variant-numeric: tabular-nums;
 }
+
+.select-all-control {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    min-width: 0;
+    cursor: pointer;
+}
+
+.selection-checkbox {
+    display: grid;
+    place-content: center;
+    width: 15px;
+    height: 15px;
+    flex: 0 0 15px;
+    margin: 0;
+    padding: 0;
+    appearance: none;
+    border: 1px solid #4a555b;
+    border-radius: 3px;
+    outline: 0;
+    background: #0e1113;
+    cursor: pointer;
+}
+
+.selection-checkbox::after {
+    content: "";
+    width: 7px;
+    height: 4px;
+    border-bottom: 1.5px solid #071014;
+    border-left: 1.5px solid #071014;
+    opacity: 0;
+    transform: translateY(-1px) rotate(-45deg);
+}
+
+.selection-checkbox:checked,
+.selection-checkbox:indeterminate {
+    border-color: var(--accent);
+    background: var(--accent);
+}
+
+.selection-checkbox:checked::after { opacity: 1; }
+
+.selection-checkbox:indeterminate::after {
+    width: 7px;
+    height: 1.5px;
+    border: 0;
+    opacity: 1;
+    background: #071014;
+    transform: none;
+}
+
+.selection-checkbox:disabled { opacity: 0.38; cursor: default; }
+
+.selection-actions {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    min-width: 0;
+}
+
+.selection-count {
+    margin-right: 4px;
+    color: var(--accent);
+    font-family: var(--mono);
+    font-size: 9px;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+.selection-action {
+    display: grid;
+    place-items: center;
+    width: 27px;
+    height: 27px;
+    padding: 0;
+    border: 0;
+    border-radius: 4px;
+    color: var(--muted);
+    background: transparent;
+    cursor: pointer;
+}
+
+.selection-action:hover:not(:disabled) { color: var(--text); background: #242a2e; }
+.selection-action:first-of-type { color: var(--green); }
+.selection-action:nth-of-type(2) { color: var(--red); }
+.selection-action:disabled { opacity: 0.35; cursor: default; }
 
 .services-list {
     min-height: 0;
@@ -322,10 +410,10 @@
 .service-row {
     position: relative;
     display: grid;
-    grid-template-columns: minmax(0, 1fr) 82px 76px;
+    grid-template-columns: 22px minmax(0, 1fr) 72px 66px;
     align-items: center;
-    min-height: 112px;
-    padding: 13px 12px 13px 20px;
+    min-height: 76px;
+    padding: 8px 8px 8px 14px;
     border-bottom: 1px solid var(--line);
     background: var(--panel);
     cursor: default;
@@ -334,6 +422,7 @@
 
 .service-row:hover { background: var(--panel-hover); }
 .service-row.is-selected { background: var(--panel-selected); }
+.service-row.is-checked:not(.is-selected) { background: #141a1e; }
 
 .service-accent {
     position: absolute;
@@ -353,14 +442,16 @@
 
 .service-copy {
     min-width: 0;
-    padding-right: 12px;
+    padding-right: 8px;
 }
+
+.service-selector { align-self: center; }
 
 .service-name-line {
     display: flex;
     align-items: center;
     min-width: 0;
-    height: 20px;
+    height: 17px;
 }
 
 .service-name-line h3 {
@@ -368,7 +459,7 @@
     margin: 0;
     overflow: hidden;
     color: #edf1f2;
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 680;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -380,7 +471,7 @@
     margin-left: 8px;
     color: var(--faint);
     font-family: var(--mono);
-    font-size: 9px;
+    font-size: 8px;
     font-variant-numeric: tabular-nums;
 }
 
@@ -389,11 +480,11 @@
     align-items: center;
     gap: 4px;
     min-width: 0;
-    height: 18px;
-    margin-top: 2px;
+    height: 14px;
+    margin-top: 1px;
     overflow: hidden;
     color: var(--muted);
-    font-size: 10px;
+    font-size: 9px;
 }
 
 .service-path span,
@@ -410,22 +501,22 @@
 .service-meta {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 8px;
     min-width: 0;
-    height: 24px;
-    margin-top: 4px;
+    height: 18px;
+    margin-top: 1px;
     font-family: var(--mono);
 }
 
 .service-command {
     display: block;
     min-width: 0;
-    max-width: 48%;
+    max-width: 45%;
     overflow: hidden;
     color: #b6c0c4;
     font-family: inherit;
-    font-size: 10px;
-    line-height: 18px;
+    font-size: 9px;
+    line-height: 16px;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
@@ -451,19 +542,19 @@
 }
 
 .service-url {
-    max-width: 48%;
-    font-size: 10px;
+    max-width: 52%;
+    font-size: 9px;
 }
 
 .service-url:hover,
 .log-url:hover { color: var(--accent-strong); }
 
 .service-error {
-    margin-top: 3px;
+    margin-top: 2px;
     overflow: hidden;
     color: var(--red);
-    font-size: 10px;
-    line-height: 14px;
+    font-size: 9px;
+    line-height: 12px;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
@@ -472,9 +563,9 @@
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    width: 78px;
+    width: 68px;
     color: var(--muted);
-    font-size: 10px;
+    font-size: 9px;
     font-weight: 650;
     white-space: nowrap;
 }
@@ -511,6 +602,12 @@
     align-items: center;
     justify-content: flex-end;
     gap: 4px;
+}
+
+.service-row .icon-button {
+    width: 30px;
+    height: 30px;
+    flex-basis: 30px;
 }
 
 .start-button {
@@ -556,20 +653,20 @@
 .skeleton-row {
     display: grid;
     align-content: center;
-    gap: 8px;
-    height: 112px;
-    padding: 0 20px;
+    gap: 6px;
+    height: 76px;
+    padding: 0 14px 0 36px;
     border-bottom: 1px solid var(--line);
 }
 
 .skeleton-row span {
     display: block;
-    height: 8px;
+    height: 6px;
     border-radius: 2px;
     background: #242a2e;
 }
 
-.skeleton-row span:nth-child(1) { width: 24%; height: 10px; }
+.skeleton-row span:nth-child(1) { width: 24%; height: 9px; }
 .skeleton-row span:nth-child(2) { width: 68%; }
 .skeleton-row span:nth-child(3) { width: 48%; }
 

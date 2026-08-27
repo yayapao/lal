@@ -27,8 +27,10 @@ import {
     OpenServiceURL,
     RevealService,
     StartAll,
+    StartServices,
     StartService,
     StopAll,
+    StopServices,
     StopService,
     UpdateService,
 } from '../wailsjs/go/main/App';
@@ -50,11 +52,12 @@ const timeFormatter = new Intl.DateTimeFormat('zh-CN', {
 function App() {
     const [services, setServices] = useState<ServiceView[]>([]);
     const [selectedId, setSelectedId] = useState('');
+    const [checkedIds, setCheckedIds] = useState<Set<string>>(new Set());
     const [logs, setLogs] = useState<LogEntry[]>([]);
     const [query, setQuery] = useState('');
     const [loading, setLoading] = useState(true);
     const [busyIds, setBusyIds] = useState<Set<string>>(new Set());
-    const [batchBusy, setBatchBusy] = useState<'start' | 'stop' | null>(null);
+    const [batchBusy, setBatchBusy] = useState<'all-start' | 'all-stop' | 'selected-start' | 'selected-stop' | null>(null);
     const [dialog, setDialog] = useState<DialogState | null>(null);
     const [deleteTarget, setDeleteTarget] = useState<ServiceView | null>(null);
     const [menu, setMenu] = useState<MenuState | null>(null);
@@ -79,6 +82,11 @@ function App() {
             setSelectedId(current => current && nextServices.some(service => service.id === current)
                 ? current
                 : nextServices[0]?.id ?? '');
+            setCheckedIds(current => {
+                const validIDs = new Set(nextServices.map(service => service.id));
+                const next = new Set([...current].filter(id => validIDs.has(id)));
+                return next.size === current.size ? current : next;
+            });
             if (state.warning) showToast(state.warning, 'error');
         } catch (error) {
             showToast(errorMessage(error), 'error');
@@ -144,6 +152,12 @@ function App() {
         return services.filter(service => [service.name, service.directory, service.command, service.url ?? '']
             .some(value => value.toLocaleLowerCase().includes(keyword)));
     }, [query, services]);
+    const checkedServices = useMemo(() => services.filter(service => checkedIds.has(service.id)), [checkedIds, services]);
+    const checkedStartableCount = checkedServices.filter(service => !isActive(service) && service.pathExists).length;
+    const checkedStoppableCount = checkedServices.filter(isStoppable).length;
+    const visibleCheckedCount = filteredServices.filter(service => checkedIds.has(service.id)).length;
+    const allVisibleChecked = filteredServices.length > 0 && visibleCheckedCount === filteredServices.length;
+    const someVisibleChecked = visibleCheckedCount > 0 && !allVisibleChecked;
 
     const toggleService = async (service: ServiceView) => {
         if (service.status === 'starting' || service.status === 'stopping') return;
@@ -163,7 +177,7 @@ function App() {
     };
 
     const runBatch = async (action: 'start' | 'stop') => {
-        setBatchBusy(action);
+        setBatchBusy(`all-${action}`);
         try {
             const result = action === 'start' ? await StartAll() : await StopAll();
             const verb = action === 'start' ? '启动' : '停止';
@@ -179,6 +193,44 @@ function App() {
         } finally {
             setBatchBusy(null); await refreshState();
         }
+    };
+
+    const runSelectedBatch = async (action: 'start' | 'stop') => {
+        const ids = checkedServices.map(service => service.id);
+        if (ids.length === 0) return;
+        setBatchBusy(`selected-${action}`);
+        try {
+            const result = action === 'start' ? await StartServices(ids) : await StopServices(ids);
+            const verb = action === 'start' ? '启动' : '停止';
+            if ((result.errors ?? []).length > 0) {
+                showToast(`${verb}完成 ${result.changed} 个，${result.errors.length} 个失败：${result.errors[0]}`, 'error');
+            } else if (result.changed === 0) {
+                showToast(action === 'start' ? '选中的服务都已在运行' : '选中的服务均未运行');
+            } else {
+                showToast(`已${verb} ${result.changed} 个选中服务`);
+            }
+        } catch (error) {
+            showToast(errorMessage(error), 'error');
+        } finally {
+            setBatchBusy(null); await refreshState();
+        }
+    };
+
+    const toggleChecked = (id: string) => {
+        setCheckedIds(current => {
+            const next = new Set(current);
+            if (next.has(id)) next.delete(id); else next.add(id);
+            return next;
+        });
+    };
+
+    const toggleVisibleSelection = () => {
+        setCheckedIds(current => {
+            const next = new Set(current);
+            if (allVisibleChecked) filteredServices.forEach(service => next.delete(service.id));
+            else filteredServices.forEach(service => next.add(service.id));
+            return next;
+        });
     };
 
     const openMenu = (event: React.MouseEvent<HTMLButtonElement>, service: ServiceView) => {
@@ -241,10 +293,10 @@ function App() {
                 </label>
                 <div className="toolbar-actions">
                     <button className="button secondary" type="button" onClick={() => void runBatch('stop')} disabled={batchBusy !== null || runningCount === 0}>
-                        {batchBusy === 'stop' ? <LoaderCircle className="spin" size={16}/> : <Square size={14}/>}全部停止
+                        {batchBusy === 'all-stop' ? <LoaderCircle className="spin" size={16}/> : <Square size={14}/>}全部停止
                     </button>
                     <button className="button primary" type="button" onClick={() => void runBatch('start')} disabled={batchBusy !== null || services.length === 0 || runningCount === services.length}>
-                        {batchBusy === 'start' ? <LoaderCircle className="spin" size={16}/> : <Play size={16}/>}全部启动
+                        {batchBusy === 'all-start' ? <LoaderCircle className="spin" size={16}/> : <Play size={16}/>}全部启动
                     </button>
                     <button className="icon-button add-button" type="button" onClick={() => setDialog({mode: 'create'})} aria-label="添加服务" title="添加服务"><Plus size={19}/></button>
                 </div>
@@ -252,7 +304,26 @@ function App() {
 
             <main className="workspace">
                 <section className="services-pane" aria-label="服务列表">
-                    <div className="pane-heading"><span>服务</span><span>{query ? `${filteredServices.length} / ${services.length}` : services.length}</span></div>
+                    <div className="pane-heading">
+                        <label className="select-all-control">
+                            <SelectionCheckbox checked={allVisibleChecked} indeterminate={someVisibleChecked} disabled={batchBusy !== null || filteredServices.length === 0}
+                                onChange={toggleVisibleSelection} ariaLabel="选择当前列表中的全部服务"/>
+                            <span>服务</span>
+                        </label>
+                        {checkedIds.size > 0 ? <div className="selection-actions">
+                            <span className="selection-count">已选 {checkedIds.size}</span>
+                            <button className="selection-action" type="button" onClick={() => void runSelectedBatch('start')}
+                                disabled={batchBusy !== null || checkedStartableCount === 0} aria-label="启动选中服务" title="启动选中服务">
+                                {batchBusy === 'selected-start' ? <LoaderCircle className="spin" size={14}/> : <Play size={14}/>}
+                            </button>
+                            <button className="selection-action" type="button" onClick={() => void runSelectedBatch('stop')}
+                                disabled={batchBusy !== null || checkedStoppableCount === 0} aria-label="停止选中服务" title="停止选中服务">
+                                {batchBusy === 'selected-stop' ? <LoaderCircle className="spin" size={14}/> : <Square size={12}/>}
+                            </button>
+                            <button className="selection-action" type="button" onClick={() => setCheckedIds(new Set())} disabled={batchBusy !== null}
+                                aria-label="清除选择" title="清除选择"><X size={14}/></button>
+                        </div> : <span className="service-count">{query ? `${filteredServices.length} / ${services.length}` : services.length}</span>}
+                    </div>
                     <div className="services-list">
                         {loading ? (
                             <div className="skeleton-list" aria-label="正在载入服务">
@@ -264,8 +335,10 @@ function App() {
                                 {!query && <button className="text-button" type="button" onClick={() => setDialog({mode: 'create'})}>添加服务</button>}
                             </div>
                         ) : filteredServices.map(service => (
-                            <ServiceRow key={service.id} service={service} selected={service.id === selectedId} busy={busyIds.has(service.id)}
+                            <ServiceRow key={service.id} service={service} selected={service.id === selectedId} checked={checkedIds.has(service.id)}
+                                busy={busyIds.has(service.id) || batchBusy?.startsWith('all') === true || (batchBusy?.startsWith('selected') === true && checkedIds.has(service.id))}
                                 onSelect={() => setSelectedId(service.id)} onToggle={() => void toggleService(service)}
+                                onCheck={() => toggleChecked(service.id)} selectionDisabled={batchBusy !== null}
                                 onOpenURL={() => void openServiceURL(service)} onMenu={event => openMenu(event, service)}/>
                         ))}
                     </div>
@@ -328,18 +401,22 @@ function App() {
     );
 }
 
-function ServiceRow({service, selected, busy, onSelect, onToggle, onOpenURL, onMenu}: {
-    service: ServiceView; selected: boolean; busy: boolean; onSelect: () => void; onToggle: () => void;
+function ServiceRow({service, selected, checked, busy, selectionDisabled, onSelect, onCheck, onToggle, onOpenURL, onMenu}: {
+    service: ServiceView; selected: boolean; checked: boolean; busy: boolean; selectionDisabled: boolean;
+    onSelect: () => void; onCheck: () => void; onToggle: () => void;
     onOpenURL: () => void;
     onMenu: (event: React.MouseEvent<HTMLButtonElement>) => void;
 }) {
     const transition = service.status === 'starting' || service.status === 'stopping';
     const handleKeyDown = (event: KeyboardEvent<HTMLElement>) => {
+        if ((event.target as HTMLElement).closest('button, input')) return;
         if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); onSelect(); }
     };
     return (
-        <article className={selected ? 'service-row is-selected' : 'service-row'} onClick={onSelect} onKeyDown={handleKeyDown} tabIndex={0} aria-current={selected}>
+        <article className={`service-row${selected ? ' is-selected' : ''}${checked ? ' is-checked' : ''}`} onClick={onSelect} onKeyDown={handleKeyDown} tabIndex={0} aria-current={selected}>
             <span className={`service-accent state-${serviceVisualState(service)}`}/>
+            <input className="selection-checkbox service-selector" type="checkbox" checked={checked} disabled={selectionDisabled}
+                onClick={event => event.stopPropagation()} onChange={onCheck} aria-label={`选择 ${service.name}`}/>
             <div className="service-copy">
                 <div className="service-name-line"><h3>{service.name}</h3>{service.pid > 0 && <span className="pid">PID {service.pid}</span>}{service.startedAt && isActive(service) && <span className="uptime">{formatUptime(service.startedAt)}</span>}</div>
                 <div className={service.pathExists ? 'service-path' : 'service-path path-invalid'} title={service.directory}>{!service.pathExists && <CircleAlert size={12}/>}<span>{service.directory}</span></div>
@@ -365,6 +442,15 @@ function ServiceRow({service, selected, busy, onSelect, onToggle, onOpenURL, onM
             </div>
         </article>
     );
+}
+
+function SelectionCheckbox({checked, indeterminate, disabled, onChange, ariaLabel}: {
+    checked: boolean; indeterminate: boolean; disabled: boolean; onChange: () => void; ariaLabel: string;
+}) {
+    const inputRef = useRef<HTMLInputElement>(null);
+    useEffect(() => { if (inputRef.current) inputRef.current.indeterminate = indeterminate; }, [indeterminate]);
+    return <input ref={inputRef} className="selection-checkbox" type="checkbox" checked={checked} disabled={disabled}
+        onChange={onChange} aria-label={ariaLabel}/>;
 }
 
 function StatusLabel({service, compact = false}: {service: ServiceView; compact?: boolean}) {
@@ -432,6 +518,10 @@ function ServiceDialog({state, onClose, onSaved}: {state: DialogState; onClose: 
 
 function isActive(service: ServiceView) {
     return service.status === 'running' || service.status === 'starting' || service.status === 'stopping';
+}
+
+function isStoppable(service: ServiceView) {
+    return service.status === 'running' || service.status === 'starting';
 }
 
 function formatLogTime(timestamp: string) {
