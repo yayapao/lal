@@ -18,6 +18,10 @@ export function DeleteService(arg1) {
   return window['go']['main']['App']['DeleteService'](arg1);
 }
 
+export function DownloadLogs(arg1) {
+  return window['go']['main']['App']['DownloadLogs'](arg1);
+}
+
 export function GetAppState() {
   return window['go']['main']['App']['GetAppState']();
 }

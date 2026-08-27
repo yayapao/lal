@@ -334,6 +334,11 @@ func (m *serviceManager) StartService(id string) error {
 	m.lastError[id] = ""
 	m.mu.Unlock()
 	m.emitState(id)
+	if err := checkServicePort(service.URL); err != nil {
+		m.failStart(id, err)
+		return err
+	}
+	m.ClearLogs(id)
 
 	args := append(append([]string(nil), m.commandArgs...), service.Command)
 	cmd := exec.Command(m.commandShell, args...)
@@ -433,7 +438,8 @@ func (m *serviceManager) StartAll() BatchResult {
 func (m *serviceManager) StartServices(ids []string) BatchResult {
 	result := BatchResult{}
 	for _, id := range uniqueIDs(ids) {
-		if _, err := m.serviceByID(id); err != nil {
+		service, err := m.serviceByID(id)
+		if err != nil {
 			result.Errors = append(result.Errors, err.Error())
 			continue
 		}
@@ -442,7 +448,7 @@ func (m *serviceManager) StartServices(ids []string) BatchResult {
 			continue
 		}
 		if err := m.StartService(id); err != nil {
-			result.Errors = append(result.Errors, err.Error())
+			result.Errors = append(result.Errors, fmt.Sprintf("%s：%v", service.Name, err))
 			continue
 		}
 		result.Changed++
@@ -457,7 +463,8 @@ func (m *serviceManager) StopAll() BatchResult {
 func (m *serviceManager) StopServices(ids []string) BatchResult {
 	result := BatchResult{}
 	for _, id := range uniqueIDs(ids) {
-		if _, err := m.serviceByID(id); err != nil {
+		service, err := m.serviceByID(id)
+		if err != nil {
 			result.Errors = append(result.Errors, err.Error())
 			continue
 		}
@@ -466,7 +473,7 @@ func (m *serviceManager) StopServices(ids []string) BatchResult {
 			continue
 		}
 		if err := m.StopService(id); err != nil {
-			result.Errors = append(result.Errors, err.Error())
+			result.Errors = append(result.Errors, fmt.Sprintf("%s：%v", service.Name, err))
 			continue
 		}
 		result.Changed++
@@ -732,6 +739,58 @@ func probeAccessURL(accessURL string, timeout time.Duration) (bool, string) {
 	}
 	_ = connection.Close()
 	return true, fmt.Sprintf("%s 可访问", parsed.Host)
+}
+
+func checkServicePort(accessURL string) error {
+	if accessURL == "" {
+		return nil
+	}
+	parsed, err := url.Parse(accessURL)
+	if err != nil || parsed.Hostname() == "" {
+		return fmt.Errorf("访问地址无效，无法检查端口")
+	}
+	port := parsed.Port()
+	if port == "" {
+		if parsed.Scheme == "https" {
+			port = "443"
+		} else {
+			port = "80"
+		}
+	}
+	command, pid := tcpPortOwner(port)
+	if pid == 0 {
+		return nil
+	}
+	inspectCommand := fmt.Sprintf("lsof -nP -iTCP:%s -sTCP:LISTEN", port)
+	return fmt.Errorf("端口 %s 已被进程 %s (PID %d) 占用。\n检查命令：%s\n如确认可以停止：kill %d\n否则请修改服务的访问地址和启动命令，改用其他端口", port, command, pid, inspectCommand, pid)
+}
+
+func tcpPortOwner(port string) (string, int) {
+	output, err := exec.Command("/usr/sbin/lsof", "-nP", "-iTCP:"+port, "-sTCP:LISTEN", "-Fpc").Output()
+	if err != nil {
+		return "未知进程", 0
+	}
+	command := "未知进程"
+	pid := 0
+	for _, line := range strings.Split(string(output), "\n") {
+		if len(line) < 2 {
+			continue
+		}
+		switch line[0] {
+		case 'p':
+			if pid == 0 {
+				pid, _ = strconv.Atoi(line[1:])
+			}
+		case 'c':
+			if command == "未知进程" {
+				command = line[1:]
+			}
+		}
+		if pid > 0 && command != "未知进程" {
+			break
+		}
+	}
+	return command, pid
 }
 
 func (m *serviceManager) appendLog(id, stream, text string) {

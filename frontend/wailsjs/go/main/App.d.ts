@@ -10,6 +10,8 @@ export function CreateService(arg1:main.ServiceInput):Promise<main.ServiceView>;
 
 export function DeleteService(arg1:string):Promise<void>;
 
+export function DownloadLogs(arg1:string):Promise<string>;
+
 export function GetAppState():Promise<main.AppState>;
 
 export function GetLogs(arg1:string):Promise<Array<main.LogEntry>>;

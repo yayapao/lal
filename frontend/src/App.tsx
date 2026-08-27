@@ -1,11 +1,12 @@
 import {
     Activity,
-    ArrowDownToLine,
     CircleAlert,
+    Download,
     Ellipsis,
     ExternalLink,
     FolderOpen,
     LoaderCircle,
+    ListEnd,
     Pencil,
     Play,
     Plus,
@@ -22,6 +23,7 @@ import {
     ClearLogs,
     CreateService,
     DeleteService,
+    DownloadLogs,
     GetAppState,
     GetLogs,
     GetResourceUsage,
@@ -45,6 +47,7 @@ type DialogState = {mode: 'create'} | {mode: 'edit'; service: ServiceView};
 type ServiceForm = {name: string; directory: string; command: string; url: string};
 type ToastState = {kind: 'success' | 'error'; message: string};
 type MenuState = {service: ServiceView; left: number; top: number};
+type OperationIssue = {title: string; message: string};
 
 const emptyForm: ServiceForm = {name: '', directory: '', command: 'npm run dev', url: ''};
 const resourceHistoryLength = 60;
@@ -67,6 +70,8 @@ function App() {
     const [deleteTarget, setDeleteTarget] = useState<ServiceView | null>(null);
     const [menu, setMenu] = useState<MenuState | null>(null);
     const [autoScroll, setAutoScroll] = useState(true);
+    const [downloadingLogs, setDownloadingLogs] = useState(false);
+    const [operationIssue, setOperationIssue] = useState<OperationIssue | null>(null);
     const [toast, setToast] = useState<ToastState | null>(null);
     const [, setClock] = useState(0);
     const selectedIdRef = useRef('');
@@ -159,7 +164,7 @@ function App() {
     useEffect(() => {
         const onKeyDown = (event: globalThis.KeyboardEvent) => {
             if (event.key !== 'Escape') return;
-            setMenu(null); setDialog(null); setDeleteTarget(null);
+            setMenu(null); setDialog(null); setDeleteTarget(null); setOperationIssue(null);
         };
         window.addEventListener('keydown', onKeyDown);
         return () => window.removeEventListener('keydown', onKeyDown);
@@ -194,15 +199,18 @@ function App() {
 
     const toggleService = async (service: ServiceView) => {
         if (service.status === 'starting' || service.status === 'stopping') return;
+        const starting = !isActive(service);
         setBusyIds(current => new Set(current).add(service.id));
         try {
-            if (isActive(service)) {
+            if (!starting) {
                 await StopService(service.id); showToast(`${service.name} 已停止`);
             } else {
                 await StartService(service.id); showToast(`${service.name} 已启动`);
             }
         } catch (error) {
-            showToast(errorMessage(error), 'error');
+            const message = errorMessage(error);
+            if (starting) setOperationIssue({title: `${service.name} 无法启动`, message});
+            else showToast(message, 'error');
         } finally {
             setBusyIds(current => { const next = new Set(current); next.delete(service.id); return next; });
             await refreshState();
@@ -215,7 +223,7 @@ function App() {
             const result = action === 'start' ? await StartAll() : await StopAll();
             const verb = action === 'start' ? '启动' : '停止';
             if ((result.errors ?? []).length > 0) {
-                showToast(`${verb}完成 ${result.changed} 个，${result.errors.length} 个失败：${result.errors[0]}`, 'error');
+                setOperationIssue({title: `部分服务${verb}失败`, message: result.errors.join('\n\n')});
             } else if (result.changed === 0) {
                 showToast(action === 'start' ? '所有服务都已在运行' : '当前没有运行中的服务');
             } else {
@@ -236,7 +244,7 @@ function App() {
             const result = action === 'start' ? await StartServices(ids) : await StopServices(ids);
             const verb = action === 'start' ? '启动' : '停止';
             if ((result.errors ?? []).length > 0) {
-                showToast(`${verb}完成 ${result.changed} 个，${result.errors.length} 个失败：${result.errors[0]}`, 'error');
+                setOperationIssue({title: `部分选中服务${verb}失败`, message: result.errors.join('\n\n')});
             } else if (result.changed === 0) {
                 showToast(action === 'start' ? '选中的服务都已在运行' : '选中的服务均未运行');
             } else {
@@ -293,6 +301,19 @@ function App() {
         if (!selectedId) return;
         try { await ClearLogs(selectedId); setLogs([]); }
         catch (error) { showToast(errorMessage(error), 'error'); }
+    };
+
+    const downloadSelectedLogs = async () => {
+        if (!selectedId || logs.length === 0) return;
+        setDownloadingLogs(true);
+        try {
+            const path = await DownloadLogs(selectedId);
+            if (path) showToast(`日志已保存：${path}`);
+        } catch (error) {
+            showToast(errorMessage(error), 'error');
+        } finally {
+            setDownloadingLogs(false);
+        }
     };
 
     const confirmDelete = async () => {
@@ -386,7 +407,9 @@ function App() {
                                 <ExternalLink size={13}/><span>{displayURL(selectedService.url)}</span>
                             </button>}
                             <button className={autoScroll ? 'icon-button subtle is-pressed' : 'icon-button subtle'} type="button" role="switch" aria-checked={autoScroll}
-                                onClick={() => setAutoScroll(value => !value)} aria-label="自动跟随日志" title="自动跟随日志" disabled={!selectedService}><ArrowDownToLine size={16}/></button>
+                                onClick={() => setAutoScroll(value => !value)} aria-label="自动跟随日志" title="自动跟随日志" disabled={!selectedService}><ListEnd size={16}/></button>
+                            <button className="icon-button subtle" type="button" onClick={() => void downloadSelectedLogs()} aria-label="下载日志" title="下载日志"
+                                disabled={!selectedService || logs.length === 0 || downloadingLogs}>{downloadingLogs ? <LoaderCircle className="spin" size={16}/> : <Download size={16}/>}</button>
                             <button className="icon-button subtle" type="button" onClick={() => void clearSelectedLogs()} aria-label="清空日志" title="清空日志" disabled={!selectedService || logs.length === 0}><Trash2 size={16}/></button>
                         </div>
                     </div>
@@ -428,6 +451,15 @@ function App() {
                     <div className="confirm-icon"><Trash2 size={18}/></div><h2 id="delete-title">移除 {deleteTarget.name}？</h2>
                     <p>该操作只删除 LAL 中的配置，不会删除项目文件。</p>
                     <div className="dialog-actions"><button className="button secondary" type="button" onClick={() => setDeleteTarget(null)}>取消</button><button className="button danger" type="button" onClick={() => void confirmDelete()}>移除</button></div>
+                </div>
+            </div>}
+
+            {operationIssue && <div className="modal-backdrop" role="presentation" onMouseDown={event => { if (event.target === event.currentTarget) setOperationIssue(null); }}>
+                <div className="issue-dialog" role="alertdialog" aria-modal="true" aria-labelledby="issue-title">
+                    <div className="issue-heading"><span className="issue-icon"><CircleAlert size={18}/></span><h2 id="issue-title">{operationIssue.title}</h2>
+                        <button className="icon-button subtle" type="button" onClick={() => setOperationIssue(null)} aria-label="关闭" title="关闭"><X size={18}/></button></div>
+                    <pre>{operationIssue.message}</pre>
+                    <div className="dialog-actions"><button className="button primary" type="button" onClick={() => setOperationIssue(null)}>知道了</button></div>
                 </div>
             </div>}
 

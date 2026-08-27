@@ -8,6 +8,7 @@ const api = vi.hoisted(() => ({
     ClearLogs: vi.fn(),
     CreateService: vi.fn(),
     DeleteService: vi.fn(),
+    DownloadLogs: vi.fn(),
     GetAppState: vi.fn(),
     GetLogs: vi.fn(),
     GetResourceUsage: vi.fn(),
@@ -50,6 +51,7 @@ describe('selected service actions', () => {
         });
         api.GetLogs.mockResolvedValue([]);
         api.GetResourceUsage.mockResolvedValue([]);
+        api.DownloadLogs.mockResolvedValue('/tmp/Alpha.log');
         api.StartServices.mockResolvedValue({changed: 1, skipped: 0, errors: []});
     });
 
@@ -81,5 +83,30 @@ describe('selected service actions', () => {
         expect(await screen.findByText('12.5%')).toBeDefined();
         expect(screen.getByText('PROC 2')).toBeDefined();
         expect(screen.getAllByText('128 MB').length).toBeGreaterThan(0);
+    });
+
+    it('downloads the selected service logs', async () => {
+        const user = userEvent.setup();
+        api.GetLogs.mockResolvedValue([{
+            serviceId: 'alpha', timestamp: '2026-08-27T15:30:45+08:00', stream: 'stdout', text: 'ready',
+        }]);
+        render(<App/>);
+
+        const button = await screen.findByRole('button', {name: '下载日志'});
+        await waitFor(() => expect((button as HTMLButtonElement).disabled).toBe(false));
+        await user.click(button);
+
+        expect(api.DownloadLogs).toHaveBeenCalledWith('alpha');
+    });
+
+    it('shows startup diagnostics when a service cannot start', async () => {
+        const user = userEvent.setup();
+        api.StartService.mockRejectedValue('端口 3900 已被 node 占用。\n检查命令：lsof');
+        render(<App/>);
+
+        await user.click(await screen.findByRole('button', {name: '启动 Alpha'}));
+
+        expect(await screen.findByRole('alertdialog', {name: 'Alpha 无法启动'})).toBeDefined();
+        expect(screen.getByText(/检查命令：lsof/)).toBeDefined();
     });
 });

@@ -104,6 +104,10 @@ func TestHealthMonitorTracksConfiguredAddress(t *testing.T) {
 	if err != nil {
 		t.Fatalf("listen: %v", err)
 	}
+	address := listener.Addr().String()
+	if err := listener.Close(); err != nil {
+		t.Fatalf("release port: %v", err)
+	}
 	app := testApp(t)
 	app.healthEvery = 15 * time.Millisecond
 	app.healthGrace = 30 * time.Millisecond
@@ -112,13 +116,17 @@ func TestHealthMonitorTracksConfiguredAddress(t *testing.T) {
 		Name:      "Healthy",
 		Directory: t.TempDir(),
 		Command:   "trap 'exit 0' TERM; while :; do sleep 1; done",
-		URL:       "http://" + listener.Addr().String(),
+		URL:       "http://" + address,
 	})
 	if err != nil {
 		t.Fatalf("create service: %v", err)
 	}
 	if err := app.StartService(service.ID); err != nil {
 		t.Fatalf("start service: %v", err)
+	}
+	listener, err = net.Listen("tcp", address)
+	if err != nil {
+		t.Fatalf("listen after start: %v", err)
 	}
 	waitFor(t, time.Second, func() bool {
 		return serviceState(t, app, service.ID).Health == "ready"
@@ -129,6 +137,36 @@ func TestHealthMonitorTracksConfiguredAddress(t *testing.T) {
 	waitFor(t, time.Second, func() bool {
 		return serviceState(t, app, service.ID).Health == "unreachable"
 	})
+}
+
+func TestStartRejectsOccupiedPortWithResolution(t *testing.T) {
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatalf("listen: %v", err)
+	}
+	defer listener.Close()
+	app := testApp(t)
+	service, err := app.CreateService(ServiceInput{
+		Name:      "Occupied",
+		Directory: t.TempDir(),
+		Command:   "exit 0",
+		URL:       "http://" + listener.Addr().String(),
+	})
+	if err != nil {
+		t.Fatalf("create service: %v", err)
+	}
+	app.appendLog(service.ID, "system", "保留旧日志")
+
+	err = app.StartService(service.ID)
+	if err == nil || !strings.Contains(err.Error(), "已被") || !strings.Contains(err.Error(), "lsof") || !strings.Contains(err.Error(), "修改服务") {
+		t.Fatalf("unexpected port conflict error: %v", err)
+	}
+	if state := serviceState(t, app, service.ID); state.Status != "failed" || state.PID != 0 {
+		t.Fatalf("service started despite occupied port: %#v", state)
+	}
+	if !logContains(app.GetLogs(service.ID), "保留旧日志") {
+		t.Fatal("preflight failure cleared previous logs")
+	}
 }
 
 func TestDefaultShellRunsWithoutInteractiveJobControl(t *testing.T) {
@@ -250,6 +288,7 @@ func TestProcessLifecycleCapturesLogsAndStopsGroup(t *testing.T) {
 	if err != nil {
 		t.Fatalf("create service: %v", err)
 	}
+	app.appendLog(service.ID, "system", "stale log")
 
 	if err := app.StartService(service.ID); err != nil {
 		t.Fatalf("start service: %v", err)
@@ -261,6 +300,9 @@ func TestProcessLifecycleCapturesLogsAndStopsGroup(t *testing.T) {
 	running := serviceState(t, app, service.ID)
 	if running.Status != "running" || running.PID == 0 {
 		t.Fatalf("unexpected running state: %#v", running)
+	}
+	if logContains(app.GetLogs(service.ID), "stale log") {
+		t.Fatal("start did not clear previous logs")
 	}
 	usage, err := app.GetResourceUsage()
 	if err != nil {
@@ -308,6 +350,17 @@ func TestFailedProcessReportsExitCode(t *testing.T) {
 	}
 	if !logContains(app.GetLogs(service.ID), "broken") {
 		t.Fatalf("stderr was not captured: %#v", app.GetLogs(service.ID))
+	}
+}
+
+func TestFormatLogEntriesPrefixesEveryLine(t *testing.T) {
+	formatted := formatLogEntries([]LogEntry{{
+		Timestamp: "2026-08-27T15:30:45.123456+08:00",
+		Stream:    "system",
+		Text:      "端口被占用\n检查命令：lsof",
+	}})
+	if strings.Count(formatted, "[SYSTEM]") != 2 || !strings.Contains(formatted, "端口被占用") || !strings.Contains(formatted, "检查命令：lsof") {
+		t.Fatalf("unexpected formatted log:\n%s", formatted)
 	}
 }
 
