@@ -14,6 +14,8 @@ export function GetAppState():Promise<main.AppState>;
 
 export function GetLogs(arg1:string):Promise<Array<main.LogEntry>>;
 
+export function OpenServiceURL(arg1:string):Promise<void>;
+
 export function RevealService(arg1:string):Promise<void>;
 
 export function StartAll():Promise<main.BatchResult>;

@@ -8,6 +8,8 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net"
+	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -20,24 +22,31 @@ import (
 )
 
 const (
-	configVersion = 1
+	configVersion = 2
 	maxLogEntries = 1200
 	stopTimeout   = 8 * time.Second
+	healthGrace   = 12 * time.Second
+	healthEvery   = 1 * time.Second
+	healthTimeout = 500 * time.Millisecond
 )
 
 var ansiPattern = regexp.MustCompile(`\x1b(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])`)
+
+const shellCommandWrapper = `if [[ -r "$HOME/.zshrc" ]]; then source "$HOME/.zshrc"; fi; eval "$1"`
 
 type Service struct {
 	ID        string `json:"id"`
 	Name      string `json:"name"`
 	Directory string `json:"directory"`
 	Command   string `json:"command"`
+	URL       string `json:"url,omitempty"`
 }
 
 type ServiceInput struct {
 	Name      string `json:"name"`
 	Directory string `json:"directory"`
 	Command   string `json:"command"`
+	URL       string `json:"url"`
 }
 
 type ServiceView struct {
@@ -47,6 +56,8 @@ type ServiceView struct {
 	StartedAt  string `json:"startedAt"`
 	LastError  string `json:"lastError"`
 	PathExists bool   `json:"pathExists"`
+	Health     string `json:"health"`
+	HealthInfo string `json:"healthInfo"`
 }
 
 type AppState struct {
@@ -81,18 +92,23 @@ type processState struct {
 }
 
 type serviceManager struct {
-	mu           sync.RWMutex
-	configPath   string
-	services     []Service
-	processes    map[string]*processState
-	lastStatus   map[string]string
-	lastError    map[string]string
-	logs         map[string][]LogEntry
-	configWarn   string
-	emit         func(string, any)
-	stopTimeout  time.Duration
-	commandShell string
-	commandArgs  []string
+	mu            sync.RWMutex
+	configPath    string
+	services      []Service
+	processes     map[string]*processState
+	lastStatus    map[string]string
+	lastError     map[string]string
+	health        map[string]string
+	healthInfo    map[string]string
+	logs          map[string][]LogEntry
+	configWarn    string
+	emit          func(string, any)
+	stopTimeout   time.Duration
+	healthGrace   time.Duration
+	healthEvery   time.Duration
+	healthTimeout time.Duration
+	commandShell  string
+	commandArgs   []string
 }
 
 func defaultConfigPath() string {
@@ -105,14 +121,19 @@ func defaultConfigPath() string {
 
 func newServiceManager(configPath string) *serviceManager {
 	m := &serviceManager{
-		configPath:   configPath,
-		processes:    make(map[string]*processState),
-		lastStatus:   make(map[string]string),
-		lastError:    make(map[string]string),
-		logs:         make(map[string][]LogEntry),
-		stopTimeout:  stopTimeout,
-		commandShell: "/bin/zsh",
-		commandArgs:  []string{"-lic"},
+		configPath:    configPath,
+		processes:     make(map[string]*processState),
+		lastStatus:    make(map[string]string),
+		lastError:     make(map[string]string),
+		health:        make(map[string]string),
+		healthInfo:    make(map[string]string),
+		logs:          make(map[string][]LogEntry),
+		stopTimeout:   stopTimeout,
+		healthGrace:   healthGrace,
+		healthEvery:   healthEvery,
+		healthTimeout: healthTimeout,
+		commandShell:  "/bin/zsh",
+		commandArgs:   []string{"-lc", shellCommandWrapper, "lal"},
 	}
 	if err := m.loadConfig(); err != nil {
 		m.configWarn = err.Error()
@@ -134,22 +155,35 @@ func (m *serviceManager) loadConfig() error {
 	if err := json.Unmarshal(data, &config); err != nil {
 		return fmt.Errorf("配置文件格式无效：%w", err)
 	}
-	if config.Version != configVersion {
+	if config.Version < 1 || config.Version > configVersion {
 		return fmt.Errorf("不支持的配置版本：%d", config.Version)
 	}
-	for _, service := range config.Services {
+	migrating := config.Version < configVersion
+	changed := migrating
+	for index, service := range config.Services {
+		service.URL = normalizeAccessURL(service.URL)
+		if migrating && service.URL == "" {
+			service.URL = knownServiceURL(service.Directory)
+		}
 		if err := validateService(service); err != nil {
 			return fmt.Errorf("服务 %q 的配置无效：%w", service.Name, err)
 		}
+		if service != config.Services[index] {
+			config.Services[index] = service
+			changed = true
+		}
 	}
 	m.services = append([]Service(nil), config.Services...)
+	if changed {
+		return m.saveConfigLocked()
+	}
 	return nil
 }
 
 func defaultServices() []Service {
 	candidates := []Service{
-		{ID: "mystock", Name: "myStock", Directory: "/Users/yango/github/stock/mystock", Command: "npm run dev"},
-		{ID: "viewai", Name: "ViewAI", Directory: "/Users/yango/Documents/huyaprojects/ai/viewai", Command: "npm run dev"},
+		{ID: "mystock", Name: "myStock", Directory: "/Users/yango/github/stock/mystock", Command: "npm run dev", URL: "http://localhost:35790"},
+		{ID: "viewai", Name: "ViewAI", Directory: "/Users/yango/Documents/huyaprojects/ai/viewai", Command: "npm run dev", URL: "http://localhost:3900"},
 	}
 	services := make([]Service, 0, len(candidates))
 	for _, candidate := range candidates {
@@ -176,6 +210,7 @@ func (m *serviceManager) CreateService(input ServiceInput) (ServiceView, error) 
 		Name:      strings.TrimSpace(input.Name),
 		Directory: cleanDirectory(input.Directory),
 		Command:   strings.TrimSpace(input.Command),
+		URL:       normalizeAccessURL(input.URL),
 	}
 	if err := validateService(service); err != nil {
 		return ServiceView{}, err
@@ -204,6 +239,7 @@ func (m *serviceManager) UpdateService(id string, input ServiceInput) (ServiceVi
 		Name:      strings.TrimSpace(input.Name),
 		Directory: cleanDirectory(input.Directory),
 		Command:   strings.TrimSpace(input.Command),
+		URL:       normalizeAccessURL(input.URL),
 	}
 	if err := validateService(updated); err != nil {
 		return ServiceView{}, err
@@ -257,6 +293,8 @@ func (m *serviceManager) DeleteService(id string) error {
 	delete(m.logs, id)
 	delete(m.lastStatus, id)
 	delete(m.lastError, id)
+	delete(m.health, id)
+	delete(m.healthInfo, id)
 	m.mu.Unlock()
 	m.emitEvent("services:changed", map[string]string{"deletedId": id})
 	return nil
@@ -313,6 +351,13 @@ func (m *serviceManager) StartService(id string) error {
 	m.processes[id] = process
 	m.lastStatus[id] = "running"
 	m.lastError[id] = ""
+	if service.URL == "" {
+		m.health[id] = "not_configured"
+		m.healthInfo[id] = ""
+	} else {
+		m.health[id] = "checking"
+		m.healthInfo[id] = "等待访问地址响应"
+	}
 	m.mu.Unlock()
 	m.appendLog(id, "system", fmt.Sprintf("已启动：%s", service.Command))
 	m.emitState(id)
@@ -320,6 +365,9 @@ func (m *serviceManager) StartService(id string) error {
 	go m.captureOutput(id, "stdout", stdout)
 	go m.captureOutput(id, "stderr", stderr)
 	go m.waitForProcess(id, process)
+	if service.URL != "" {
+		go m.monitorHealth(id, process, service.URL)
+	}
 	return nil
 }
 
@@ -472,6 +520,10 @@ func (m *serviceManager) serviceViewLocked(service Service) ServiceView {
 		Status:     m.lastStatus[service.ID],
 		LastError:  m.lastError[service.ID],
 		PathExists: isDirectory(service.Directory),
+		Health:     "stopped",
+	}
+	if service.URL == "" {
+		view.Health = "not_configured"
 	}
 	if view.Status == "" {
 		view.Status = "stopped"
@@ -479,6 +531,11 @@ func (m *serviceManager) serviceViewLocked(service Service) ServiceView {
 	if process, ok := m.processes[service.ID]; ok {
 		view.PID = process.cmd.Process.Pid
 		view.StartedAt = process.startedAt.Format(time.RFC3339)
+		view.Health = m.health[service.ID]
+		view.HealthInfo = m.healthInfo[service.ID]
+		if view.Health == "" {
+			view.Health = "checking"
+		}
 	}
 	return view
 }
@@ -499,6 +556,8 @@ func (m *serviceManager) waitForProcess(id string, process *processState) {
 		return
 	}
 	delete(m.processes, id)
+	m.health[id] = "stopped"
+	m.healthInfo[id] = ""
 	if err != nil {
 		m.lastStatus[id] = "failed"
 		m.lastError[id] = exitMessage(err)
@@ -531,6 +590,72 @@ func (m *serviceManager) captureOutput(id, stream string, reader io.Reader) {
 	}
 }
 
+func (m *serviceManager) monitorHealth(id string, process *processState, accessURL string) {
+	ticker := time.NewTicker(m.healthEvery)
+	defer ticker.Stop()
+	for {
+		ready, info := probeAccessURL(accessURL, m.healthTimeout)
+		status := "ready"
+		if !ready {
+			m.mu.RLock()
+			previous := m.health[id]
+			m.mu.RUnlock()
+			if previous == "ready" || time.Since(process.startedAt) >= m.healthGrace {
+				status = "unreachable"
+			} else {
+				status = "checking"
+			}
+		}
+		if !m.updateHealth(id, process, status, info) {
+			return
+		}
+		select {
+		case <-process.done:
+			return
+		case <-ticker.C:
+		}
+	}
+}
+
+func (m *serviceManager) updateHealth(id string, process *processState, status, info string) bool {
+	m.mu.Lock()
+	current, ok := m.processes[id]
+	if !ok || current != process {
+		m.mu.Unlock()
+		return false
+	}
+	changed := m.health[id] != status || m.healthInfo[id] != info
+	m.health[id] = status
+	m.healthInfo[id] = info
+	m.mu.Unlock()
+	if changed {
+		m.emitState(id)
+	}
+	return true
+}
+
+func probeAccessURL(accessURL string, timeout time.Duration) (bool, string) {
+	parsed, err := url.Parse(accessURL)
+	if err != nil {
+		return false, "访问地址无效"
+	}
+	port := parsed.Port()
+	if port == "" {
+		if parsed.Scheme == "https" {
+			port = "443"
+		} else {
+			port = "80"
+		}
+	}
+	hostPort := net.JoinHostPort(parsed.Hostname(), port)
+	connection, err := net.DialTimeout("tcp", hostPort, timeout)
+	if err != nil {
+		return false, fmt.Sprintf("等待 %s 响应", parsed.Host)
+	}
+	_ = connection.Close()
+	return true, fmt.Sprintf("%s 可访问", parsed.Host)
+}
+
 func (m *serviceManager) appendLog(id, stream, text string) {
 	entry := LogEntry{
 		ServiceID: id,
@@ -552,6 +677,8 @@ func (m *serviceManager) failStart(id string, err error) {
 	m.mu.Lock()
 	m.lastStatus[id] = "failed"
 	m.lastError[id] = fmt.Sprintf("启动失败：%v", err)
+	m.health[id] = "stopped"
+	m.healthInfo[id] = ""
 	m.mu.Unlock()
 	m.appendLog(id, "system", fmt.Sprintf("启动失败：%v", err))
 	m.emitState(id)
@@ -578,6 +705,8 @@ func (m *serviceManager) finalizeStoppedProcess(id string, process *processState
 	delete(m.processes, id)
 	m.lastStatus[id] = "stopped"
 	m.lastError[id] = ""
+	m.health[id] = "stopped"
+	m.healthInfo[id] = ""
 	m.mu.Unlock()
 	m.appendLog(id, "system", "服务已停止")
 	m.emitState(id)
@@ -693,6 +822,12 @@ func validateService(service Service) error {
 	} else if len(command) > 1000 {
 		return fmt.Errorf("启动命令不能超过 1000 个字符")
 	}
+	if service.URL != "" {
+		parsed, err := url.Parse(service.URL)
+		if err != nil || (parsed.Scheme != "http" && parsed.Scheme != "https") || parsed.Hostname() == "" {
+			return fmt.Errorf("访问地址必须是有效的 http 或 https 地址")
+		}
+	}
 	return nil
 }
 
@@ -707,6 +842,28 @@ func cleanDirectory(path string) string {
 		return ""
 	}
 	return filepath.Clean(path)
+}
+
+func normalizeAccessURL(value string) string {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return ""
+	}
+	if !strings.Contains(value, "://") {
+		value = "http://" + value
+	}
+	return strings.TrimRight(value, "/")
+}
+
+func knownServiceURL(directory string) string {
+	switch cleanDirectory(directory) {
+	case "/Users/yango/github/stock/mystock":
+		return "http://localhost:35790"
+	case "/Users/yango/Documents/huyaprojects/ai/viewai":
+		return "http://localhost:3900"
+	default:
+		return ""
+	}
 }
 
 func processGroupExists(pid int) bool {

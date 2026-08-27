@@ -1,7 +1,8 @@
 :root {
     font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", "Helvetica Neue", sans-serif;
-    color: #202523;
-    background: #f6f8f7;
+    color: #e6ebed;
+    background: #0b0d0f;
+    color-scheme: dark;
     font-synthesis: none;
     text-rendering: geometricPrecision;
     -webkit-font-smoothing: antialiased;
@@ -29,6 +30,6 @@ button { color: inherit; }
 button:focus-visible,
 input:focus-visible,
 [tabindex]:focus-visible {
-    outline: 2px solid #356cdd;
+    outline: 2px solid #70c7e8;
     outline-offset: 2px;
 }

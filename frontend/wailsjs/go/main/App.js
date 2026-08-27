@@ -26,6 +26,10 @@ export function GetLogs(arg1) {
   return window['go']['main']['App']['GetLogs'](arg1);
 }
 
+export function OpenServiceURL(arg1) {
+  return window['go']['main']['App']['OpenServiceURL'](arg1);
+}
+
 export function RevealService(arg1) {
   return window['go']['main']['App']['RevealService'](arg1);
 }

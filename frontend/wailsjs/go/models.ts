@@ -5,11 +5,14 @@ export namespace main {
 	    name: string;
 	    directory: string;
 	    command: string;
+	    url?: string;
 	    status: string;
 	    pid: number;
 	    startedAt: string;
 	    lastError: string;
 	    pathExists: boolean;
+	    health: string;
+	    healthInfo: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new ServiceView(source);
@@ -21,11 +24,14 @@ export namespace main {
 	        this.name = source["name"];
 	        this.directory = source["directory"];
 	        this.command = source["command"];
+	        this.url = source["url"];
 	        this.status = source["status"];
 	        this.pid = source["pid"];
 	        this.startedAt = source["startedAt"];
 	        this.lastError = source["lastError"];
 	        this.pathExists = source["pathExists"];
+	        this.health = source["health"];
+	        this.healthInfo = source["healthInfo"];
 	    }
 	}
 	export class AppState {
@@ -100,6 +106,7 @@ export namespace main {
 	    name: string;
 	    directory: string;
 	    command: string;
+	    url: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new ServiceInput(source);
@@ -110,6 +117,7 @@ export namespace main {
 	        this.name = source["name"];
 	        this.directory = source["directory"];
 	        this.command = source["command"];
+	        this.url = source["url"];
 	    }
 	}
 

@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"os/exec"
 	"path/filepath"
 	"strings"
@@ -69,4 +70,16 @@ func (a *App) RevealService(id string) error {
 		return err
 	}
 	return exec.Command("open", filepath.Clean(service.Directory)).Start()
+}
+
+func (a *App) OpenServiceURL(id string) error {
+	service, err := a.serviceByID(id)
+	if err != nil {
+		return err
+	}
+	if service.URL == "" {
+		return fmt.Errorf("该服务尚未配置访问地址")
+	}
+	runtime.BrowserOpenURL(a.ctx, service.URL)
+	return nil
 }

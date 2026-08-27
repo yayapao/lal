@@ -24,6 +24,7 @@ import {
     DeleteService,
     GetAppState,
     GetLogs,
+    OpenServiceURL,
     RevealService,
     StartAll,
     StartService,
@@ -37,11 +38,11 @@ import {EventsOn} from '../wailsjs/runtime/runtime';
 type ServiceView = main.ServiceView;
 type LogEntry = main.LogEntry;
 type DialogState = {mode: 'create'} | {mode: 'edit'; service: ServiceView};
-type ServiceForm = {name: string; directory: string; command: string};
+type ServiceForm = {name: string; directory: string; command: string; url: string};
 type ToastState = {kind: 'success' | 'error'; message: string};
 type MenuState = {service: ServiceView; left: number; top: number};
 
-const emptyForm: ServiceForm = {name: '', directory: '', command: 'npm run dev'};
+const emptyForm: ServiceForm = {name: '', directory: '', command: 'npm run dev', url: ''};
 const timeFormatter = new Intl.DateTimeFormat('zh-CN', {
     hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false,
 });
@@ -136,10 +137,11 @@ function App() {
 
     const selectedService = services.find(service => service.id === selectedId) ?? null;
     const runningCount = services.filter(isActive).length;
+    const readyCount = services.filter(service => service.health === 'ready').length;
     const filteredServices = useMemo(() => {
         const keyword = query.trim().toLocaleLowerCase();
         if (!keyword) return services;
-        return services.filter(service => [service.name, service.directory, service.command]
+        return services.filter(service => [service.name, service.directory, service.command, service.url ?? '']
             .some(value => value.toLocaleLowerCase().includes(keyword)));
     }, [query, services]);
 
@@ -196,6 +198,12 @@ function App() {
         catch (error) { showToast(errorMessage(error), 'error'); }
     };
 
+    const openServiceURL = async (service: ServiceView) => {
+        if (!service.url) return;
+        try { await OpenServiceURL(service.id); }
+        catch (error) { showToast(errorMessage(error), 'error'); }
+    };
+
     const clearSelectedLogs = async () => {
         if (!selectedId) return;
         try { await ClearLogs(selectedId); setLogs([]); }
@@ -216,14 +224,15 @@ function App() {
             <header className="titlebar">
                 <div className="brand-mark" aria-hidden="true"><TerminalSquare size={18}/></div>
                 <div className="brand-name">LAL</div>
-                <div className="brand-subtitle">Local App Launcher</div>
-                <div className="titlebar-status"><span className={runningCount > 0 ? 'live-pulse is-active' : 'live-pulse'}/>{runningCount} 个运行中</div>
+                <div className="brand-subtitle">DEV SERVICE CONTROL</div>
+                <div className="titlebar-status"><span className={readyCount > 0 ? 'live-pulse is-active' : 'live-pulse'}/>{readyCount} 个可访问</div>
             </header>
 
             <div className="toolbar">
                 <div className="summary">
-                    <Activity size={17}/><span><strong>{services.length}</strong> 个服务</span>
-                    <span className="summary-separator"/><span><strong>{runningCount}</strong> 个运行中</span>
+                    <Activity size={17}/><span><strong>{services.length}</strong> SERVICES</span>
+                    <span className="summary-separator"/><span><strong>{runningCount}</strong> RUNNING</span>
+                    <span className="summary-separator"/><span><strong>{readyCount}</strong> READY</span>
                 </div>
                 <label className="search-field">
                     <Search size={16}/>
@@ -246,7 +255,9 @@ function App() {
                     <div className="pane-heading"><span>服务</span><span>{query ? `${filteredServices.length} / ${services.length}` : services.length}</span></div>
                     <div className="services-list">
                         {loading ? (
-                            <div className="empty-state"><LoaderCircle className="spin" size={22}/><span>正在载入</span></div>
+                            <div className="skeleton-list" aria-label="正在载入服务">
+                                {[0, 1, 2].map(item => <div className="skeleton-row" key={item}><span/><span/><span/></div>)}
+                            </div>
                         ) : filteredServices.length === 0 ? (
                             <div className="empty-state">
                                 <TerminalSquare size={25}/><span>{query ? '没有匹配的服务' : '暂无服务'}</span>
@@ -254,7 +265,8 @@ function App() {
                             </div>
                         ) : filteredServices.map(service => (
                             <ServiceRow key={service.id} service={service} selected={service.id === selectedId} busy={busyIds.has(service.id)}
-                                onSelect={() => setSelectedId(service.id)} onToggle={() => void toggleService(service)} onMenu={event => openMenu(event, service)}/>
+                                onSelect={() => setSelectedId(service.id)} onToggle={() => void toggleService(service)}
+                                onOpenURL={() => void openServiceURL(service)} onMenu={event => openMenu(event, service)}/>
                         ))}
                     </div>
                 </section>
@@ -263,6 +275,9 @@ function App() {
                     <div className="log-heading">
                         <div className="log-title"><TerminalSquare size={17}/><span>{selectedService?.name ?? '日志'}</span>{selectedService && <StatusLabel service={selectedService} compact/>}</div>
                         <div className="log-actions">
+                            {selectedService?.url && <button className="log-url" type="button" onClick={() => void openServiceURL(selectedService)} title={`打开 ${selectedService.url}`}>
+                                <ExternalLink size={13}/><span>{displayURL(selectedService.url)}</span>
+                            </button>}
                             <button className={autoScroll ? 'icon-button subtle is-pressed' : 'icon-button subtle'} type="button" role="switch" aria-checked={autoScroll}
                                 onClick={() => setAutoScroll(value => !value)} aria-label="自动跟随日志" title="自动跟随日志" disabled={!selectedService}><ArrowDownToLine size={16}/></button>
                             <button className="icon-button subtle" type="button" onClick={() => void clearSelectedLogs()} aria-label="清空日志" title="清空日志" disabled={!selectedService || logs.length === 0}><Trash2 size={16}/></button>
@@ -313,8 +328,9 @@ function App() {
     );
 }
 
-function ServiceRow({service, selected, busy, onSelect, onToggle, onMenu}: {
+function ServiceRow({service, selected, busy, onSelect, onToggle, onOpenURL, onMenu}: {
     service: ServiceView; selected: boolean; busy: boolean; onSelect: () => void; onToggle: () => void;
+    onOpenURL: () => void;
     onMenu: (event: React.MouseEvent<HTMLButtonElement>) => void;
 }) {
     const transition = service.status === 'starting' || service.status === 'stopping';
@@ -323,11 +339,16 @@ function ServiceRow({service, selected, busy, onSelect, onToggle, onMenu}: {
     };
     return (
         <article className={selected ? 'service-row is-selected' : 'service-row'} onClick={onSelect} onKeyDown={handleKeyDown} tabIndex={0} aria-current={selected}>
-            <span className={`service-accent status-${service.status}`}/>
+            <span className={`service-accent state-${serviceVisualState(service)}`}/>
             <div className="service-copy">
                 <div className="service-name-line"><h3>{service.name}</h3>{service.pid > 0 && <span className="pid">PID {service.pid}</span>}{service.startedAt && isActive(service) && <span className="uptime">{formatUptime(service.startedAt)}</span>}</div>
                 <div className={service.pathExists ? 'service-path' : 'service-path path-invalid'} title={service.directory}>{!service.pathExists && <CircleAlert size={12}/>}<span>{service.directory}</span></div>
-                <code className="service-command" title={service.command}>{service.command}</code>
+                <div className="service-meta">
+                    <code className="service-command" title={service.command}>{service.command}</code>
+                    {service.url && <button className="service-url" type="button" onClick={event => { event.stopPropagation(); onOpenURL(); }} title={`打开 ${service.url}`}>
+                        <ExternalLink size={11}/><span>{displayURL(service.url)}</span>
+                    </button>}
+                </div>
                 {service.lastError && <div className="service-error" title={service.lastError}>{service.lastError}</div>}
             </div>
             <StatusLabel service={service}/>
@@ -347,12 +368,22 @@ function ServiceRow({service, selected, busy, onSelect, onToggle, onMenu}: {
 }
 
 function StatusLabel({service, compact = false}: {service: ServiceView; compact?: boolean}) {
-    const label = !service.pathExists ? '路径失效' : ({running: '运行中', starting: '启动中', stopping: '停止中', failed: '异常', stopped: '已停止'} as Record<string, string>)[service.status] ?? '已停止';
-    return <span className={`status-label status-${!service.pathExists ? 'invalid' : service.status} ${compact ? 'is-compact' : ''}`}><span className="status-dot"/>{label}</span>;
+    let state = serviceVisualState(service);
+    let label = ({running: '运行中', starting: '启动中', stopping: '停止中', failed: '异常', stopped: '已停止', invalid: '路径失效'} as Record<string, string>)[state] ?? '已停止';
+    if (state === 'ready') label = '可访问';
+    if (state === 'checking') label = '等待端口';
+    if (state === 'unreachable') label = '地址不可达';
+    return <span className={`status-label state-${state} ${compact ? 'is-compact' : ''}`} title={service.healthInfo || label}><span className="status-dot"/>{label}</span>;
+}
+
+function serviceVisualState(service: ServiceView) {
+    if (!service.pathExists) return 'invalid';
+    if (service.status === 'running' && service.url && ['ready', 'checking', 'unreachable'].includes(service.health)) return service.health;
+    return service.status;
 }
 
 function ServiceDialog({state, onClose, onSaved}: {state: DialogState; onClose: () => void; onSaved: (service: ServiceView) => Promise<void>}) {
-    const initial = state.mode === 'edit' ? {name: state.service.name, directory: state.service.directory, command: state.service.command} : emptyForm;
+    const initial = state.mode === 'edit' ? {name: state.service.name, directory: state.service.directory, command: state.service.command, url: state.service.url ?? ''} : emptyForm;
     const [form, setForm] = useState<ServiceForm>(initial);
     const [saving, setSaving] = useState(false);
     const [browsing, setBrowsing] = useState(false);
@@ -373,8 +404,8 @@ function ServiceDialog({state, onClose, onSaved}: {state: DialogState; onClose: 
 
     const submit = async (event: FormEvent) => {
         event.preventDefault();
-        const normalized = {name: form.name.trim(), directory: form.directory.trim(), command: form.command.trim()};
-        if (state.mode === 'edit' && normalized.name === initial.name && normalized.directory === initial.directory && normalized.command === initial.command) { onClose(); return; }
+        const normalized = {name: form.name.trim(), directory: form.directory.trim(), command: form.command.trim(), url: form.url.trim()};
+        if (state.mode === 'edit' && normalized.name === initial.name && normalized.directory === initial.directory && normalized.command === initial.command && normalized.url === initial.url) { onClose(); return; }
         setSaving(true); setError('');
         try {
             const service = state.mode === 'create' ? await CreateService(normalized) : await UpdateService(state.service.id, normalized);
@@ -384,13 +415,14 @@ function ServiceDialog({state, onClose, onSaved}: {state: DialogState; onClose: 
 
     return <div className="modal-backdrop" role="presentation" onMouseDown={event => { if (event.target === event.currentTarget) onClose(); }}>
         <form className="service-dialog" onSubmit={event => void submit(event)} role="dialog" aria-modal="true" aria-labelledby="service-dialog-title">
-            <div className="dialog-heading"><div><span className="dialog-kicker">SERVICE CONFIG</span><h2 id="service-dialog-title">{state.mode === 'create' ? '添加本地服务' : '编辑服务'}</h2></div>
+            <div className="dialog-heading"><h2 id="service-dialog-title">{state.mode === 'create' ? '添加本地服务' : '编辑服务'}</h2>
                 <button className="icon-button subtle" type="button" onClick={onClose} aria-label="关闭" title="关闭"><X size={18}/></button></div>
             <div className="form-fields">
                 <label><span>服务名称</span><input ref={nameInputRef} value={form.name} onChange={event => setForm({...form, name: event.target.value})} maxLength={80} required placeholder="例如 myStock"/></label>
                 <label><span>项目目录</span><div className="input-with-action"><input value={form.directory} onChange={event => setForm({...form, directory: event.target.value})} required placeholder="/Users/name/path/to/project" spellCheck={false}/>
                     <button type="button" onClick={() => void browse()} aria-label="选择目录" title="选择目录" disabled={browsing}>{browsing ? <LoaderCircle className="spin" size={17}/> : <FolderOpen size={17}/>} </button></div></label>
                 <label><span>启动命令</span><input className="command-input" value={form.command} onChange={event => setForm({...form, command: event.target.value})} required maxLength={1000} placeholder="npm run dev" spellCheck={false}/></label>
+                <label><span>访问地址 <small>可选</small></span><input className="command-input" value={form.url} onChange={event => setForm({...form, url: event.target.value})} maxLength={500} inputMode="url" placeholder="http://localhost:3900" spellCheck={false}/></label>
             </div>
             {error && <div className="form-error"><CircleAlert size={15}/><span>{error}</span></div>}
             <div className="dialog-actions"><button className="button secondary" type="button" onClick={onClose}>取消</button><button className="button primary" type="submit" disabled={saving}>{saving && <LoaderCircle className="spin" size={16}/>} {state.mode === 'create' ? '添加服务' : '保存'}</button></div>
@@ -413,6 +445,10 @@ function formatUptime(startedAt: string) {
     if (hours > 0) return `${hours}h ${minutes}m`;
     if (minutes > 0) return `${minutes}m`;
     return `${seconds}s`;
+}
+
+function displayURL(value: string) {
+    return value.replace(/^https?:\/\//, '').replace(/\/$/, '');
 }
 
 function errorMessage(error: unknown) {

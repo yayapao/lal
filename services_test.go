@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"errors"
+	"net"
 	"os"
 	"path/filepath"
 	"strings"
@@ -18,16 +19,20 @@ func TestServiceConfigLifecycle(t *testing.T) {
 	if _, err := app.CreateService(ServiceInput{Name: "Invalid", Directory: " ", Command: "npm run dev"}); err == nil {
 		t.Fatal("expected an empty directory to fail")
 	}
+	if _, err := app.CreateService(ServiceInput{Name: "Invalid URL", Directory: projectDir, Command: "npm run dev", URL: "file:///tmp"}); err == nil {
+		t.Fatal("expected a non-http URL to fail")
+	}
 
 	created, err := app.CreateService(ServiceInput{
 		Name:      "API",
 		Directory: projectDir,
 		Command:   "npm run dev",
+		URL:       "localhost:4321/",
 	})
 	if err != nil {
 		t.Fatalf("create service: %v", err)
 	}
-	if created.ID == "" || created.Name != "API" || !created.PathExists {
+	if created.ID == "" || created.Name != "API" || !created.PathExists || created.URL != "http://localhost:4321" {
 		t.Fatalf("unexpected created service: %#v", created)
 	}
 
@@ -39,16 +44,17 @@ func TestServiceConfigLifecycle(t *testing.T) {
 		Name:      "Gateway",
 		Directory: projectDir,
 		Command:   "go run .",
+		URL:       "https://localhost:8443",
 	})
 	if err != nil {
 		t.Fatalf("update service: %v", err)
 	}
-	if updated.Name != "Gateway" || updated.Command != "go run ." {
+	if updated.Name != "Gateway" || updated.Command != "go run ." || updated.URL != "https://localhost:8443" {
 		t.Fatalf("unexpected updated service: %#v", updated)
 	}
 
 	reloaded := newAppWithConfigPath(configPath).GetAppState()
-	if len(reloaded.Services) != 1 || reloaded.Services[0].Name != "Gateway" {
+	if len(reloaded.Services) != 1 || reloaded.Services[0].Name != "Gateway" || reloaded.Services[0].URL != "https://localhost:8443" {
 		t.Fatalf("service was not persisted: %#v", reloaded.Services)
 	}
 
@@ -57,6 +63,94 @@ func TestServiceConfigLifecycle(t *testing.T) {
 	}
 	if services := newAppWithConfigPath(configPath).GetAppState().Services; len(services) != 0 {
 		t.Fatalf("deleted service was persisted: %#v", services)
+	}
+}
+
+func TestVersionOneConfigMigratesKnownServiceURLs(t *testing.T) {
+	configPath := filepath.Join(t.TempDir(), "config.json")
+	legacy := configFile{Version: 1, Services: []Service{{
+		ID:        "viewai",
+		Name:      "ViewAI",
+		Directory: "/Users/yango/Documents/huyaprojects/ai/viewai",
+		Command:   "npm run dev",
+	}}}
+	data, err := json.Marshal(legacy)
+	if err != nil {
+		t.Fatalf("marshal legacy config: %v", err)
+	}
+	if err := os.WriteFile(configPath, data, 0o600); err != nil {
+		t.Fatalf("write legacy config: %v", err)
+	}
+
+	state := newAppWithConfigPath(configPath).GetAppState()
+	if len(state.Services) != 1 || state.Services[0].URL != "http://localhost:3900" {
+		t.Fatalf("known URL was not migrated: %#v", state.Services)
+	}
+	updatedData, err := os.ReadFile(configPath)
+	if err != nil {
+		t.Fatalf("read migrated config: %v", err)
+	}
+	var updated configFile
+	if err := json.Unmarshal(updatedData, &updated); err != nil {
+		t.Fatalf("unmarshal migrated config: %v", err)
+	}
+	if updated.Version != configVersion {
+		t.Fatalf("config version = %d, want %d", updated.Version, configVersion)
+	}
+}
+
+func TestHealthMonitorTracksConfiguredAddress(t *testing.T) {
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatalf("listen: %v", err)
+	}
+	app := testApp(t)
+	app.healthEvery = 15 * time.Millisecond
+	app.healthGrace = 30 * time.Millisecond
+	app.healthTimeout = 20 * time.Millisecond
+	service, err := app.CreateService(ServiceInput{
+		Name:      "Healthy",
+		Directory: t.TempDir(),
+		Command:   "trap 'exit 0' TERM; while :; do sleep 1; done",
+		URL:       "http://" + listener.Addr().String(),
+	})
+	if err != nil {
+		t.Fatalf("create service: %v", err)
+	}
+	if err := app.StartService(service.ID); err != nil {
+		t.Fatalf("start service: %v", err)
+	}
+	waitFor(t, time.Second, func() bool {
+		return serviceState(t, app, service.ID).Health == "ready"
+	})
+	if err := listener.Close(); err != nil {
+		t.Fatalf("close listener: %v", err)
+	}
+	waitFor(t, time.Second, func() bool {
+		return serviceState(t, app, service.ID).Health == "unreachable"
+	})
+}
+
+func TestDefaultShellRunsWithoutInteractiveJobControl(t *testing.T) {
+	app := newAppWithConfigPath(emptyConfig(t))
+	app.stopTimeout = 500 * time.Millisecond
+	t.Cleanup(app.stopAllProcesses)
+	service, err := app.CreateService(ServiceInput{
+		Name:      "Shell",
+		Directory: t.TempDir(),
+		Command:   "case $- in *i*) exit 9;; esac; printf 'non-interactive\\n'; trap 'exit 0' TERM; while :; do sleep 1; done",
+	})
+	if err != nil {
+		t.Fatalf("create service: %v", err)
+	}
+	if err := app.StartService(service.ID); err != nil {
+		t.Fatalf("start service: %v", err)
+	}
+	waitFor(t, 3*time.Second, func() bool {
+		return logContains(app.GetLogs(service.ID), "non-interactive")
+	})
+	if state := serviceState(t, app, service.ID); state.Status != "running" {
+		t.Fatalf("shell did not stay running: %#v", state)
 	}
 }
 
