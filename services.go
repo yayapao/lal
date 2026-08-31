@@ -23,12 +23,15 @@ import (
 )
 
 const (
-	configVersion = 2
-	maxLogEntries = 1200
-	stopTimeout   = 8 * time.Second
-	healthGrace   = 12 * time.Second
-	healthEvery   = 1 * time.Second
-	healthTimeout = 500 * time.Millisecond
+	configVersion         = 3
+	maxLogEntries         = 1200
+	maxCommandLength      = 1000
+	maxCleanCommandLength = 2000
+	stopTimeout           = 8 * time.Second
+	healthGrace           = 12 * time.Second
+	healthEvery           = 1 * time.Second
+	healthTimeout         = 500 * time.Millisecond
+	defaultCleanCommand   = "rm -rf .next"
 )
 
 var ansiPattern = regexp.MustCompile(`\x1b(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])`)
@@ -36,18 +39,20 @@ var ansiPattern = regexp.MustCompile(`\x1b(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])`)
 const shellCommandWrapper = `if [[ -r "$HOME/.zshrc" ]]; then source "$HOME/.zshrc"; fi; eval "$1"`
 
 type Service struct {
-	ID        string `json:"id"`
-	Name      string `json:"name"`
-	Directory string `json:"directory"`
-	Command   string `json:"command"`
-	URL       string `json:"url,omitempty"`
+	ID           string `json:"id"`
+	Name         string `json:"name"`
+	Directory    string `json:"directory"`
+	Command      string `json:"command"`
+	URL          string `json:"url,omitempty"`
+	CleanCommand string `json:"cleanCommand"`
 }
 
 type ServiceInput struct {
-	Name      string `json:"name"`
-	Directory string `json:"directory"`
-	Command   string `json:"command"`
-	URL       string `json:"url"`
+	Name         string `json:"name"`
+	Directory    string `json:"directory"`
+	Command      string `json:"command"`
+	URL          string `json:"url"`
+	CleanCommand string `json:"cleanCommand"`
 }
 
 type ServiceView struct {
@@ -170,6 +175,9 @@ func (m *serviceManager) loadConfig() error {
 	changed := migrating
 	for index, service := range config.Services {
 		service.URL = normalizeAccessURL(service.URL)
+		if strings.TrimSpace(service.CleanCommand) == "" {
+			service.CleanCommand = defaultCleanCommand
+		}
 		if migrating && service.URL == "" {
 			service.URL = knownServiceURL(service.Directory)
 		}
@@ -190,8 +198,8 @@ func (m *serviceManager) loadConfig() error {
 
 func defaultServices() []Service {
 	candidates := []Service{
-		{ID: "mystock", Name: "myStock", Directory: "/Users/yango/github/stock/mystock", Command: "npm run dev", URL: "http://localhost:35790"},
-		{ID: "viewai", Name: "ViewAI", Directory: "/Users/yango/Documents/huyaprojects/ai/viewai", Command: "npm run dev", URL: "http://localhost:3900"},
+		{ID: "mystock", Name: "myStock", Directory: "/Users/yango/github/stock/mystock", Command: "npm run dev", URL: "http://localhost:35790", CleanCommand: defaultCleanCommand},
+		{ID: "viewai", Name: "ViewAI", Directory: "/Users/yango/Documents/huyaprojects/ai/viewai", Command: "npm run dev", URL: "http://localhost:3900", CleanCommand: defaultCleanCommand},
 	}
 	services := make([]Service, 0, len(candidates))
 	for _, candidate := range candidates {
@@ -214,11 +222,12 @@ func (m *serviceManager) GetAppState() AppState {
 
 func (m *serviceManager) CreateService(input ServiceInput) (ServiceView, error) {
 	service := Service{
-		ID:        newID(),
-		Name:      strings.TrimSpace(input.Name),
-		Directory: cleanDirectory(input.Directory),
-		Command:   strings.TrimSpace(input.Command),
-		URL:       normalizeAccessURL(input.URL),
+		ID:           newID(),
+		Name:         strings.TrimSpace(input.Name),
+		Directory:    cleanDirectory(input.Directory),
+		Command:      strings.TrimSpace(input.Command),
+		URL:          normalizeAccessURL(input.URL),
+		CleanCommand: normalizeCleanCommand(input.CleanCommand),
 	}
 	if err := validateService(service); err != nil {
 		return ServiceView{}, err
@@ -243,11 +252,12 @@ func (m *serviceManager) CreateService(input ServiceInput) (ServiceView, error) 
 
 func (m *serviceManager) UpdateService(id string, input ServiceInput) (ServiceView, error) {
 	updated := Service{
-		ID:        id,
-		Name:      strings.TrimSpace(input.Name),
-		Directory: cleanDirectory(input.Directory),
-		Command:   strings.TrimSpace(input.Command),
-		URL:       normalizeAccessURL(input.URL),
+		ID:           id,
+		Name:         strings.TrimSpace(input.Name),
+		Directory:    cleanDirectory(input.Directory),
+		Command:      strings.TrimSpace(input.Command),
+		URL:          normalizeAccessURL(input.URL),
+		CleanCommand: normalizeCleanCommand(input.CleanCommand),
 	}
 	if err := validateService(updated); err != nil {
 		return ServiceView{}, err
@@ -429,6 +439,90 @@ func (m *serviceManager) StopService(id string) error {
 	}
 	m.finalizeStoppedProcess(id, process)
 	return nil
+}
+
+// RestartService stops the process managed by LAL and starts it again. A
+// stopped service is started directly; services in a transition state must
+// finish that transition before another lifecycle operation is allowed.
+func (m *serviceManager) RestartService(id string) error {
+	m.mu.RLock()
+	service, ok := m.serviceByIDLocked(id)
+	status := m.lastStatus[id]
+	_, running := m.processes[id]
+	m.mu.RUnlock()
+	if !ok {
+		return fmt.Errorf("服务不存在")
+	}
+	if status == "starting" || status == "stopping" {
+		return fmt.Errorf("服务正在%s，请稍后再试", map[string]string{"starting": "启动", "stopping": "停止"}[status])
+	}
+	if !isDirectory(service.Directory) {
+		return fmt.Errorf("项目目录不存在：%s", service.Directory)
+	}
+	if running {
+		if err := m.StopService(id); err != nil {
+			return err
+		}
+	}
+	return m.StartService(id)
+}
+
+// ClearNextCache runs the configured cache-cleanup command in the project
+// directory. A running service is restarted after cleanup so that Next.js
+// rebuilds from the fresh cache state.
+func (m *serviceManager) ClearNextCache(id string) error {
+	service, err := m.serviceByID(id)
+	if err != nil {
+		return err
+	}
+	if !isDirectory(service.Directory) {
+		return fmt.Errorf("项目目录不存在：%s", service.Directory)
+	}
+
+	m.mu.RLock()
+	status := m.lastStatus[id]
+	_, running := m.processes[id]
+	m.mu.RUnlock()
+	if status == "starting" || status == "stopping" {
+		return fmt.Errorf("服务正在%s，请稍后再试", map[string]string{"starting": "启动", "stopping": "停止"}[status])
+	}
+	service.CleanCommand = normalizeCleanCommand(service.CleanCommand)
+	if running {
+		if err := m.StopService(id); err != nil {
+			return err
+		}
+	}
+
+	output, err := m.runCleanupCommand(service)
+	if err != nil {
+		if strings.TrimSpace(output) != "" {
+			m.appendLog(id, "system", output)
+		}
+		return fmt.Errorf("执行缓存清理脚本失败：%w", err)
+	}
+	if strings.TrimSpace(output) != "" {
+		m.appendLog(id, "system", output)
+	}
+	m.appendLog(id, "system", fmt.Sprintf("已执行缓存清理脚本：%s", service.CleanCommand))
+
+	if running {
+		if err := m.StartService(id); err != nil {
+			return fmt.Errorf("缓存已清除，但服务重启失败：%w", err)
+		}
+	}
+	return nil
+}
+
+func (m *serviceManager) runCleanupCommand(service Service) (string, error) {
+	m.mu.RLock()
+	shell := m.commandShell
+	args := append([]string(nil), m.commandArgs...)
+	m.mu.RUnlock()
+	args = append(args, service.CleanCommand)
+	cmd := exec.Command(shell, args...)
+	cmd.Dir = service.Directory
+	output, err := cmd.CombinedOutput()
+	return strings.TrimSpace(string(output)), err
 }
 
 func (m *serviceManager) StartAll() BatchResult {
@@ -963,8 +1057,11 @@ func validateService(service Service) error {
 	}
 	if command := strings.TrimSpace(service.Command); command == "" {
 		return fmt.Errorf("启动命令不能为空")
-	} else if len(command) > 1000 {
-		return fmt.Errorf("启动命令不能超过 1000 个字符")
+	} else if len(command) > maxCommandLength {
+		return fmt.Errorf("启动命令不能超过 %d 个字符", maxCommandLength)
+	}
+	if cleanCommand := strings.TrimSpace(service.CleanCommand); len(cleanCommand) > maxCleanCommandLength {
+		return fmt.Errorf("缓存清理脚本不能超过 %d 个字符", maxCleanCommandLength)
 	}
 	if service.URL != "" {
 		parsed, err := url.Parse(service.URL)
@@ -1010,6 +1107,14 @@ func normalizeAccessURL(value string) string {
 		value = "http://" + value
 	}
 	return strings.TrimRight(value, "/")
+}
+
+func normalizeCleanCommand(value string) string {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return defaultCleanCommand
+	}
+	return value
 }
 
 func knownServiceURL(directory string) string {

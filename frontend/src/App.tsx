@@ -10,6 +10,7 @@ import {
     Pencil,
     Play,
     Plus,
+    RefreshCw,
     Search,
     Square,
     TerminalSquare,
@@ -21,6 +22,7 @@ import './App.css';
 import LogLine from './LogLine';
 import {
     ChooseDirectory,
+    ClearNextCache,
     ClearLogs,
     CreateService,
     DeleteService,
@@ -30,6 +32,7 @@ import {
     GetResourceUsage,
     OpenServiceURL,
     RevealService,
+    RestartService,
     StartAll,
     StartServices,
     StartService,
@@ -45,12 +48,13 @@ type ServiceView = main.ServiceView;
 type LogEntry = main.LogEntry;
 type ResourceUsage = main.ResourceUsage;
 type DialogState = {mode: 'create'} | {mode: 'edit'; service: ServiceView};
-type ServiceForm = {name: string; directory: string; command: string; url: string};
+type ServiceForm = {name: string; directory: string; command: string; url: string; cleanCommand: string};
 type ToastState = {kind: 'success' | 'error'; message: string};
 type MenuState = {service: ServiceView; left: number; top: number};
 type OperationIssue = {title: string; message: string};
 
-const emptyForm: ServiceForm = {name: '', directory: '', command: 'npm run dev', url: ''};
+const defaultCleanCommand = 'rm -rf .next';
+const emptyForm: ServiceForm = {name: '', directory: '', command: 'npm run dev', url: '', cleanCommand: defaultCleanCommand};
 const resourceHistoryLength = 60;
 function App() {
     const [services, setServices] = useState<ServiceView[]>([]);
@@ -68,6 +72,9 @@ function App() {
     const [menu, setMenu] = useState<MenuState | null>(null);
     const [autoScroll, setAutoScroll] = useState(true);
     const [downloadingLogs, setDownloadingLogs] = useState(false);
+    const [refreshing, setRefreshing] = useState(false);
+    const [cacheTarget, setCacheTarget] = useState<ServiceView | null>(null);
+    const [cacheBusyId, setCacheBusyId] = useState('');
     const [operationIssue, setOperationIssue] = useState<OperationIssue | null>(null);
     const [toast, setToast] = useState<ToastState | null>(null);
     const [, setClock] = useState(0);
@@ -161,7 +168,7 @@ function App() {
     useEffect(() => {
         const onKeyDown = (event: globalThis.KeyboardEvent) => {
             if (event.key !== 'Escape') return;
-            setMenu(null); setDialog(null); setDeleteTarget(null); setOperationIssue(null);
+            setMenu(null); setDialog(null); setDeleteTarget(null); setCacheTarget(null); setOperationIssue(null);
         };
         window.addEventListener('keydown', onKeyDown);
         return () => window.removeEventListener('keydown', onKeyDown);
@@ -274,7 +281,7 @@ function App() {
     const openMenu = (event: React.MouseEvent<HTMLButtonElement>, service: ServiceView) => {
         event.stopPropagation();
         const rect = event.currentTarget.getBoundingClientRect();
-        const width = 176, height = 132;
+        const width = 196, height = 204;
         setMenu({
             service,
             left: Math.min(rect.right - width, window.innerWidth - width - 12),
@@ -292,6 +299,49 @@ function App() {
         if (!service.url) return;
         try { await OpenServiceURL(service.id); }
         catch (error) { showToast(errorMessage(error), 'error'); }
+    };
+
+    const refreshAppState = async () => {
+        setRefreshing(true);
+        try {
+            await refreshState();
+            if (selectedId) setLogs(await GetLogs(selectedId));
+            showToast('状态已刷新');
+        } catch (error) {
+            showToast(errorMessage(error), 'error');
+        } finally {
+            setRefreshing(false);
+        }
+    };
+
+    const restartService = async (service: ServiceView) => {
+        setMenu(null);
+        setBusyIds(current => new Set(current).add(service.id));
+        try {
+            await RestartService(service.id);
+            showToast(`${service.name} 已重启`);
+        } catch (error) {
+            showToast(errorMessage(error), 'error');
+        } finally {
+            setBusyIds(current => { const next = new Set(current); next.delete(service.id); return next; });
+            await refreshState();
+        }
+    };
+
+    const confirmClearNextCache = async () => {
+        if (!cacheTarget) return;
+        const service = cacheTarget;
+        setCacheBusyId(service.id);
+        try {
+            await ClearNextCache(service.id);
+            showToast(`${service.name} 的 Next.js 缓存已清除${isActive(service) ? '并重启' : ''}`);
+            setCacheTarget(null);
+        } catch (error) {
+            showToast(errorMessage(error), 'error');
+        } finally {
+            setCacheBusyId('');
+            await refreshState();
+        }
     };
 
     const clearSelectedLogs = async () => {
@@ -343,6 +393,8 @@ function App() {
                     {query && <button type="button" onClick={() => setQuery('')} aria-label="清除搜索" title="清除搜索"><X size={14}/></button>}
                 </label>
                 <div className="toolbar-actions">
+                    <button className={refreshing ? 'icon-button subtle is-pressed' : 'icon-button subtle'} type="button" onClick={() => void refreshAppState()}
+                        aria-label="刷新状态" title="刷新状态" disabled={refreshing || batchBusy !== null}>{refreshing ? <RefreshCw className="spin" size={16}/> : <RefreshCw size={16}/>}</button>
                     <button className="button secondary" type="button" onClick={() => void runBatch('stop')} disabled={batchBusy !== null || runningCount === 0}>
                         {batchBusy === 'all-stop' ? <LoaderCircle className="spin" size={16}/> : <Square size={14}/>}全部停止
                     </button>
@@ -426,6 +478,8 @@ function App() {
                 <button className="menu-scrim" type="button" onClick={() => setMenu(null)} aria-label="关闭菜单"/>
                 <div className="context-menu" role="menu" style={{left: menu.left, top: menu.top}}>
                     <button type="button" role="menuitem" onClick={() => { setDialog({mode: 'edit', service: menu.service}); setMenu(null); }} disabled={isActive(menu.service)}><Pencil size={15}/>编辑配置</button>
+                    <button type="button" role="menuitem" onClick={() => void restartService(menu.service)} disabled={menu.service.status === 'starting' || menu.service.status === 'stopping' || !menu.service.pathExists}><RefreshCw size={15}/>重启服务</button>
+                    <button type="button" role="menuitem" onClick={() => { setCacheTarget(menu.service); setMenu(null); }} disabled={cacheBusyId !== '' || menu.service.status === 'starting' || menu.service.status === 'stopping' || !menu.service.pathExists}><Trash2 size={15}/>执行缓存清理</button>
                     <button type="button" role="menuitem" onClick={() => void revealService(menu.service)}><ExternalLink size={15}/>在 Finder 中显示</button>
                     <button className="danger-item" type="button" role="menuitem" onClick={() => { setDeleteTarget(menu.service); setMenu(null); }} disabled={isActive(menu.service)}><Trash2 size={15}/>移除服务</button>
                 </div>
@@ -444,6 +498,14 @@ function App() {
                     <div className="confirm-icon"><Trash2 size={18}/></div><h2 id="delete-title">移除 {deleteTarget.name}？</h2>
                     <p>该操作只删除 LAL 中的配置，不会删除项目文件。</p>
                     <div className="dialog-actions"><button className="button secondary" type="button" onClick={() => setDeleteTarget(null)}>取消</button><button className="button danger" type="button" onClick={() => void confirmDelete()}>移除</button></div>
+                </div>
+            </div>}
+
+            {cacheTarget && <div className="modal-backdrop" role="presentation" onMouseDown={event => { if (event.target === event.currentTarget && !cacheBusyId) setCacheTarget(null); }}>
+                <div className="confirm-dialog" role="alertdialog" aria-modal="true" aria-labelledby="cache-title">
+                    <div className="confirm-icon"><Trash2 size={18}/></div><h2 id="cache-title">执行 {cacheTarget.name} 的缓存清理？</h2>
+                    <p>将在项目目录执行以下脚本：</p><pre className="cache-command-preview">{cacheTarget.cleanCommand || defaultCleanCommand}</pre><p>{isActive(cacheTarget) ? '当前服务会先停止，清理后自动重启。' : '当前服务未运行，清理后保持停止。'}</p>
+                    <div className="dialog-actions"><button className="button secondary" type="button" onClick={() => setCacheTarget(null)} disabled={Boolean(cacheBusyId)}>取消</button><button className="button danger" type="button" onClick={() => void confirmClearNextCache()} disabled={Boolean(cacheBusyId)}>{cacheBusyId ? <LoaderCircle className="spin" size={16}/> : <Trash2 size={15}/>}清除缓存</button></div>
                 </div>
             </div>}
 
@@ -568,7 +630,7 @@ function serviceVisualState(service: ServiceView) {
 }
 
 function ServiceDialog({state, onClose, onSaved}: {state: DialogState; onClose: () => void; onSaved: (service: ServiceView) => Promise<void>}) {
-    const initial = state.mode === 'edit' ? {name: state.service.name, directory: state.service.directory, command: state.service.command, url: state.service.url ?? ''} : emptyForm;
+    const initial = state.mode === 'edit' ? {name: state.service.name, directory: state.service.directory, command: state.service.command, url: state.service.url ?? '', cleanCommand: state.service.cleanCommand ?? defaultCleanCommand} : emptyForm;
     const [form, setForm] = useState<ServiceForm>(initial);
     const [saving, setSaving] = useState(false);
     const [browsing, setBrowsing] = useState(false);
@@ -589,8 +651,8 @@ function ServiceDialog({state, onClose, onSaved}: {state: DialogState; onClose: 
 
     const submit = async (event: FormEvent) => {
         event.preventDefault();
-        const normalized = {name: form.name.trim(), directory: form.directory.trim(), command: form.command.trim(), url: form.url.trim()};
-        if (state.mode === 'edit' && normalized.name === initial.name && normalized.directory === initial.directory && normalized.command === initial.command && normalized.url === initial.url) { onClose(); return; }
+        const normalized = {name: form.name.trim(), directory: form.directory.trim(), command: form.command.trim(), url: form.url.trim(), cleanCommand: form.cleanCommand.trim()};
+        if (state.mode === 'edit' && normalized.name === initial.name && normalized.directory === initial.directory && normalized.command === initial.command && normalized.url === initial.url && normalized.cleanCommand === initial.cleanCommand) { onClose(); return; }
         setSaving(true); setError('');
         try {
             const service = state.mode === 'create' ? await CreateService(normalized) : await UpdateService(state.service.id, normalized);
@@ -608,6 +670,7 @@ function ServiceDialog({state, onClose, onSaved}: {state: DialogState; onClose: 
                     <button type="button" onClick={() => void browse()} aria-label="选择目录" title="选择目录" disabled={browsing}>{browsing ? <LoaderCircle className="spin" size={17}/> : <FolderOpen size={17}/>} </button></div></label>
                 <label><span>启动命令</span><input className="command-input" value={form.command} onChange={event => setForm({...form, command: event.target.value})} required maxLength={1000} placeholder="npm run dev" spellCheck={false}/></label>
                 <label><span>访问地址 <small>可选</small></span><input className="command-input" value={form.url} onChange={event => setForm({...form, url: event.target.value})} maxLength={500} inputMode="url" placeholder="http://localhost:3900" spellCheck={false}/></label>
+                <label><span>缓存清理脚本 <small>在项目目录执行</small></span><textarea className="command-input cache-command-input" value={form.cleanCommand} onChange={event => setForm({...form, cleanCommand: event.target.value})} required maxLength={2000} rows={2} placeholder="rm -rf .next" spellCheck={false}/></label>
             </div>
             {error && <div className="form-error"><CircleAlert size={15}/><span>{error}</span></div>}
             <div className="dialog-actions"><button className="button secondary" type="button" onClick={onClose}>取消</button><button className="button primary" type="submit" disabled={saving}>{saving && <LoaderCircle className="spin" size={16}/>} {state.mode === 'create' ? '添加服务' : '保存'}</button></div>

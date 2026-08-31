@@ -6,6 +6,7 @@ export namespace main {
 	    directory: string;
 	    command: string;
 	    url?: string;
+	    cleanCommand: string;
 	    status: string;
 	    pid: number;
 	    startedAt: string;
@@ -25,6 +26,7 @@ export namespace main {
 	        this.directory = source["directory"];
 	        this.command = source["command"];
 	        this.url = source["url"];
+	        this.cleanCommand = source["cleanCommand"];
 	        this.status = source["status"];
 	        this.pid = source["pid"];
 	        this.startedAt = source["startedAt"];
@@ -125,6 +127,7 @@ export namespace main {
 	    directory: string;
 	    command: string;
 	    url: string;
+	    cleanCommand: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new ServiceInput(source);
@@ -136,6 +139,7 @@ export namespace main {
 	        this.directory = source["directory"];
 	        this.command = source["command"];
 	        this.url = source["url"];
+	        this.cleanCommand = source["cleanCommand"];
 	    }
 	}
 

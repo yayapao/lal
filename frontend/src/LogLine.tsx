@@ -15,6 +15,7 @@ type ParsedLog = {
     severity: Severity;
     metadata: LogMeta[];
     details: string;
+    kind?: 'http';
 };
 
 const servicePrefix = /^\[([^\]\r\n]{1,40})\]\s*(.*)$/s;
@@ -24,12 +25,14 @@ const successPattern = /\b(?:ready|started|success|successful|listening)\b/i;
 const infoPattern = /\b(?:starting|stopping|stopped|synchronizing|rerunning|restarting)\b/i;
 const emphasizedToken = /(\b(?:ETIMEDOUT|CONNECT_TIMEOUT|ECONNREFUSED|EADDRINUSE|fatal|error|failed|failure|warning)\b|(?:\d{1,3}\.){3}\d{1,3}:\d+)/gi;
 const exactEmphasizedToken = /^(?:ETIMEDOUT|CONNECT_TIMEOUT|ECONNREFUSED|EADDRINUSE|fatal|error|failed|failure|warning|(?:\d{1,3}\.){3}\d{1,3}:\d+)$/i;
+const httpRequestPattern = /^(GET|POST|PUT|PATCH|DELETE|OPTIONS|HEAD)\s+(\S+)\s+(\d{3})\s+in\s+(\d+(?:\.\d+)?(?:ms|s))(?:\s+\((.+)\))?$/i;
+const httpPhasePattern = /^\s*([^:]+):\s*(\d+(?:\.\d+)?(?:ms|s))\s*$/i;
 
 export const LogLine = memo(function LogLine({entry, fallbackService}: {entry: LogLineEntry; fallbackService: string}) {
     const parsed = useMemo(() => parseLogText(entry.text, entry.stream), [entry.stream, entry.text]);
     const service = parsed.service || fallbackService;
     const streamLabel = entry.stream === 'stderr' ? 'ERR' : entry.stream === 'system' ? 'LAL' : 'OUT';
-    return <div className={`log-line stream-${entry.stream} is-${parsed.severity}`}>
+    return <div className={`log-line stream-${entry.stream} is-${parsed.severity}${parsed.kind ? ` is-${parsed.kind}` : ''}`}>
         <time dateTime={entry.timestamp} title={formatFullTimestamp(entry.timestamp)}>{formatLogTime(entry.timestamp)}</time>
         <span className="stream-mark">{streamLabel}</span>
         <span className={`log-service service-color-${serviceColor(service)}`} title={service}>{service}</span>
@@ -57,6 +60,8 @@ export function parseLogText(text: string, stream: string): ParsedLog {
     const structured = parseJSONObject(payload.trim());
 
     if (!structured) {
+        const request = parseHTTPRequest(payload);
+        if (request) return {...request, service};
         const severity = inferSeverity(payload, stream);
         const metadata: LogMeta[] = [];
         if (severity !== 'neutral') metadata.push({label: severityLabel(severity), tone: severity});
@@ -96,6 +101,25 @@ export function parseLogText(text: string, stream: string): ParsedLog {
         || stringValue(error?.message)
         || payload;
     return {service, message, severity, metadata, details: JSON.stringify(structured, null, 2)};
+}
+
+function parseHTTPRequest(payload: string): Omit<ParsedLog, 'service'> | null {
+    const match = payload.match(httpRequestPattern);
+    if (!match) return null;
+
+    const [, method, path, statusText, total, phaseText] = match;
+    const status = Number(statusText);
+    const statusTone = httpStatusTone(status);
+    const metadata: LogMeta[] = [
+        {label: method.toUpperCase(), tone: 'info'},
+        {label: 'HTTP', value: statusText, tone: statusTone},
+        {label: 'TOTAL', value: total, tone: durationTone(total)},
+    ];
+    for (const phase of phaseText?.split(',') ?? []) {
+        const phaseMatch = phase.match(httpPhasePattern);
+        if (phaseMatch) metadata.push({label: phaseMatch[1].trim(), value: phaseMatch[2], tone: durationTone(phaseMatch[2])});
+    }
+    return {message: path, severity: statusTone, metadata, details: '', kind: 'http'};
 }
 
 function AnsiText({text}: {text: string}) {
@@ -161,6 +185,21 @@ function severityFromLevel(level: unknown): Severity | null {
 function strongestSeverity(...values: Array<Severity | null>) {
     const priority: Record<Severity, number> = {neutral: 0, debug: 1, info: 2, success: 3, warn: 4, error: 5};
     return values.reduce<Severity>((strongest, value) => value && priority[value] > priority[strongest] ? value : strongest, 'neutral');
+}
+
+function httpStatusTone(status: number): Severity {
+    if (status >= 500) return 'error';
+    if (status >= 400) return 'warn';
+    if (status >= 300) return 'info';
+    if (status >= 200) return 'success';
+    return 'neutral';
+}
+
+function durationTone(duration: string): Severity {
+    const milliseconds = Number.parseFloat(duration) * (duration.endsWith('ms') ? 1 : 1000);
+    if (milliseconds >= 1000) return 'error';
+    if (milliseconds >= 500) return 'warn';
+    return 'neutral';
 }
 
 function levelLabel(level: unknown) {

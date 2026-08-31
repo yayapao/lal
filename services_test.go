@@ -32,7 +32,7 @@ func TestServiceConfigLifecycle(t *testing.T) {
 	if err != nil {
 		t.Fatalf("create service: %v", err)
 	}
-	if created.ID == "" || created.Name != "API" || !created.PathExists || created.URL != "http://localhost:4321" {
+	if created.ID == "" || created.Name != "API" || !created.PathExists || created.URL != "http://localhost:4321" || created.CleanCommand != defaultCleanCommand {
 		t.Fatalf("unexpected created service: %#v", created)
 	}
 
@@ -41,20 +41,21 @@ func TestServiceConfigLifecycle(t *testing.T) {
 	}
 
 	updated, err := app.UpdateService(created.ID, ServiceInput{
-		Name:      "Gateway",
-		Directory: projectDir,
-		Command:   "go run .",
-		URL:       "https://localhost:8443",
+		Name:         "Gateway",
+		Directory:    projectDir,
+		Command:      "go run .",
+		URL:          "https://localhost:8443",
+		CleanCommand: "rm -rf .next .turbo",
 	})
 	if err != nil {
 		t.Fatalf("update service: %v", err)
 	}
-	if updated.Name != "Gateway" || updated.Command != "go run ." || updated.URL != "https://localhost:8443" {
+	if updated.Name != "Gateway" || updated.Command != "go run ." || updated.URL != "https://localhost:8443" || updated.CleanCommand != "rm -rf .next .turbo" {
 		t.Fatalf("unexpected updated service: %#v", updated)
 	}
 
 	reloaded := newAppWithConfigPath(configPath).GetAppState()
-	if len(reloaded.Services) != 1 || reloaded.Services[0].Name != "Gateway" || reloaded.Services[0].URL != "https://localhost:8443" {
+	if len(reloaded.Services) != 1 || reloaded.Services[0].Name != "Gateway" || reloaded.Services[0].URL != "https://localhost:8443" || reloaded.Services[0].CleanCommand != "rm -rf .next .turbo" {
 		t.Fatalf("service was not persisted: %#v", reloaded.Services)
 	}
 
@@ -83,7 +84,7 @@ func TestVersionOneConfigMigratesKnownServiceURLs(t *testing.T) {
 	}
 
 	state := newAppWithConfigPath(configPath).GetAppState()
-	if len(state.Services) != 1 || state.Services[0].URL != "http://localhost:3900" {
+	if len(state.Services) != 1 || state.Services[0].URL != "http://localhost:3900" || state.Services[0].CleanCommand != defaultCleanCommand {
 		t.Fatalf("known URL was not migrated: %#v", state.Services)
 	}
 	updatedData, err := os.ReadFile(configPath)
@@ -323,6 +324,119 @@ func TestProcessLifecycleCapturesLogsAndStopsGroup(t *testing.T) {
 	}
 	if err := syscall.Kill(-pid, 0); !errors.Is(err, syscall.ESRCH) {
 		t.Fatalf("process group %d is still alive: %v", pid, err)
+	}
+}
+
+func TestRestartServiceStopsAndStartsManagedProcess(t *testing.T) {
+	app := testApp(t)
+	service, err := app.CreateService(ServiceInput{
+		Name:      "Restartable",
+		Directory: t.TempDir(),
+		Command:   "trap 'exit 0' TERM; while :; do sleep 1; done",
+	})
+	if err != nil {
+		t.Fatalf("create service: %v", err)
+	}
+	if err := app.StartService(service.ID); err != nil {
+		t.Fatalf("start service: %v", err)
+	}
+	firstPID := serviceState(t, app, service.ID).PID
+	if firstPID == 0 {
+		t.Fatal("service did not start")
+	}
+
+	if err := app.RestartService(service.ID); err != nil {
+		t.Fatalf("restart service: %v", err)
+	}
+	waitFor(t, time.Second, func() bool {
+		state := serviceState(t, app, service.ID)
+		return state.Status == "running" && state.PID != 0 && state.PID != firstPID
+	})
+}
+
+func TestClearNextCacheRemovesDirectoryAndRestartsRunningService(t *testing.T) {
+	app := testApp(t)
+	projectDir := t.TempDir()
+	cacheDir := filepath.Join(projectDir, ".next")
+	if err := os.MkdirAll(filepath.Join(cacheDir, "cache"), 0o755); err != nil {
+		t.Fatalf("create cache: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(cacheDir, "cache", "stale"), []byte("stale"), 0o600); err != nil {
+		t.Fatalf("write cache: %v", err)
+	}
+	service, err := app.CreateService(ServiceInput{
+		Name:      "Next app",
+		Directory: projectDir,
+		Command:   "trap 'exit 0' TERM; while :; do sleep 1; done",
+	})
+	if err != nil {
+		t.Fatalf("create service: %v", err)
+	}
+	if err := app.StartService(service.ID); err != nil {
+		t.Fatalf("start service: %v", err)
+	}
+	firstPID := serviceState(t, app, service.ID).PID
+
+	if err := app.ClearNextCache(service.ID); err != nil {
+		t.Fatalf("clear Next.js cache: %v", err)
+	}
+	if _, err := os.Stat(cacheDir); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf(".next still exists after cleanup: %v", err)
+	}
+	waitFor(t, time.Second, func() bool {
+		state := serviceState(t, app, service.ID)
+		return state.Status == "running" && state.PID != 0 && state.PID != firstPID
+	})
+}
+
+func TestClearNextCacheWorksForStoppedService(t *testing.T) {
+	app := testApp(t)
+	projectDir := t.TempDir()
+	if err := os.Mkdir(filepath.Join(projectDir, ".next"), 0o755); err != nil {
+		t.Fatalf("create cache: %v", err)
+	}
+	service, err := app.CreateService(ServiceInput{Name: "Stopped Next", Directory: projectDir, Command: "exit 0"})
+	if err != nil {
+		t.Fatalf("create service: %v", err)
+	}
+	if err := app.ClearNextCache(service.ID); err != nil {
+		t.Fatalf("clear Next.js cache: %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(projectDir, ".next")); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf(".next still exists after cleanup: %v", err)
+	}
+	if state := serviceState(t, app, service.ID); state.Status != "stopped" {
+		t.Fatalf("stopped service changed state: %#v", state)
+	}
+}
+
+func TestClearNextCacheRunsCustomCommandInProjectDirectory(t *testing.T) {
+	app := testApp(t)
+	projectDir := t.TempDir()
+	for _, directory := range []string{".next", "build/cache", "keep"} {
+		if err := os.MkdirAll(filepath.Join(projectDir, directory), 0o755); err != nil {
+			t.Fatalf("create %s: %v", directory, err)
+		}
+	}
+	service, err := app.CreateService(ServiceInput{
+		Name:         "Custom cache",
+		Directory:    projectDir,
+		Command:      "exit 0",
+		CleanCommand: "rm -rf .next build/cache",
+	})
+	if err != nil {
+		t.Fatalf("create service: %v", err)
+	}
+	if err := app.ClearNextCache(service.ID); err != nil {
+		t.Fatalf("clear custom cache: %v", err)
+	}
+	for _, directory := range []string{".next", "build/cache"} {
+		if _, err := os.Stat(filepath.Join(projectDir, directory)); !errors.Is(err, os.ErrNotExist) {
+			t.Fatalf("custom cache %s still exists: %v", directory, err)
+		}
+	}
+	if _, err := os.Stat(filepath.Join(projectDir, "keep")); err != nil {
+		t.Fatalf("unlisted directory was removed: %v", err)
 	}
 }
 

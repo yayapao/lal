@@ -51,4 +51,36 @@ describe('LogLine', () => {
         expect(parsed.severity).toBe('error');
         expect(parsed.metadata).toContainEqual({label: 'STATUS', value: 'startup failure', tone: 'error'});
     });
+
+    it('structures a Next.js request with timing phases', () => {
+        const entry = {
+            timestamp: '2026-08-27T18:20:00+08:00',
+            stream: 'stdout',
+            text: 'GET /admin 200 in 501ms (next.js: 88ms, proxy.ts: 114ms, application-code: 299ms)',
+        };
+
+        render(<LogLine entry={entry} fallbackService="web"/>);
+
+        expect(screen.getByText('/admin')).toBeDefined();
+        expect(screen.getByText('GET')).toBeDefined();
+        expect(screen.getByText('HTTP')).toBeDefined();
+        expect(screen.getByText('200')).toBeDefined();
+        expect(screen.getByText('TOTAL')).toBeDefined();
+        expect(screen.getByText('501ms')).toBeDefined();
+        expect(screen.getByText('next.js')).toBeDefined();
+        expect(screen.getByText('88ms')).toBeDefined();
+        expect(screen.getByText('proxy.ts')).toBeDefined();
+        expect(screen.getByText('114ms')).toBeDefined();
+        expect(screen.getByText('application-code')).toBeDefined();
+        expect(screen.getByText('299ms')).toBeDefined();
+    });
+
+    it('marks server errors from request logs as errors', () => {
+        const parsed = parseLogText('POST /api/agents 503 in 2.1s', 'stdout');
+
+        expect(parsed.severity).toBe('error');
+        expect(parsed.message).toBe('/api/agents');
+        expect(parsed.metadata).toContainEqual({label: 'HTTP', value: '503', tone: 'error'});
+        expect(parsed.metadata).toContainEqual({label: 'TOTAL', value: '2.1s', tone: 'error'});
+    });
 });

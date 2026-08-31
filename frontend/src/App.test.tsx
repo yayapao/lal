@@ -5,6 +5,7 @@ import App from './App';
 
 const api = vi.hoisted(() => ({
     ChooseDirectory: vi.fn(),
+    ClearNextCache: vi.fn(),
     ClearLogs: vi.fn(),
     CreateService: vi.fn(),
     DeleteService: vi.fn(),
@@ -14,6 +15,7 @@ const api = vi.hoisted(() => ({
     GetResourceUsage: vi.fn(),
     OpenServiceURL: vi.fn(),
     RevealService: vi.fn(),
+    RestartService: vi.fn(),
     StartAll: vi.fn(),
     StartServices: vi.fn(),
     StartService: vi.fn(),
@@ -53,6 +55,8 @@ describe('selected service actions', () => {
         api.GetResourceUsage.mockResolvedValue([]);
         api.DownloadLogs.mockResolvedValue('/tmp/Alpha.log');
         api.StartServices.mockResolvedValue({changed: 1, skipped: 0, errors: []});
+        api.RestartService.mockResolvedValue(undefined);
+        api.ClearNextCache.mockResolvedValue(undefined);
     });
 
     afterEach(cleanup);
@@ -66,6 +70,15 @@ describe('selected service actions', () => {
 
         await waitFor(() => expect(api.StartServices).toHaveBeenCalledWith(['alpha']));
         expect(api.StartAll).not.toHaveBeenCalled();
+    });
+
+    it('refreshes the service state on demand', async () => {
+        const user = userEvent.setup();
+        render(<App/>);
+
+        await user.click(await screen.findByRole('button', {name: '刷新状态'}));
+
+        await waitFor(() => expect(api.GetAppState).toHaveBeenCalledTimes(2));
     });
 
     it('renders sampled CPU, memory, and process count', async () => {
@@ -108,5 +121,44 @@ describe('selected service actions', () => {
 
         expect(await screen.findByRole('alertdialog', {name: 'Alpha 无法启动'})).toBeDefined();
         expect(screen.getByText(/检查命令：lsof/)).toBeDefined();
+    });
+
+    it('restarts a service from its action menu', async () => {
+        const user = userEvent.setup();
+        render(<App/>);
+
+        await user.click(await screen.findByRole('button', {name: 'Alpha 更多操作'}));
+        await user.click(screen.getByRole('menuitem', {name: '重启服务'}));
+
+        await waitFor(() => expect(api.RestartService).toHaveBeenCalledWith('alpha'));
+    });
+
+    it('confirms and executes the configured cache cleanup', async () => {
+        const user = userEvent.setup();
+        render(<App/>);
+
+        await user.click(await screen.findByRole('button', {name: 'Alpha 更多操作'}));
+        await user.click(screen.getByRole('menuitem', {name: '执行缓存清理'}));
+        expect(screen.getByRole('alertdialog', {name: '执行 Alpha 的缓存清理？'})).toBeDefined();
+        await user.click(screen.getByRole('button', {name: '清除缓存'}));
+
+        await waitFor(() => expect(api.ClearNextCache).toHaveBeenCalledWith('alpha'));
+    });
+
+    it('persists a custom cache cleanup command from the service editor', async () => {
+        const user = userEvent.setup();
+        api.UpdateService.mockResolvedValue({...alphaService, cleanCommand: 'rm -rf .next dist/.cache'});
+        render(<App/>);
+
+        await user.click(await screen.findByRole('button', {name: 'Alpha 更多操作'}));
+        await user.click(screen.getByRole('menuitem', {name: '编辑配置'}));
+        const command = screen.getByLabelText(/缓存清理脚本/);
+        await user.clear(command);
+        await user.type(command, 'rm -rf .next dist/.cache');
+        await user.click(screen.getByRole('button', {name: '保存'}));
+
+        await waitFor(() => expect(api.UpdateService).toHaveBeenCalledWith('alpha', {
+            name: 'Alpha', directory: '/tmp/alpha', command: 'npm run dev', url: '', cleanCommand: 'rm -rf .next dist/.cache',
+        }));
     });
 });

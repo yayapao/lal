@@ -905,6 +905,7 @@
 .log-line.is-warn { border-left-color: var(--amber); }
 .log-line.is-success { border-left-color: var(--green); }
 .log-line.is-info { border-left-color: rgba(112, 199, 232, 0.55); }
+.log-line.is-http .log-message { color: #eef3f5; font-weight: 680; }
 
 .log-line time {
     padding-top: 1px;
@@ -1114,7 +1115,7 @@
 .context-menu {
     position: fixed;
     z-index: 41;
-    width: 176px;
+    width: 196px;
     padding: 4px;
     border: 1px solid var(--line-strong);
     border-radius: 4px;
@@ -1198,9 +1199,10 @@
     font-weight: 500;
 }
 
-.form-fields input {
+.form-fields input,
+.form-fields textarea {
     width: 100%;
-    height: 38px;
+    min-height: 38px;
     padding: 0 10px;
     border: 1px solid var(--line-strong);
     border-radius: 4px;
@@ -1211,7 +1213,16 @@
     transition: border-color 120ms ease, background-color 120ms ease;
 }
 
-.form-fields input:focus {
+.form-fields textarea {
+    height: 58px;
+    padding-top: 9px;
+    padding-bottom: 9px;
+    resize: vertical;
+    line-height: 18px;
+}
+
+.form-fields input:focus,
+.form-fields textarea:focus {
     border-color: #4e94ad;
     background: #111619;
 }
@@ -1289,6 +1300,23 @@
     color: var(--muted);
     font-size: 11px;
     line-height: 18px;
+}
+
+.cache-command-preview {
+    max-height: 110px;
+    margin: 10px 0 0;
+    padding: 9px 10px;
+    overflow: auto;
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    color: #cbd5d8;
+    background: #0d1012;
+    font-family: var(--mono);
+    font-size: 10px;
+    line-height: 16px;
+    text-align: left;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
 }
 
 .confirm-dialog .dialog-actions { justify-content: center; }

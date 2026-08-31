@@ -10,6 +10,7 @@ LAL（Local App Launcher）是一个基于 Wails v2 的 macOS 本地开发服务
 
 - 服务的添加、编辑、删除和搜索
 - 单个服务一键启动、停止
+- 服务状态手动刷新、重启，以及执行可自定义的缓存清理脚本后自动重启
 - 多选服务后批量启动、停止
 - 全部启动、全部停止
 - stdout / stderr 实时日志、启动前自动清空、手动清空、下载与自动跟随
@@ -34,7 +35,9 @@ LAL（Local App Launcher）是一个基于 Wails v2 的 macOS 本地开发服务
 | myStock | `/Users/yango/github/stock/mystock` | `npm run dev` | `http://localhost:35790` |
 | ViewAI | `/Users/yango/Documents/huyaprojects/ai/viewai` | `npm run dev` | `http://localhost:3900` |
 
-之后的配置保存在 `~/Library/Application Support/LAL/config.json`，不会写入各项目目录。旧版 v1 配置会自动迁移到 v2，并为上述两个已知服务补充默认访问地址。
+之后的配置保存在 `~/Library/Application Support/LAL/config.json`，不会写入各项目目录。旧版 v1/v2 配置会自动迁移到当前版本，并为上述两个已知服务补充默认访问地址和默认缓存清理脚本。
+
+每个服务都有独立的缓存清理脚本，默认是 `rm -rf .next`。可以在编辑服务时改成项目实际需要的命令，例如 `rm -rf .next dist/.cache .turbo` 或项目内的清理脚本路径；命令会在该服务的项目目录中执行。
 
 ## 状态说明
 

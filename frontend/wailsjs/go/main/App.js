@@ -10,6 +10,10 @@ export function ClearLogs(arg1) {
   return window['go']['main']['App']['ClearLogs'](arg1);
 }
 
+export function ClearNextCache(arg1) {
+  return window['go']['main']['App']['ClearNextCache'](arg1);
+}
+
 export function CreateService(arg1) {
   return window['go']['main']['App']['CreateService'](arg1);
 }
@@ -36,6 +40,10 @@ export function GetResourceUsage() {
 
 export function OpenServiceURL(arg1) {
   return window['go']['main']['App']['OpenServiceURL'](arg1);
+}
+
+export function RestartService(arg1) {
+  return window['go']['main']['App']['RestartService'](arg1);
 }
 
 export function RevealService(arg1) {

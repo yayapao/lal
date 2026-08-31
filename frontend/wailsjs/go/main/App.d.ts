@@ -6,6 +6,8 @@ export function ChooseDirectory(arg1:string):Promise<string>;
 
 export function ClearLogs(arg1:string):Promise<void>;
 
+export function ClearNextCache(arg1:string):Promise<void>;
+
 export function CreateService(arg1:main.ServiceInput):Promise<main.ServiceView>;
 
 export function DeleteService(arg1:string):Promise<void>;
@@ -19,6 +21,8 @@ export function GetLogs(arg1:string):Promise<Array<main.LogEntry>>;
 export function GetResourceUsage():Promise<Array<main.ResourceUsage>>;
 
 export function OpenServiceURL(arg1:string):Promise<void>;
+
+export function RestartService(arg1:string):Promise<void>;
 
 export function RevealService(arg1:string):Promise<void>;
 
