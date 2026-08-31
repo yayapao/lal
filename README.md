@@ -60,9 +60,11 @@ wails dev
 `wails dev` 只用于开发 LAL 本身。日常使用 LAL 管理其他项目时，推荐构建 macOS 应用包后直接运行：
 
 ```bash
-wails build -platform darwin/universal
-open build/bin/LAL.app
+scripts/build-macos.sh
+open "$HOME/Applications/LAL.app"
 ```
+
+构建脚本会执行干净的 macOS universal 构建，将应用安装到 `~/Applications/LAL.app`，刷新 LaunchServices 和 Spotlight，并校验应用是否能被系统索引。可以通过 `INSTALL_DIR=/Applications scripts/build-macos.sh` 安装到系统应用目录，或使用 `--install-dir PATH` 指定其他目录；使用 `--no-install` 只构建不安装。
 
 检查代码：
 
