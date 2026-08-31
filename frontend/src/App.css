@@ -42,32 +42,10 @@
     user-select: none;
 }
 
-.brand-mark {
-    display: grid;
-    place-items: center;
-    width: 28px;
-    height: 28px;
-    margin-right: 9px;
-    border: 1px solid #39434a;
-    border-radius: 4px;
-    color: var(--accent);
-    background: #151a1d;
-}
-
 .brand-name {
     color: #f1f4f5;
     font-size: 14px;
     font-weight: 760;
-}
-
-.brand-subtitle {
-    margin-left: 10px;
-    padding-left: 10px;
-    border-left: 1px solid var(--line-strong);
-    color: var(--faint);
-    font-family: var(--mono);
-    font-size: 9px;
-    font-weight: 650;
 }
 
 .titlebar-status {
