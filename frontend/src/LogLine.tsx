@@ -7,6 +7,8 @@ export type LogLineEntry = {
     text: string;
 };
 
+const logBlockGapMs = 250;
+
 type Severity = 'error' | 'warn' | 'success' | 'info' | 'debug' | 'neutral';
 type LogMeta = {label: string; value?: string; tone?: Severity};
 type ParsedLog = {
@@ -50,6 +52,35 @@ export const LogLine = memo(function LogLine({entry, fallbackService}: {entry: L
         </span>
     </div>;
 });
+
+/** Group adjacent error lines emitted as one short-lived stderr burst. */
+export function groupLogEntries(entries: LogLineEntry[]): LogLineEntry[] {
+    const grouped: LogLineEntry[] = [];
+    let previousEntry: LogLineEntry | undefined;
+    for (const entry of entries) {
+        const previous = grouped[grouped.length - 1];
+        if (!previous || !previousEntry || !canJoinErrorEntries(previousEntry, entry)) {
+            grouped.push({...entry});
+        } else {
+            previous.text = `${previous.text}\n${entry.text}`;
+        }
+        previousEntry = entry;
+    }
+    return grouped;
+}
+
+function canJoinErrorEntries(previous: LogLineEntry, next: LogLineEntry) {
+    if (previous.stream !== next.stream) return false;
+    const previousParsed = parseLogText(previous.text, previous.stream);
+    const nextParsed = parseLogText(next.text, next.stream);
+    if (previousParsed.severity !== 'error' || nextParsed.severity !== 'error') return false;
+    if (previousParsed.service && nextParsed.service && previousParsed.service !== nextParsed.service) return false;
+    const previousTime = Date.parse(previous.timestamp);
+    const nextTime = Date.parse(next.timestamp);
+    if (!Number.isFinite(previousTime) || !Number.isFinite(nextTime)) return false;
+    const gap = nextTime - previousTime;
+    return gap >= 0 && gap <= logBlockGapMs;
+}
 
 export function parseLogText(text: string, stream: string): ParsedLog {
     const plainText = Anser.ansiToText(text);

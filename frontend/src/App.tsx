@@ -24,7 +24,7 @@ import {
 } from 'lucide-react';
 import {FormEvent, KeyboardEvent, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState} from 'react';
 import './App.css';
-import LogLine from './LogLine';
+import LogLine, {groupLogEntries} from './LogLine';
 import {
     ChooseDirectory,
     ClearNextCache,
@@ -191,6 +191,7 @@ function App() {
     const selectedService = services.find(service => service.id === selectedId) ?? null;
     const selectedUsage = selectedService ? resourceUsage[selectedService.id] : undefined;
     const selectedResourceHistory = selectedService ? resourceHistory[selectedService.id] ?? [] : [];
+    const logBlocks = useMemo(() => groupLogEntries(logs), [logs]);
     const runningCount = services.filter(isActive).length;
     const readyCount = services.filter(service => service.health === 'ready').length;
     const filteredServices = useMemo(() => {
@@ -471,7 +472,7 @@ function App() {
                     <div className="log-viewport" ref={logViewportRef}>
                         {!selectedService ? <div className="console-empty">未选择服务</div>
                             : logs.length === 0 ? <div className="console-empty">暂无日志</div>
-                                : <div className="log-lines">{logs.map((entry, index) => (
+                                : <div className="log-lines">{logBlocks.map((entry, index) => (
                                     <LogLine entry={entry} fallbackService={selectedService.name} key={`${entry.timestamp}-${index}`}/>
                                 ))}</div>}
                     </div>
