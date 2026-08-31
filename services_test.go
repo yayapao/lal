@@ -100,6 +100,23 @@ func TestVersionOneConfigMigratesKnownServiceURLs(t *testing.T) {
 	}
 }
 
+func TestServiceViewDetectsProjectTypeFromPackageManifest(t *testing.T) {
+	configPath := emptyConfig(t)
+	projectDir := t.TempDir()
+	manifest := `{"name":"web","dependencies":{"next":"15.0.0","react":"19.0.0"}}`
+	if err := os.WriteFile(filepath.Join(projectDir, "package.json"), []byte(manifest), 0o600); err != nil {
+		t.Fatalf("write package manifest: %v", err)
+	}
+	app := newAppWithConfigPath(configPath)
+	service, err := app.CreateService(ServiceInput{Name: "Next app", Directory: projectDir, Command: "npm run dev"})
+	if err != nil {
+		t.Fatalf("create service: %v", err)
+	}
+	if service.ProjectType != "nextjs" {
+		t.Fatalf("project type = %q, want nextjs", service.ProjectType)
+	}
+}
+
 func TestHealthMonitorTracksConfiguredAddress(t *testing.T) {
 	listener, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {

@@ -39,6 +39,7 @@ const alphaService = {
     startedAt: '',
     lastError: '',
     pathExists: true,
+    projectType: 'nextjs',
     health: '',
     healthInfo: '',
 };
@@ -79,6 +80,12 @@ describe('selected service actions', () => {
         await user.click(await screen.findByRole('button', {name: '刷新状态'}));
 
         await waitFor(() => expect(api.GetAppState).toHaveBeenCalledTimes(2));
+    });
+
+    it('uses the detected project icon for a Next.js service', async () => {
+        render(<App/>);
+
+        expect(await screen.findByRole('img', {name: 'Alpha：Next.js'})).toBeDefined();
     });
 
     it('renders sampled CPU, memory, and process count', async () => {

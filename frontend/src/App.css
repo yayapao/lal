@@ -410,7 +410,7 @@
 .service-row {
     position: relative;
     display: grid;
-    grid-template-columns: 22px minmax(0, 1fr) 72px 66px;
+    grid-template-columns: 58px minmax(0, 1fr) 72px 66px;
     align-items: center;
     min-height: 76px;
     padding: 8px 8px 8px 14px;
@@ -430,6 +430,40 @@
     width: 2px;
     background: transparent;
 }
+
+.service-leading {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+}
+
+.project-icon {
+    display: grid;
+    place-items: center;
+    width: 28px;
+    height: 28px;
+    flex: 0 0 28px;
+    border: 1px solid var(--line-strong);
+    border-radius: 6px;
+    color: var(--muted);
+    background: #171c1f;
+}
+
+.project-icon svg { width: 17px; height: 17px; }
+.project-icon-nextjs { border-color: #566066; color: #f4f6f7; background: #0b0d0f; }
+.project-icon-nextjs svg { width: 22px; height: 22px; }
+.project-icon-nextjs circle { fill: currentColor; }
+.project-icon-nextjs path { fill: #0b0d0f; }
+.project-icon-vite { color: #d9b6ff; background: #211c2b; }
+.project-icon-react { color: #7dd9f4; background: #15242a; }
+.project-icon-vue { color: #80d5a2; background: #17261e; }
+.project-icon-svelte { color: #ff9b69; background: #2a1d18; }
+.project-icon-angular { color: #f08c9a; background: #2b191d; }
+.project-icon-go { color: #75d1dc; background: #15272a; }
+.project-icon-rust { color: #e9b77f; background: #2a2119; }
+.project-icon-python { color: #e7c56f; background: #292719; }
+.project-icon-node { color: #91d56e; background: #1b2918; }
 
 .service-row.is-selected .service-accent { background: var(--accent); }
 .service-row.is-selected .service-accent.state-ready { background: var(--green); }

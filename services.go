@@ -57,13 +57,14 @@ type ServiceInput struct {
 
 type ServiceView struct {
 	Service
-	Status     string `json:"status"`
-	PID        int    `json:"pid"`
-	StartedAt  string `json:"startedAt"`
-	LastError  string `json:"lastError"`
-	PathExists bool   `json:"pathExists"`
-	Health     string `json:"health"`
-	HealthInfo string `json:"healthInfo"`
+	ProjectType string `json:"projectType"`
+	Status      string `json:"status"`
+	PID         int    `json:"pid"`
+	StartedAt   string `json:"startedAt"`
+	LastError   string `json:"lastError"`
+	PathExists  bool   `json:"pathExists"`
+	Health      string `json:"health"`
+	HealthInfo  string `json:"healthInfo"`
 }
 
 type AppState struct {
@@ -695,11 +696,12 @@ func (m *serviceManager) serviceViewsLocked() []ServiceView {
 
 func (m *serviceManager) serviceViewLocked(service Service) ServiceView {
 	view := ServiceView{
-		Service:    service,
-		Status:     m.lastStatus[service.ID],
-		LastError:  m.lastError[service.ID],
-		PathExists: isDirectory(service.Directory),
-		Health:     "stopped",
+		Service:     service,
+		ProjectType: detectProjectType(service.Directory, service.Command),
+		Status:      m.lastStatus[service.ID],
+		LastError:   m.lastError[service.ID],
+		PathExists:  isDirectory(service.Directory),
+		Health:      "stopped",
 	}
 	if service.URL == "" {
 		view.Health = "not_configured"
@@ -1088,6 +1090,79 @@ func uniqueIDs(ids []string) []string {
 func isDirectory(path string) bool {
 	info, err := os.Stat(path)
 	return err == nil && info.IsDir()
+}
+
+type packageManifest struct {
+	Dependencies    map[string]json.RawMessage `json:"dependencies"`
+	DevDependencies map[string]json.RawMessage `json:"devDependencies"`
+	Scripts         map[string]string          `json:"scripts"`
+}
+
+func detectProjectType(directory, command string) string {
+	hasPackageManifest := false
+	manifestPath := filepath.Join(directory, "package.json")
+	if data, err := os.ReadFile(manifestPath); err == nil && len(data) <= 2*1024*1024 {
+		var manifest packageManifest
+		if json.Unmarshal(data, &manifest) == nil {
+			hasPackageManifest = true
+			dependencies := make(map[string]struct{}, len(manifest.Dependencies)+len(manifest.DevDependencies))
+			for name := range manifest.Dependencies {
+				dependencies[name] = struct{}{}
+			}
+			for name := range manifest.DevDependencies {
+				dependencies[name] = struct{}{}
+			}
+			for _, candidate := range []struct {
+				projectType string
+				packages    []string
+			}{
+				{projectType: "nextjs", packages: []string{"next"}},
+				{projectType: "vite", packages: []string{"vite"}},
+				{projectType: "angular", packages: []string{"@angular/core"}},
+				{projectType: "vue", packages: []string{"vue"}},
+				{projectType: "svelte", packages: []string{"svelte"}},
+				{projectType: "react", packages: []string{"react", "react-dom"}},
+			} {
+				for _, packageName := range candidate.packages {
+					if _, found := dependencies[packageName]; found {
+						return candidate.projectType
+					}
+				}
+			}
+			for _, script := range manifest.Scripts {
+				if strings.Contains(strings.ToLower(script), "next") {
+					return "nextjs"
+				}
+			}
+		}
+	}
+
+	for _, filename := range []string{"next.config.js", "next.config.mjs", "next.config.ts"} {
+		if isFile(filepath.Join(directory, filename)) {
+			return "nextjs"
+		}
+	}
+	if isDirectory(filepath.Join(directory, ".next")) || strings.Contains(strings.ToLower(command), "next") {
+		return "nextjs"
+	}
+	if isFile(filepath.Join(directory, "go.mod")) {
+		return "go"
+	}
+	if isFile(filepath.Join(directory, "Cargo.toml")) {
+		return "rust"
+	}
+	if isFile(filepath.Join(directory, "pyproject.toml")) || isFile(filepath.Join(directory, "requirements.txt")) {
+		return "python"
+	}
+	if hasPackageManifest {
+		return "node"
+	}
+	return "generic"
+}
+
+func isFile(path string) bool {
+	info, err := os.Stat(path)
+	return err == nil && !info.IsDir()
 }
 
 func cleanDirectory(path string) string {

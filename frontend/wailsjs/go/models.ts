@@ -7,6 +7,7 @@ export namespace main {
 	    command: string;
 	    url?: string;
 	    cleanCommand: string;
+	    projectType: string;
 	    status: string;
 	    pid: number;
 	    startedAt: string;
@@ -27,6 +28,7 @@ export namespace main {
 	        this.command = source["command"];
 	        this.url = source["url"];
 	        this.cleanCommand = source["cleanCommand"];
+	        this.projectType = source["projectType"];
 	        this.status = source["status"];
 	        this.pid = source["pid"];
 	        this.startedAt = source["startedAt"];

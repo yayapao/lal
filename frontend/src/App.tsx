@@ -1,6 +1,9 @@
 import {
     Activity,
+    Atom,
+    Box,
     CircleAlert,
+    Code2,
     Download,
     Ellipsis,
     ExternalLink,
@@ -10,12 +13,14 @@ import {
     Pencil,
     Play,
     Plus,
+    Package,
     RefreshCw,
     Search,
     Square,
     TerminalSquare,
     Trash2,
     X,
+    Zap,
 } from 'lucide-react';
 import {FormEvent, KeyboardEvent, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState} from 'react';
 import './App.css';
@@ -537,8 +542,11 @@ function ServiceRow({service, usage, selected, checked, busy, selectionDisabled,
     return (
         <article className={`service-row${selected ? ' is-selected' : ''}${checked ? ' is-checked' : ''}`} onClick={onSelect} onKeyDown={handleKeyDown} tabIndex={0} aria-current={selected}>
             <span className={`service-accent state-${serviceVisualState(service)}`}/>
-            <input className="selection-checkbox service-selector" type="checkbox" checked={checked} disabled={selectionDisabled}
-                onClick={event => event.stopPropagation()} onChange={onCheck} aria-label={`选择 ${service.name}`}/>
+            <div className="service-leading">
+                <input className="selection-checkbox service-selector" type="checkbox" checked={checked} disabled={selectionDisabled}
+                    onClick={event => event.stopPropagation()} onChange={onCheck} aria-label={`选择 ${service.name}`}/>
+                <ProjectIcon projectType={service.projectType} projectName={service.name}/>
+            </div>
             <div className="service-copy">
                 <div className="service-name-line"><h3>{service.name}</h3>{service.pid > 0 && <span className="pid">PID {service.pid}</span>}{service.startedAt && isActive(service) && <span className="uptime">{formatUptime(service.startedAt)}</span>}
                     {isActive(service) && <span className="service-resources"><span>CPU {formatCPU(usage?.cpuPercent ?? 0)}</span><span>MEM {formatMemory(usage?.memoryBytes ?? 0)}</span></span>}
@@ -567,6 +575,40 @@ function ServiceRow({service, usage, selected, checked, busy, selectionDisabled,
         </article>
     );
 }
+
+function ProjectIcon({projectType, projectName}: {projectType?: string; projectName: string}) {
+    const type = projectType || 'generic';
+    const label = projectTypeLabels[type] ?? '项目';
+    let mark: React.ReactNode = <TerminalSquare size={17}/>;
+    if (type === 'nextjs') mark = <NextMark/>;
+    else if (type === 'react') mark = <Atom size={17}/>;
+    else if (type === 'vite') mark = <Zap size={17}/>;
+    else if (type === 'vue' || type === 'svelte' || type === 'angular') mark = <Code2 size={17}/>;
+    else if (type === 'go' || type === 'rust') mark = <Box size={17}/>;
+    else if (type === 'python' || type === 'node') mark = <Package size={17}/>;
+    return <span className={`project-icon project-icon-${type}`} role="img" aria-label={`${projectName}：${label}`} title={label}>{mark}</span>;
+}
+
+function NextMark() {
+    return <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <circle cx="12" cy="12" r="11"/>
+        <path d="M7.3 7.2h2.35l5.05 6.35V7.2h2v9.6h-2.2L9.35 10.3v6.5h-2.05z"/>
+    </svg>;
+}
+
+const projectTypeLabels: Record<string, string> = {
+    nextjs: 'Next.js',
+    vite: 'Vite',
+    react: 'React',
+    vue: 'Vue',
+    svelte: 'Svelte',
+    angular: 'Angular',
+    go: 'Go',
+    rust: 'Rust',
+    python: 'Python',
+    node: 'Node.js',
+    generic: '本地服务',
+};
 
 function ResourceMonitor({service, usage, history}: {service: ServiceView | null; usage?: ResourceUsage; history: ResourceUsage[]}) {
     const cpuValues = history.map(sample => sample.cpuPercent);
