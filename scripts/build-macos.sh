@@ -113,7 +113,7 @@ for attempt in {1..10}; do
   # mdfind may not accept a newly-created user Applications directory as an
   # -onlyin scope immediately, so query the global index and allow a short
   # window for metadata propagation.
-  INDEXED_PATH="$(mdfind 'kMDItemFSName == "LAL.app"c' | rg -Fx "$INSTALL_APP" || true)"
+  INDEXED_PATH="$(mdfind 'kMDItemFSName == "LAL.app"c' | /usr/bin/grep -F -x -- "$INSTALL_APP" || true)"
   [[ "$INDEXED_PATH" == "$INSTALL_APP" ]] && break
   sleep 1
 done
