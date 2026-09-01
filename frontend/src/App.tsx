@@ -381,7 +381,6 @@ function App() {
     return (
         <div className="app-shell">
             <header className="titlebar">
-                <div className="brand-name">LAL</div>
                 <div className="titlebar-status"><span className={readyCount > 0 ? 'live-pulse is-active' : 'live-pulse'}/>{readyCount} 个可访问</div>
             </header>
 

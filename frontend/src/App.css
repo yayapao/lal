@@ -42,12 +42,6 @@
     user-select: none;
 }
 
-.brand-name {
-    color: #f1f4f5;
-    font-size: 14px;
-    font-weight: 760;
-}
-
 .titlebar-status {
     display: flex;
     align-items: center;
