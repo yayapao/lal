@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 	"errors"
 	"net"
-	"net/url"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"syscall"
 	"testing"
@@ -186,14 +186,22 @@ func TestLegacySinglePromptPathMigratesToAddedPrompt(t *testing.T) {
 	}
 }
 
-func TestCodexWorkspaceURLPreservesDirectory(t *testing.T) {
+func TestCodexAppArgumentsPreserveDirectory(t *testing.T) {
 	workspace := "/tmp/My Project"
-	parsed, err := url.Parse(codexWorkspaceURL(workspace))
-	if err != nil {
-		t.Fatalf("parse Codex URL: %v", err)
+	want := []string{"app", workspace}
+	if got := codexAppArguments(workspace); !reflect.DeepEqual(got, want) {
+		t.Fatalf("Codex arguments = %#v, want %#v", got, want)
 	}
-	if parsed.Scheme != "codex" || parsed.Host != "threads" || parsed.Path != "/new" || parsed.Query().Get("cwd") != workspace {
-		t.Fatalf("unexpected Codex URL: %s", parsed.String())
+}
+
+func TestCodexPasteReplacesTheOpenedConversationDraft(t *testing.T) {
+	selectAll := strings.Index(codexNewConversationAndPasteScript, `keystroke "a" using command down`)
+	paste := strings.Index(codexNewConversationAndPasteScript, `keystroke "v" using command down`)
+	if selectAll < 0 || paste < 0 || selectAll >= paste {
+		t.Fatalf("expected draft selection before paste:\n%s", codexNewConversationAndPasteScript)
+	}
+	if strings.Contains(codexNewConversationAndPasteScript, `keystroke "n" using command down`) {
+		t.Fatalf("Codex app command already opens a new conversation:\n%s", codexNewConversationAndPasteScript)
 	}
 }
 

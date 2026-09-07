@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -171,16 +170,48 @@ func (a *App) OpenCodexWithPrompt(id, path string) error {
 	if !isDirectory(service.Directory) {
 		return fmt.Errorf("项目目录不存在：%s", service.Directory)
 	}
-	if err := a.CopyCodexPrompt(id, path); err != nil {
+	prompt, err := a.readCodexPrompt(id, path)
+	if err != nil {
 		return err
 	}
+	if err := runtime.ClipboardSetText(a.ctx, prompt); err != nil {
+		return fmt.Errorf("复制 Codex 启动提示词失败：%w", err)
+	}
 
-	codexURL := codexWorkspaceURL(service.Directory)
-	if output, err := exec.Command("/usr/bin/open", codexURL).CombinedOutput(); err != nil {
+	codexPath, err := codexExecutablePath()
+	if err != nil {
+		return err
+	}
+	if output, err := exec.Command(codexPath, codexAppArguments(service.Directory)...).CombinedOutput(); err != nil {
 		return fmt.Errorf("打开 Codex 失败：%s", commandError(output, err))
 	}
 
-	const pasteScript = `
+	if output, err := exec.Command("/usr/bin/osascript", "-e", codexNewConversationAndPasteScript).CombinedOutput(); err != nil {
+		return fmt.Errorf("Codex 已打开，提示词原文已复制；自动新建并粘贴需要在“系统设置 > 隐私与安全性 > 辅助功能”中允许 LAL：%s", commandError(output, err))
+	}
+	return nil
+}
+
+func codexExecutablePath() (string, error) {
+	for _, candidate := range []string{
+		"/Applications/ChatGPT.app/Contents/Resources/codex",
+		"/Applications/Codex.app/Contents/Resources/codex",
+	} {
+		if info, err := os.Stat(candidate); err == nil && !info.IsDir() {
+			return candidate, nil
+		}
+	}
+	if path, err := exec.LookPath("codex"); err == nil {
+		return path, nil
+	}
+	return "", fmt.Errorf("未找到 Codex 桌面端，请先安装或更新 Codex")
+}
+
+func codexAppArguments(directory string) []string {
+	return []string{"app", directory}
+}
+
+const codexNewConversationAndPasteScript = `
 tell application id "com.openai.codex" to activate
 tell application "System Events"
 	repeat 80 times
@@ -191,19 +222,11 @@ tell application "System Events"
 		end if
 		delay 0.1
 	end repeat
-	delay 0.7
+	delay 1
+	keystroke "a" using command down
+	delay 0.1
 	keystroke "v" using command down
 end tell`
-	if output, err := exec.Command("/usr/bin/osascript", "-e", pasteScript).CombinedOutput(); err != nil {
-		return fmt.Errorf("Codex 已打开，提示词已复制；自动粘贴需要在“系统设置 > 隐私与安全性 > 辅助功能”中允许 LAL：%s", commandError(output, err))
-	}
-	return nil
-}
-
-func codexWorkspaceURL(directory string) string {
-	query := url.Values{"cwd": []string{directory}}
-	return (&url.URL{Scheme: "codex", Host: "threads", Path: "/new", RawQuery: query.Encode()}).String()
-}
 
 func commandError(output []byte, err error) string {
 	message := strings.TrimSpace(string(output))
