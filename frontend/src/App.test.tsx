@@ -4,17 +4,22 @@ import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import App from './App';
 
 const api = vi.hoisted(() => ({
+    ChooseAndAddPrompt: vi.fn(),
     ChooseDirectory: vi.fn(),
     ClearNextCache: vi.fn(),
     ClearLogs: vi.fn(),
+    CopyCodexPrompt: vi.fn(),
     CreateService: vi.fn(),
     DeleteService: vi.fn(),
     DownloadLogs: vi.fn(),
     GetAppState: vi.fn(),
     GetLogs: vi.fn(),
+    GetPrompts: vi.fn(),
     GetResourceUsage: vi.fn(),
+    OpenCodexWithPrompt: vi.fn(),
     OpenServiceURL: vi.fn(),
     RevealService: vi.fn(),
+    RemovePromptFile: vi.fn(),
     RestartService: vi.fn(),
     StartAll: vi.fn(),
     StartServices: vi.fn(),
@@ -34,6 +39,8 @@ const alphaService = {
     directory: '/tmp/alpha',
     command: 'npm run dev',
     url: '',
+    cleanCommand: 'rm -rf .next',
+    promptFiles: [],
     status: 'stopped',
     pid: 0,
     startedAt: '',
@@ -42,6 +49,15 @@ const alphaService = {
     projectType: 'nextjs',
     health: '',
     healthInfo: '',
+};
+
+const startupPrompt = {
+    name: 'codex-startup.md',
+    path: '/tmp/alpha/prompts/codex-startup.md',
+    displayPath: 'prompts/codex-startup.md',
+    content: 'Start this Codex session',
+    source: 'project',
+    error: '',
 };
 
 describe('selected service actions', () => {
@@ -53,11 +69,16 @@ describe('selected service actions', () => {
             warning: '',
         });
         api.GetLogs.mockResolvedValue([]);
+        api.GetPrompts.mockResolvedValue([startupPrompt]);
         api.GetResourceUsage.mockResolvedValue([]);
         api.DownloadLogs.mockResolvedValue('/tmp/Alpha.log');
         api.StartServices.mockResolvedValue({changed: 1, skipped: 0, errors: []});
         api.RestartService.mockResolvedValue(undefined);
         api.ClearNextCache.mockResolvedValue(undefined);
+        api.ChooseAndAddPrompt.mockResolvedValue(true);
+        api.CopyCodexPrompt.mockResolvedValue(undefined);
+        api.OpenCodexWithPrompt.mockResolvedValue(undefined);
+        api.RemovePromptFile.mockResolvedValue(undefined);
     });
 
     afterEach(cleanup);
@@ -82,10 +103,115 @@ describe('selected service actions', () => {
         await waitFor(() => expect(api.GetAppState).toHaveBeenCalledTimes(2));
     });
 
+    it('keeps rendering when refresh returns no logs', async () => {
+        const user = userEvent.setup();
+        api.GetLogs.mockResolvedValueOnce([]).mockResolvedValueOnce(null);
+        render(<App/>);
+
+        await user.click(await screen.findByRole('button', {name: '刷新状态'}));
+
+        await waitFor(() => expect(api.GetLogs).toHaveBeenCalledTimes(2));
+        expect(screen.getByRole('img', {name: 'Alpha：Next.js'})).toBeDefined();
+        expect(screen.getByText('暂无日志')).toBeDefined();
+    });
+
     it('uses the detected project icon for a Next.js service', async () => {
         render(<App/>);
 
         expect(await screen.findByRole('img', {name: 'Alpha：Next.js'})).toBeDefined();
+    });
+
+    it('puts service search in the titlebar without the accessible count', async () => {
+        const {container} = render(<App/>);
+
+        await screen.findByRole('img', {name: 'Alpha：Next.js'});
+        expect(container.querySelector('header .search-field input')).not.toBeNull();
+        expect(screen.queryByText(/个可访问/)).toBeNull();
+    });
+
+    it('opens Prompt management from the service action menu', async () => {
+        const user = userEvent.setup();
+        render(<App/>);
+
+        await user.click(await screen.findByRole('button', {name: 'Alpha 更多操作'}));
+        await user.click(screen.getByRole('menuitem', {name: 'Prompt 启动'}));
+
+        expect(await screen.findByRole('region', {name: 'Alpha Prompt 管理'})).toBeDefined();
+        expect(screen.getByText('codex-startup.md')).toBeDefined();
+        expect(screen.queryByRole('button', {name: '复制 Alpha 的 Codex 启动提示词'})).toBeNull();
+    });
+
+    it('copies a Prompt from its card', async () => {
+        const user = userEvent.setup();
+        render(<App/>);
+
+        await user.click(await screen.findByRole('button', {name: 'Alpha 更多操作'}));
+        await user.click(screen.getByRole('menuitem', {name: 'Prompt 启动'}));
+        await user.click(await screen.findByRole('button', {name: '复制 codex-startup.md 内容'}));
+
+        await waitFor(() => expect(api.CopyCodexPrompt).toHaveBeenCalledWith('alpha', startupPrompt.path));
+    });
+
+    it('opens a Codex chat with the Prompt from its card', async () => {
+        const user = userEvent.setup();
+        render(<App/>);
+
+        await user.click(await screen.findByRole('button', {name: 'Alpha 更多操作'}));
+        await user.click(screen.getByRole('menuitem', {name: 'Prompt 启动'}));
+        await user.click(await screen.findByRole('button', {name: '使用 codex-startup.md 一键启动'}));
+
+        await waitFor(() => expect(api.OpenCodexWithPrompt).toHaveBeenCalledWith('alpha', startupPrompt.path));
+    });
+
+    it('adds a Prompt and reloads the cards', async () => {
+        const user = userEvent.setup();
+        render(<App/>);
+
+        await user.click(await screen.findByRole('button', {name: 'Alpha 更多操作'}));
+        await user.click(screen.getByRole('menuitem', {name: 'Prompt 启动'}));
+        await user.click(await screen.findByRole('button', {name: '添加 Prompt'}));
+
+        await waitFor(() => expect(api.ChooseAndAddPrompt).toHaveBeenCalledWith('alpha'));
+        await waitFor(() => expect(api.GetPrompts).toHaveBeenCalledTimes(2));
+    });
+
+    it('synchronizes changed Prompt content on demand', async () => {
+        const user = userEvent.setup();
+        api.GetPrompts
+            .mockResolvedValueOnce([startupPrompt])
+            .mockResolvedValueOnce([{...startupPrompt, content: 'Updated session prompt'}]);
+        render(<App/>);
+
+        await user.click(await screen.findByRole('button', {name: 'Alpha 更多操作'}));
+        await user.click(screen.getByRole('menuitem', {name: 'Prompt 启动'}));
+        expect(await screen.findByText('Start this Codex session')).toBeDefined();
+        await user.click(screen.getByRole('button', {name: '同步 Prompt'}));
+
+        expect(await screen.findByText('Updated session prompt')).toBeDefined();
+    });
+
+    it('returns to logs from Prompt management', async () => {
+        const user = userEvent.setup();
+        render(<App/>);
+
+        await user.click(await screen.findByRole('button', {name: 'Alpha 更多操作'}));
+        await user.click(screen.getByRole('menuitem', {name: 'Prompt 启动'}));
+        await user.click(await screen.findByRole('button', {name: '返回日志'}));
+
+        expect(screen.getByRole('region', {name: '服务日志'})).toBeDefined();
+    });
+
+    it('removes an externally added Prompt association', async () => {
+        const user = userEvent.setup();
+        const addedPrompt = {...startupPrompt, source: 'added', path: '/tmp/shared.md', displayPath: '/tmp/shared.md'};
+        api.GetPrompts.mockResolvedValueOnce([addedPrompt]).mockResolvedValueOnce([]);
+        render(<App/>);
+
+        await user.click(await screen.findByRole('button', {name: 'Alpha 更多操作'}));
+        await user.click(screen.getByRole('menuitem', {name: 'Prompt 启动'}));
+        await user.click(await screen.findByRole('button', {name: '移除 codex-startup.md 关联'}));
+
+        await waitFor(() => expect(api.RemovePromptFile).toHaveBeenCalledWith('alpha', addedPrompt.path));
     });
 
     it('renders sampled CPU, memory, and process count', async () => {

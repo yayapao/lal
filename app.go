@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -126,4 +127,88 @@ func (a *App) OpenServiceURL(id string) error {
 	}
 	runtime.BrowserOpenURL(a.ctx, service.URL)
 	return nil
+}
+
+func (a *App) ChooseAndAddPrompt(id string) (bool, error) {
+	service, err := a.serviceByID(id)
+	if err != nil {
+		return false, err
+	}
+	defaultDirectory := filepath.Join(service.Directory, defaultPromptsDir)
+	if !isDirectory(defaultDirectory) {
+		defaultDirectory = service.Directory
+	}
+	path, err := runtime.OpenFileDialog(a.ctx, runtime.OpenDialogOptions{
+		Title:            "添加 Prompt 文件",
+		DefaultDirectory: defaultDirectory,
+		Filters:          []runtime.FileFilter{{DisplayName: "文本文件", Pattern: "*.md;*.markdown;*.txt;*.prompt"}},
+	})
+	if err != nil || path == "" {
+		return false, err
+	}
+	if err := a.AddPromptFile(id, path); err != nil {
+		return false, err
+	}
+	return true, nil
+}
+
+func (a *App) CopyCodexPrompt(id, path string) error {
+	prompt, err := a.readCodexPrompt(id, path)
+	if err != nil {
+		return err
+	}
+	if err := runtime.ClipboardSetText(a.ctx, prompt); err != nil {
+		return fmt.Errorf("复制 Codex 启动提示词失败：%w", err)
+	}
+	return nil
+}
+
+func (a *App) OpenCodexWithPrompt(id, path string) error {
+	service, err := a.serviceByID(id)
+	if err != nil {
+		return err
+	}
+	if !isDirectory(service.Directory) {
+		return fmt.Errorf("项目目录不存在：%s", service.Directory)
+	}
+	if err := a.CopyCodexPrompt(id, path); err != nil {
+		return err
+	}
+
+	codexURL := codexWorkspaceURL(service.Directory)
+	if output, err := exec.Command("/usr/bin/open", codexURL).CombinedOutput(); err != nil {
+		return fmt.Errorf("打开 Codex 失败：%s", commandError(output, err))
+	}
+
+	const pasteScript = `
+tell application id "com.openai.codex" to activate
+tell application "System Events"
+	repeat 80 times
+		if exists (first application process whose bundle identifier is "com.openai.codex") then
+			tell first application process whose bundle identifier is "com.openai.codex"
+				if frontmost and (count of windows) > 0 then exit repeat
+			end tell
+		end if
+		delay 0.1
+	end repeat
+	delay 0.7
+	keystroke "v" using command down
+end tell`
+	if output, err := exec.Command("/usr/bin/osascript", "-e", pasteScript).CombinedOutput(); err != nil {
+		return fmt.Errorf("Codex 已打开，提示词已复制；自动粘贴需要在“系统设置 > 隐私与安全性 > 辅助功能”中允许 LAL：%s", commandError(output, err))
+	}
+	return nil
+}
+
+func codexWorkspaceURL(directory string) string {
+	query := url.Values{"cwd": []string{directory}}
+	return (&url.URL{Scheme: "codex", Host: "threads", Path: "/new", RawQuery: query.Encode()}).String()
+}
+
+func commandError(output []byte, err error) string {
+	message := strings.TrimSpace(string(output))
+	if message != "" {
+		return message
+	}
+	return err.Error()
 }

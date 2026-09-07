@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -15,6 +16,12 @@ import (
 func TestServiceConfigLifecycle(t *testing.T) {
 	configPath := emptyConfig(t)
 	projectDir := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(projectDir, defaultPromptsDir), 0o755); err != nil {
+		t.Fatalf("create prompt directory: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(projectDir, defaultPromptsDir, "codex-startup.md"), []byte("Start this session"), 0o600); err != nil {
+		t.Fatalf("write prompt: %v", err)
+	}
 	app := newAppWithConfigPath(configPath)
 	if _, err := app.CreateService(ServiceInput{Name: "Invalid", Directory: " ", Command: "npm run dev"}); err == nil {
 		t.Fatal("expected an empty directory to fail")
@@ -32,7 +39,7 @@ func TestServiceConfigLifecycle(t *testing.T) {
 	if err != nil {
 		t.Fatalf("create service: %v", err)
 	}
-	if created.ID == "" || created.Name != "API" || !created.PathExists || created.URL != "http://localhost:4321" || created.CleanCommand != defaultCleanCommand {
+	if created.ID == "" || created.Name != "API" || !created.PathExists || created.URL != "http://localhost:4321" || created.CleanCommand != defaultCleanCommand || len(created.PromptFiles) != 0 {
 		t.Fatalf("unexpected created service: %#v", created)
 	}
 
@@ -97,6 +104,96 @@ func TestVersionOneConfigMigratesKnownServiceURLs(t *testing.T) {
 	}
 	if updated.Version != configVersion {
 		t.Fatalf("config version = %d, want %d", updated.Version, configVersion)
+	}
+}
+
+func TestPromptsDiscoverProjectFilesAndManageAddedFiles(t *testing.T) {
+	projectDir := t.TempDir()
+	projectPrompt := filepath.Join(projectDir, defaultPromptsDir, "startup.md")
+	if err := os.MkdirAll(filepath.Dir(projectPrompt), 0o755); err != nil {
+		t.Fatalf("create prompt directory: %v", err)
+	}
+	if err := os.WriteFile(projectPrompt, []byte("project prompt\n"), 0o600); err != nil {
+		t.Fatalf("write project prompt: %v", err)
+	}
+	app := newAppWithConfigPath(emptyConfig(t))
+	service, err := app.CreateService(ServiceInput{
+		Name:      "Prompted",
+		Directory: projectDir,
+		Command:   "npm run dev",
+	})
+	if err != nil {
+		t.Fatalf("create service: %v", err)
+	}
+	prompts, err := app.GetPrompts(service.ID)
+	if err != nil || len(prompts) != 1 || prompts[0].Path != projectPrompt || prompts[0].DisplayPath != "prompts/startup.md" || prompts[0].Content != "project prompt\n" || prompts[0].Source != "project" {
+		t.Fatalf("unexpected discovered prompts: %#v, %v", prompts, err)
+	}
+	prompt, err := app.readCodexPrompt(service.ID, projectPrompt)
+	if err != nil || prompt != "project prompt\n" {
+		t.Fatalf("read project prompt = %q, %v", prompt, err)
+	}
+	if err := os.WriteFile(projectPrompt, []byte("updated project prompt\n"), 0o600); err != nil {
+		t.Fatalf("update project prompt: %v", err)
+	}
+	prompt, err = app.readCodexPrompt(service.ID, projectPrompt)
+	if err != nil || prompt != "updated project prompt\n" {
+		t.Fatalf("read updated project prompt = %q, %v", prompt, err)
+	}
+
+	addedPrompt := filepath.Join(t.TempDir(), "shared.md")
+	if err := os.WriteFile(addedPrompt, []byte("shared prompt"), 0o600); err != nil {
+		t.Fatalf("write added prompt: %v", err)
+	}
+	if err := app.AddPromptFile(service.ID, addedPrompt); err != nil {
+		t.Fatalf("add prompt: %v", err)
+	}
+	prompts, err = app.GetPrompts(service.ID)
+	if err != nil || len(prompts) != 2 || prompts[1].Path != addedPrompt || prompts[1].Source != "added" {
+		t.Fatalf("unexpected prompts after add: %#v, %v", prompts, err)
+	}
+	if err := app.RemovePromptFile(service.ID, addedPrompt); err != nil {
+		t.Fatalf("remove prompt association: %v", err)
+	}
+	if _, err := os.Stat(addedPrompt); err != nil {
+		t.Fatalf("removing association deleted source file: %v", err)
+	}
+	if prompts, err = newAppWithConfigPath(app.configPath).GetPrompts(service.ID); err != nil || len(prompts) != 1 {
+		t.Fatalf("prompt association was not removed: %#v, %v", prompts, err)
+	}
+	if err := app.RemovePromptFile(service.ID, projectPrompt); err == nil {
+		t.Fatal("expected project prompt removal to fail")
+	}
+}
+
+func TestLegacySinglePromptPathMigratesToAddedPrompt(t *testing.T) {
+	configPath := filepath.Join(t.TempDir(), "config.json")
+	projectDir := t.TempDir()
+	legacy := configFile{Version: 4, Services: []Service{{
+		ID: "legacy", Name: "Legacy", Directory: projectDir, Command: "npm run dev", CleanCommand: defaultCleanCommand, PromptFile: "docs/session.md",
+	}}}
+	data, err := json.Marshal(legacy)
+	if err != nil {
+		t.Fatalf("marshal legacy config: %v", err)
+	}
+	if err := os.WriteFile(configPath, data, 0o600); err != nil {
+		t.Fatalf("write legacy config: %v", err)
+	}
+
+	service := newAppWithConfigPath(configPath).GetAppState().Services[0]
+	if service.PromptFile != "" || len(service.PromptFiles) != 1 || service.PromptFiles[0] != "docs/session.md" {
+		t.Fatalf("legacy prompt was not migrated: %#v", service)
+	}
+}
+
+func TestCodexWorkspaceURLPreservesDirectory(t *testing.T) {
+	workspace := "/tmp/My Project"
+	parsed, err := url.Parse(codexWorkspaceURL(workspace))
+	if err != nil {
+		t.Fatalf("parse Codex URL: %v", err)
+	}
+	if parsed.Scheme != "codex" || parsed.Host != "threads" || parsed.Path != "/new" || parsed.Query().Get("cwd") != workspace {
+		t.Fatalf("unexpected Codex URL: %s", parsed.String())
 	}
 }
 

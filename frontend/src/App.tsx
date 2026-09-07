@@ -1,15 +1,19 @@
 import {
     Activity,
+    ArrowLeft,
     Atom,
     Box,
     CircleAlert,
     Code2,
+    Copy,
     Download,
     Ellipsis,
     ExternalLink,
+    FileText,
     FolderOpen,
     LoaderCircle,
     ListEnd,
+    MessageSquarePlus,
     Pencil,
     Play,
     Plus,
@@ -19,6 +23,7 @@ import {
     Square,
     TerminalSquare,
     Trash2,
+    Unlink,
     X,
     Zap,
 } from 'lucide-react';
@@ -26,17 +31,22 @@ import {FormEvent, KeyboardEvent, useCallback, useEffect, useLayoutEffect, useMe
 import './App.css';
 import LogLine, {groupLogEntries} from './LogLine';
 import {
+    ChooseAndAddPrompt,
     ChooseDirectory,
     ClearNextCache,
     ClearLogs,
+    CopyCodexPrompt,
     CreateService,
     DeleteService,
     DownloadLogs,
     GetAppState,
     GetLogs,
+    GetPrompts,
     GetResourceUsage,
+    OpenCodexWithPrompt,
     OpenServiceURL,
     RevealService,
+    RemovePromptFile,
     RestartService,
     StartAll,
     StartServices,
@@ -52,6 +62,7 @@ import {EventsOn} from '../wailsjs/runtime/runtime';
 type ServiceView = main.ServiceView;
 type LogEntry = main.LogEntry;
 type ResourceUsage = main.ResourceUsage;
+type PromptFileView = main.PromptFileView;
 type DialogState = {mode: 'create'} | {mode: 'edit'; service: ServiceView};
 type ServiceForm = {name: string; directory: string; command: string; url: string; cleanCommand: string};
 type ToastState = {kind: 'success' | 'error'; message: string};
@@ -80,6 +91,13 @@ function App() {
     const [refreshing, setRefreshing] = useState(false);
     const [cacheTarget, setCacheTarget] = useState<ServiceView | null>(null);
     const [cacheBusyId, setCacheBusyId] = useState('');
+    const [rightView, setRightView] = useState<'logs' | 'prompts'>('logs');
+    const [prompts, setPrompts] = useState<PromptFileView[]>([]);
+    const [promptLoading, setPromptLoading] = useState(false);
+    const [promptSyncing, setPromptSyncing] = useState(false);
+    const [promptError, setPromptError] = useState('');
+    const [addingPrompt, setAddingPrompt] = useState(false);
+    const [promptBusy, setPromptBusy] = useState<{path: string; action: 'copy' | 'open' | 'remove'} | null>(null);
     const [operationIssue, setOperationIssue] = useState<OperationIssue | null>(null);
     const [toast, setToast] = useState<ToastState | null>(null);
     const [, setClock] = useState(0);
@@ -138,6 +156,24 @@ function App() {
             .catch(error => showToast(errorMessage(error), 'error'));
         return () => { current = false; };
     }, [selectedId, showToast]);
+
+    const loadPrompts = useCallback(async (serviceId: string) => {
+        setPromptLoading(true);
+        setPromptError('');
+        try {
+            setPrompts(await GetPrompts(serviceId) ?? []);
+        } catch (error) {
+            setPrompts([]);
+            setPromptError(errorMessage(error));
+        } finally {
+            setPromptLoading(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        if (rightView !== 'prompts' || !selectedId) return;
+        void loadPrompts(selectedId);
+    }, [loadPrompts, rightView, selectedId]);
 
     useEffect(() => {
         const timer = window.setInterval(() => setClock(value => value + 1), 1000);
@@ -287,7 +323,7 @@ function App() {
     const openMenu = (event: React.MouseEvent<HTMLButtonElement>, service: ServiceView) => {
         event.stopPropagation();
         const rect = event.currentTarget.getBoundingClientRect();
-        const width = 196, height = 204;
+        const width = 196, height = 240;
         setMenu({
             service,
             left: Math.min(rect.right - width, window.innerWidth - width - 12),
@@ -307,11 +343,84 @@ function App() {
         catch (error) { showToast(errorMessage(error), 'error'); }
     };
 
+    const openPromptManager = (service: ServiceView) => {
+        setMenu(null);
+        setPrompts([]);
+        setPromptError('');
+        setPromptLoading(true);
+        setSelectedId(service.id);
+        setRightView('prompts');
+    };
+
+    const copyCodexPrompt = async (service: ServiceView, prompt: PromptFileView) => {
+        setPromptBusy({path: prompt.path, action: 'copy'});
+        try {
+            await CopyCodexPrompt(service.id, prompt.path);
+            showToast(`${prompt.name} 已复制`);
+        } catch (error) {
+            showToast(errorMessage(error), 'error');
+        } finally {
+            setPromptBusy(null);
+        }
+    };
+
+    const openCodexWithPrompt = async (service: ServiceView, prompt: PromptFileView) => {
+        setPromptBusy({path: prompt.path, action: 'open'});
+        try {
+            await OpenCodexWithPrompt(service.id, prompt.path);
+            showToast(`已用 ${prompt.name} 打开 Codex`);
+        } catch (error) {
+            showToast(errorMessage(error), 'error');
+        } finally {
+            setPromptBusy(null);
+        }
+    };
+
+    const addPrompt = async (service: ServiceView) => {
+        setAddingPrompt(true);
+        try {
+            if (await ChooseAndAddPrompt(service.id)) {
+                await loadPrompts(service.id);
+                showToast('Prompt 已添加');
+            }
+        } catch (error) {
+            showToast(errorMessage(error), 'error');
+        } finally {
+            setAddingPrompt(false);
+        }
+    };
+
+    const syncPrompts = async (service: ServiceView) => {
+        setPromptSyncing(true);
+        try {
+            setPrompts(await GetPrompts(service.id) ?? []);
+            setPromptError('');
+            showToast('Prompt 已同步');
+        } catch (error) {
+            showToast(errorMessage(error), 'error');
+        } finally {
+            setPromptSyncing(false);
+        }
+    };
+
+    const removePrompt = async (service: ServiceView, prompt: PromptFileView) => {
+        setPromptBusy({path: prompt.path, action: 'remove'});
+        try {
+            await RemovePromptFile(service.id, prompt.path);
+            await loadPrompts(service.id);
+            showToast(`${prompt.name} 的关联已移除`);
+        } catch (error) {
+            showToast(errorMessage(error), 'error');
+        } finally {
+            setPromptBusy(null);
+        }
+    };
+
     const refreshAppState = async () => {
         setRefreshing(true);
         try {
             await refreshState();
-            if (selectedId) setLogs(await GetLogs(selectedId));
+            if (selectedId) setLogs((await GetLogs(selectedId)) ?? []);
             showToast('状态已刷新');
         } catch (error) {
             showToast(errorMessage(error), 'error');
@@ -381,7 +490,11 @@ function App() {
     return (
         <div className="app-shell">
             <header className="titlebar">
-                <div className="titlebar-status"><span className={readyCount > 0 ? 'live-pulse is-active' : 'live-pulse'}/>{readyCount} 个可访问</div>
+                <label className="search-field titlebar-search">
+                    <Search size={16}/>
+                    <input value={query} onChange={event => setQuery(event.target.value)} placeholder="搜索服务" aria-label="搜索服务"/>
+                    {query && <button type="button" onClick={() => setQuery('')} aria-label="清除搜索" title="清除搜索"><X size={14}/></button>}
+                </label>
             </header>
 
             <div className="toolbar">
@@ -390,11 +503,6 @@ function App() {
                     <span className="summary-separator"/><span><strong>{runningCount}</strong> RUNNING</span>
                     <span className="summary-separator"/><span><strong>{readyCount}</strong> READY</span>
                 </div>
-                <label className="search-field">
-                    <Search size={16}/>
-                    <input value={query} onChange={event => setQuery(event.target.value)} placeholder="搜索服务" aria-label="搜索服务"/>
-                    {query && <button type="button" onClick={() => setQuery('')} aria-label="清除搜索" title="清除搜索"><X size={14}/></button>}
-                </label>
                 <div className="toolbar-actions">
                     <button className={refreshing ? 'icon-button subtle is-pressed' : 'icon-button subtle'} type="button" onClick={() => void refreshAppState()}
                         aria-label="刷新状态" title="刷新状态" disabled={refreshing || batchBusy !== null}>{refreshing ? <RefreshCw className="spin" size={16}/> : <RefreshCw size={16}/>}</button>
@@ -444,14 +552,23 @@ function App() {
                             <ServiceRow key={service.id} service={service} selected={service.id === selectedId} checked={checkedIds.has(service.id)}
                                 usage={resourceUsage[service.id]}
                                 busy={busyIds.has(service.id) || batchBusy?.startsWith('all') === true || (batchBusy?.startsWith('selected') === true && checkedIds.has(service.id))}
-                                onSelect={() => setSelectedId(service.id)} onToggle={() => void toggleService(service)}
+                                onSelect={() => { setSelectedId(service.id); setRightView('logs'); }} onToggle={() => void toggleService(service)}
                                 onCheck={() => toggleChecked(service.id)} selectionDisabled={batchBusy !== null}
                                 onOpenURL={() => void openServiceURL(service)} onMenu={event => openMenu(event, service)}/>
                         ))}
                     </div>
                 </section>
 
-                <section className="logs-pane" aria-label="服务日志">
+                {rightView === 'prompts' && selectedService ? (
+                    <PromptManager service={selectedService} prompts={prompts} loading={promptLoading} error={promptError}
+                        adding={addingPrompt} syncing={promptSyncing} busy={promptBusy}
+                        onAdd={() => void addPrompt(selectedService)} onRetry={() => void loadPrompts(selectedService.id)}
+                        onSync={() => void syncPrompts(selectedService)}
+                        onCopy={prompt => void copyCodexPrompt(selectedService, prompt)}
+                        onOpen={prompt => void openCodexWithPrompt(selectedService, prompt)}
+                        onRemove={prompt => void removePrompt(selectedService, prompt)}
+                        onBack={() => setRightView('logs')}/>
+                ) : <section className="logs-pane" aria-label="服务日志">
                     <div className="log-heading">
                         <div className="log-title"><TerminalSquare size={17}/><span>{selectedService?.name ?? '日志'}</span>{selectedService && <StatusLabel service={selectedService} compact/>}</div>
                         <div className="log-actions">
@@ -474,12 +591,13 @@ function App() {
                                 ))}</div>}
                     </div>
                     {selectedService && <div className="console-footer"><span>{selectedService.directory}</span><span>{logs.length} 行</span></div>}
-                </section>
+                </section>}
             </main>
 
             {menu && <>
                 <button className="menu-scrim" type="button" onClick={() => setMenu(null)} aria-label="关闭菜单"/>
                 <div className="context-menu" role="menu" style={{left: menu.left, top: menu.top}}>
+                    <button type="button" role="menuitem" onClick={() => openPromptManager(menu.service)} disabled={!menu.service.pathExists}><MessageSquarePlus size={15}/>Prompt 启动</button>
                     <button type="button" role="menuitem" onClick={() => { setDialog({mode: 'edit', service: menu.service}); setMenu(null); }} disabled={isActive(menu.service)}><Pencil size={15}/>编辑配置</button>
                     <button type="button" role="menuitem" onClick={() => void restartService(menu.service)} disabled={menu.service.status === 'starting' || menu.service.status === 'stopping' || !menu.service.pathExists}><RefreshCw size={15}/>重启服务</button>
                     <button type="button" role="menuitem" onClick={() => { setCacheTarget(menu.service); setMenu(null); }} disabled={cacheBusyId !== '' || menu.service.status === 'starting' || menu.service.status === 'stopping' || !menu.service.pathExists}><Trash2 size={15}/>执行缓存清理</button>
@@ -524,6 +642,75 @@ function App() {
             {toast && <div className={`toast ${toast.kind}`} role="status">{toast.kind === 'error' ? <CircleAlert size={17}/> : <span className="toast-dot"/>}<span>{toast.message}</span></div>}
         </div>
     );
+}
+
+function PromptManager({service, prompts, loading, error, adding, syncing, busy, onAdd, onRetry, onSync, onCopy, onOpen, onRemove, onBack}: {
+    service: ServiceView;
+    prompts: PromptFileView[];
+    loading: boolean;
+    error: string;
+    adding: boolean;
+    syncing: boolean;
+    busy: {path: string; action: 'copy' | 'open' | 'remove'} | null;
+    onAdd: () => void;
+    onRetry: () => void;
+    onSync: () => void;
+    onCopy: (prompt: PromptFileView) => void;
+    onOpen: (prompt: PromptFileView) => void;
+    onRemove: (prompt: PromptFileView) => void;
+    onBack: () => void;
+}) {
+    return <section className="prompt-pane" aria-label={`${service.name} Prompt 管理`}>
+        <div className="prompt-heading">
+            <div className="prompt-title"><MessageSquarePlus size={17}/><span>{service.name}</span><span className="prompt-count">{prompts.length} PROMPTS</span></div>
+            <div className="prompt-heading-actions">
+                <button className="icon-button subtle" type="button" onClick={onSync} disabled={loading || syncing || adding || busy !== null}
+                    aria-label="同步 Prompt" title="同步 Prompt">{syncing ? <RefreshCw className="spin" size={16}/> : <RefreshCw size={16}/>}</button>
+                <button className="button secondary prompt-add-button" type="button" onClick={onAdd} disabled={adding}>
+                    {adding ? <LoaderCircle className="spin" size={15}/> : <Plus size={15}/>}添加 Prompt
+                </button>
+                <button className="icon-button subtle" type="button" onClick={onBack} aria-label="返回日志" title="返回日志"><ArrowLeft size={17}/></button>
+            </div>
+        </div>
+        <div className="prompt-viewport">
+            {loading ? <div className="prompt-skeleton" aria-label="正在载入 Prompt">
+                {[0, 1].map(item => <div className="prompt-skeleton-card" key={item}><span/><span/><span/></div>)}
+            </div> : error ? <div className="prompt-state is-error">
+                <CircleAlert size={24}/><span>{error}</span>
+                <button className="text-button" type="button" onClick={onRetry}>重新载入</button>
+            </div> : prompts.length === 0 ? <div className="prompt-state">
+                <FileText size={25}/><span>prompts/ 中暂无 Prompt</span>
+                <button className="text-button" type="button" onClick={onAdd} disabled={adding}>添加 Prompt</button>
+            </div> : <div className="prompt-grid">{prompts.map(prompt => {
+                const currentAction = busy?.path === prompt.path ? busy.action : null;
+                return <article className={`prompt-card${prompt.error ? ' has-error' : ''}`} key={prompt.path}>
+                    <header className="prompt-card-header">
+                        <span className="prompt-file-icon"><FileText size={16}/></span>
+                        <div className="prompt-card-name"><h3>{prompt.name}</h3><span title={prompt.path}>{prompt.displayPath}</span></div>
+                        <span className="prompt-source">{prompt.source === 'project' ? '项目目录' : '外部关联'}</span>
+                    </header>
+                    {prompt.error ? <div className="prompt-card-error"><CircleAlert size={14}/><span>{prompt.error}</span></div>
+                        : <pre className="prompt-preview">{prompt.content}</pre>}
+                    <footer className="prompt-card-actions">
+                        {prompt.source === 'added' && <button className="icon-button subtle" type="button" onClick={() => onRemove(prompt)}
+                            disabled={busy !== null} aria-label={`移除 ${prompt.name} 关联`} title="移除关联">
+                            {currentAction === 'remove' ? <LoaderCircle className="spin" size={15}/> : <Unlink size={15}/>}
+                        </button>}
+                        <span/>
+                        <button className="icon-button subtle" type="button" onClick={() => onCopy(prompt)} disabled={busy !== null || Boolean(prompt.error)}
+                            aria-label={`复制 ${prompt.name} 内容`} title="复制内容">
+                            {currentAction === 'copy' ? <LoaderCircle className="spin" size={15}/> : <Copy size={15}/>}
+                        </button>
+                        <button className="button primary prompt-launch-button" type="button" onClick={() => onOpen(prompt)} disabled={busy !== null || Boolean(prompt.error)}
+                            aria-label={`使用 ${prompt.name} 一键启动`}>
+                            {currentAction === 'open' ? <LoaderCircle className="spin" size={15}/> : <MessageSquarePlus size={15}/>}一键启动
+                        </button>
+                    </footer>
+                </article>;
+            })}</div>}
+        </div>
+        <div className="prompt-footer"><span>{service.directory}/prompts</span><span>{prompts.length} 项</span></div>
+    </section>;
 }
 
 function ServiceRow({service, usage, selected, checked, busy, selectionDisabled, onSelect, onCheck, onToggle, onOpenURL, onMenu}: {

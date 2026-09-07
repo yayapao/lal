@@ -11,6 +11,7 @@ LAL（Local App Launcher）是一个基于 Wails v2 的 macOS 本地开发服务
 - 服务的添加、编辑、删除和搜索
 - 单个服务一键启动、停止
 - 服务状态手动刷新、重启，以及执行可自定义的缓存清理脚本后自动重启
+- 按服务读取 Codex 启动提示词，支持一键复制或在对应项目中新建 Codex 对话并粘贴
 - 根据项目内容自动识别并显示 Next.js、Vite、React、Vue、Go 等项目图标
 - 多选服务后批量启动、停止
 - 全部启动、全部停止
@@ -36,9 +37,11 @@ LAL（Local App Launcher）是一个基于 Wails v2 的 macOS 本地开发服务
 | myStock | `/Users/yango/github/stock/mystock` | `npm run dev` | `http://localhost:35790` |
 | ViewAI | `/Users/yango/Documents/huyaprojects/ai/viewai` | `npm run dev` | `http://localhost:3900` |
 
-之后的配置保存在 `~/Library/Application Support/LAL/config.json`，不会写入各项目目录。旧版 v1/v2 配置会自动迁移到当前版本，并为上述两个已知服务补充默认访问地址和默认缓存清理脚本。
+之后的配置保存在 `~/Library/Application Support/LAL/config.json`，不会写入各项目目录。旧版 v1/v2/v3 配置会自动迁移到当前版本；上述两个已知服务还会补充默认访问地址。同版本早期使用的单 Prompt 路径字段也会兼容转换。
 
 每个服务都有独立的缓存清理脚本，默认是 `rm -rf .next`。可以在编辑服务时改成项目实际需要的命令，例如 `rm -rf .next dist/.cache .turbo` 或项目内的清理脚本路径；命令会在该服务的项目目录中执行。
+
+服务的省略号菜单提供“Prompt 启动”入口。LAL 会自动读取项目 `prompts/` 目录中的 `.md`、`.markdown`、`.txt` 和 `.prompt` 文件，也可以在 Prompt 管理界面关联其他位置的文件；移除关联不会删除原文件。本地文件修改后，可以通过“同步 Prompt”刷新卡片内容。每张 Prompt 卡片支持复制内容，或在对应项目中新建 Codex 对话并粘贴内容，但不会自动发送；这两个操作都会在点击时重新读取文件。首次使用自动粘贴时，macOS 可能要求在“系统设置 > 隐私与安全性 > 辅助功能”中允许 LAL；未授权时内容仍会保留在剪贴板。
 
 ## 状态说明
 

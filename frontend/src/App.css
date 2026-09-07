@@ -42,16 +42,6 @@
     user-select: none;
 }
 
-.titlebar-status {
-    display: flex;
-    align-items: center;
-    gap: 7px;
-    margin-left: auto;
-    color: var(--muted);
-    font-size: 11px;
-}
-
-.live-pulse,
 .status-dot,
 .toast-dot {
     display: inline-block;
@@ -62,7 +52,6 @@
     background: var(--faint);
 }
 
-.live-pulse.is-active,
 .toast-dot {
     background: var(--green);
 }
@@ -114,6 +103,15 @@
     color: var(--faint);
     background: #0e1113;
     transition: border-color 120ms ease, background-color 120ms ease;
+}
+
+.titlebar-search {
+    --wails-draggable: no-drag;
+    width: min(320px, 34vw);
+    height: 30px;
+    margin-left: auto;
+    background: #0b0e10;
+    user-select: auto;
 }
 
 .search-field:focus-within {
@@ -252,7 +250,8 @@
 }
 
 .services-pane,
-.logs-pane {
+.logs-pane,
+.prompt-pane {
     display: grid;
     min-width: 0;
     min-height: 0;
@@ -265,7 +264,8 @@
 }
 
 .pane-heading,
-.log-heading {
+.log-heading,
+.prompt-heading {
     display: flex;
     align-items: center;
     border-bottom: 1px solid var(--line);
@@ -698,7 +698,13 @@
     background: var(--console);
 }
 
-.log-heading {
+.prompt-pane {
+    grid-template-rows: 40px minmax(0, 1fr) 26px;
+    background: var(--console);
+}
+
+.log-heading,
+.prompt-heading {
     justify-content: space-between;
     padding: 0 9px 0 15px;
     color: #dfe5e7;
@@ -706,7 +712,9 @@
 }
 
 .log-title,
-.log-actions {
+.log-actions,
+.prompt-title,
+.prompt-heading-actions {
     display: flex;
     align-items: center;
     min-width: 0;
@@ -717,6 +725,227 @@
     font-size: 11px;
     font-weight: 650;
 }
+
+.prompt-title {
+    flex: 1 1 auto;
+    gap: 7px;
+    font-size: 11px;
+    font-weight: 650;
+}
+
+.prompt-title > span:first-of-type {
+    max-width: 150px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.prompt-count {
+    color: var(--faint);
+    font-family: var(--mono);
+    font-size: 8px;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+.prompt-heading-actions {
+    flex: 0 0 auto;
+    gap: 5px;
+}
+
+.prompt-add-button {
+    height: 28px;
+    padding: 0 9px;
+}
+
+.prompt-viewport {
+    min-height: 0;
+    padding: 14px;
+    overflow-y: auto;
+}
+
+.prompt-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    align-items: start;
+    gap: 12px;
+}
+
+.prompt-card {
+    display: grid;
+    grid-template-rows: auto minmax(112px, 1fr) auto;
+    min-width: 0;
+    min-height: 220px;
+    overflow: hidden;
+    border: 1px solid var(--line-strong);
+    border-radius: 6px;
+    background: #111619;
+}
+
+.prompt-card:hover { border-color: #465158; }
+.prompt-card.has-error { border-color: #624345; }
+
+.prompt-card-header {
+    display: grid;
+    grid-template-columns: 30px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+    padding: 10px 10px 9px;
+    border-bottom: 1px solid var(--line);
+}
+
+.prompt-file-icon {
+    display: grid;
+    place-items: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 5px;
+    color: var(--accent);
+    background: var(--accent-soft);
+}
+
+.prompt-card-name { min-width: 0; }
+
+.prompt-card-name h3 {
+    margin: 0;
+    overflow: hidden;
+    color: var(--text);
+    font-size: 11px;
+    font-weight: 680;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.prompt-card-name span {
+    display: block;
+    margin-top: 3px;
+    overflow: hidden;
+    color: var(--faint);
+    font-family: var(--mono);
+    font-size: 8px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.prompt-source {
+    padding: 3px 5px;
+    border: 1px solid var(--line-strong);
+    border-radius: 3px;
+    color: var(--muted);
+    font-size: 8px;
+    white-space: nowrap;
+}
+
+.prompt-preview {
+    max-height: 220px;
+    margin: 0;
+    padding: 12px;
+    overflow: auto;
+    color: #b8c2c6;
+    background: #0d1113;
+    font-family: var(--mono);
+    font-size: 9px;
+    line-height: 1.65;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
+.prompt-card-error {
+    display: flex;
+    align-items: flex-start;
+    gap: 7px;
+    padding: 12px;
+    color: var(--red);
+    font-size: 10px;
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+}
+
+.prompt-card-error svg { flex: 0 0 auto; margin-top: 1px; }
+
+.prompt-card-actions {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    min-height: 43px;
+    padding: 6px 8px;
+    border-top: 1px solid var(--line);
+}
+
+.prompt-card-actions > span { flex: 1 1 auto; }
+.prompt-card-actions .icon-button { width: 30px; height: 30px; flex-basis: 30px; }
+
+.prompt-launch-button {
+    height: 30px;
+    padding: 0 9px;
+}
+
+.prompt-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    min-height: 260px;
+    color: var(--faint);
+    font-size: 11px;
+    text-align: center;
+}
+
+.prompt-state.is-error { color: var(--red); }
+.prompt-state span { max-width: 340px; overflow-wrap: anywhere; }
+
+.prompt-skeleton {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 12px;
+}
+
+.prompt-skeleton-card {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-height: 220px;
+    padding: 14px;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    background: #111619;
+}
+
+.prompt-skeleton-card span {
+    display: block;
+    height: 8px;
+    border-radius: 2px;
+    background: #242a2e;
+}
+
+.prompt-skeleton-card span:nth-child(1) { width: 45%; }
+.prompt-skeleton-card span:nth-child(2) { width: 75%; }
+.prompt-skeleton-card span:nth-child(3) { width: 100%; height: 110px; margin-top: 4px; }
+
+.prompt-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    min-width: 0;
+    padding: 0 12px;
+    border-top: 1px solid var(--line);
+    color: var(--faint);
+    background: #0e1214;
+    font-family: var(--mono);
+    font-size: 8px;
+}
+
+.prompt-footer span:first-child {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.prompt-footer span:last-child { flex: 0 0 auto; }
 
 .log-title > span:not(.status-label) {
     max-width: 150px;

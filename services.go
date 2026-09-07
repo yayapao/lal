@@ -14,24 +14,29 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
 	"sync"
 	"syscall"
 	"time"
+	"unicode/utf8"
 )
 
 const (
-	configVersion         = 3
+	configVersion         = 4
 	maxLogEntries         = 1200
 	maxCommandLength      = 1000
 	maxCleanCommandLength = 2000
+	maxPromptFileLength   = 1000
+	maxPromptFileBytes    = 2 * 1024 * 1024
 	stopTimeout           = 8 * time.Second
 	healthGrace           = 12 * time.Second
 	healthEvery           = 1 * time.Second
 	healthTimeout         = 500 * time.Millisecond
 	defaultCleanCommand   = "rm -rf .next"
+	defaultPromptsDir     = "prompts"
 )
 
 var ansiPattern = regexp.MustCompile(`\x1b(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])`)
@@ -39,12 +44,14 @@ var ansiPattern = regexp.MustCompile(`\x1b(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])`)
 const shellCommandWrapper = `if [[ -r "$HOME/.zshrc" ]]; then source "$HOME/.zshrc"; fi; eval "$1"`
 
 type Service struct {
-	ID           string `json:"id"`
-	Name         string `json:"name"`
-	Directory    string `json:"directory"`
-	Command      string `json:"command"`
-	URL          string `json:"url,omitempty"`
-	CleanCommand string `json:"cleanCommand"`
+	ID           string   `json:"id"`
+	Name         string   `json:"name"`
+	Directory    string   `json:"directory"`
+	Command      string   `json:"command"`
+	URL          string   `json:"url,omitempty"`
+	CleanCommand string   `json:"cleanCommand"`
+	PromptFiles  []string `json:"promptFiles,omitempty"`
+	PromptFile   string   `json:"promptFile,omitempty"` // v4 migration only
 }
 
 type ServiceInput struct {
@@ -65,6 +72,15 @@ type ServiceView struct {
 	PathExists  bool   `json:"pathExists"`
 	Health      string `json:"health"`
 	HealthInfo  string `json:"healthInfo"`
+}
+
+type PromptFileView struct {
+	Name        string `json:"name"`
+	Path        string `json:"path"`
+	DisplayPath string `json:"displayPath"`
+	Content     string `json:"content"`
+	Source      string `json:"source"`
+	Error       string `json:"error"`
 }
 
 type AppState struct {
@@ -175,17 +191,23 @@ func (m *serviceManager) loadConfig() error {
 	migrating := config.Version < configVersion
 	changed := migrating
 	for index, service := range config.Services {
+		original := service
 		service.URL = normalizeAccessURL(service.URL)
 		if strings.TrimSpace(service.CleanCommand) == "" {
 			service.CleanCommand = defaultCleanCommand
 		}
+		if legacyPrompt := strings.TrimSpace(service.PromptFile); legacyPrompt != "" && filepath.Clean(legacyPrompt) != filepath.Join(defaultPromptsDir, "codex-startup.md") {
+			service.PromptFiles = append(service.PromptFiles, legacyPrompt)
+		}
+		service.PromptFile = ""
+		service.PromptFiles = normalizePromptFiles(service.PromptFiles)
 		if migrating && service.URL == "" {
 			service.URL = knownServiceURL(service.Directory)
 		}
 		if err := validateService(service); err != nil {
 			return fmt.Errorf("服务 %q 的配置无效：%w", service.Name, err)
 		}
-		if service != config.Services[index] {
+		if !serviceEqual(service, original) {
 			config.Services[index] = service
 			changed = true
 		}
@@ -279,6 +301,7 @@ func (m *serviceManager) UpdateService(id string, input ServiceInput) (ServiceVi
 		return ServiceView{}, fmt.Errorf("服务名称 %q 已存在", updated.Name)
 	}
 	previous := m.services[index]
+	updated.PromptFiles = append([]string(nil), previous.PromptFiles...)
 	m.services[index] = updated
 	if err := m.saveConfigLocked(); err != nil {
 		m.services[index] = previous
@@ -653,6 +676,7 @@ func (m *serviceManager) serviceByID(id string) (Service, error) {
 	if !ok {
 		return Service{}, fmt.Errorf("服务不存在")
 	}
+	service.PromptFiles = append([]string(nil), service.PromptFiles...)
 	return service, nil
 }
 
@@ -695,6 +719,7 @@ func (m *serviceManager) serviceViewsLocked() []ServiceView {
 }
 
 func (m *serviceManager) serviceViewLocked(service Service) ServiceView {
+	service.PromptFiles = append([]string(nil), service.PromptFiles...)
 	view := ServiceView{
 		Service:     service,
 		ProjectType: detectProjectType(service.Directory, service.Command),
@@ -719,6 +744,147 @@ func (m *serviceManager) serviceViewLocked(service Service) ServiceView {
 		}
 	}
 	return view
+}
+
+func (m *serviceManager) GetPrompts(id string) ([]PromptFileView, error) {
+	service, err := m.serviceByID(id)
+	if err != nil {
+		return nil, err
+	}
+	paths, err := promptPaths(service)
+	if err != nil {
+		return nil, err
+	}
+	prompts := make([]PromptFileView, 0, len(paths))
+	for _, item := range paths {
+		prompt := PromptFileView{
+			Name:        filepath.Base(item.path),
+			Path:        item.path,
+			DisplayPath: displayPromptPath(service.Directory, item.path),
+			Source:      item.source,
+		}
+		prompt.Content, prompt.Error = readPromptPath(item.path)
+		prompts = append(prompts, prompt)
+	}
+	sort.SliceStable(prompts, func(i, j int) bool {
+		if prompts[i].Source != prompts[j].Source {
+			return prompts[i].Source == "project"
+		}
+		return strings.ToLower(prompts[i].DisplayPath) < strings.ToLower(prompts[j].DisplayPath)
+	})
+	return prompts, nil
+}
+
+func (m *serviceManager) AddPromptFile(id, path string) error {
+	service, err := m.serviceByID(id)
+	if err != nil {
+		return err
+	}
+	path, err = filepath.Abs(strings.TrimSpace(path))
+	if err != nil || path == "" {
+		return fmt.Errorf("Prompt 文件路径无效")
+	}
+	path = filepath.Clean(path)
+	if len(path) > maxPromptFileLength {
+		return fmt.Errorf("Prompt 文件路径不能超过 %d 个字符", maxPromptFileLength)
+	}
+	if _, readError := readPromptPath(path); readError != "" {
+		return errors.New(readError)
+	}
+	if pathWithin(filepath.Join(service.Directory, defaultPromptsDir), path) {
+		return nil
+	}
+
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	index := m.serviceIndexLocked(id)
+	if index < 0 {
+		return fmt.Errorf("服务不存在")
+	}
+	for _, existing := range m.services[index].PromptFiles {
+		if resolvePromptPath(m.services[index].Directory, existing) == path {
+			return nil
+		}
+	}
+	previous := append([]string(nil), m.services[index].PromptFiles...)
+	m.services[index].PromptFiles = append(m.services[index].PromptFiles, path)
+	if err := m.saveConfigLocked(); err != nil {
+		m.services[index].PromptFiles = previous
+		return err
+	}
+	return nil
+}
+
+func (m *serviceManager) RemovePromptFile(id, path string) error {
+	path = filepath.Clean(strings.TrimSpace(path))
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	index := m.serviceIndexLocked(id)
+	if index < 0 {
+		return fmt.Errorf("服务不存在")
+	}
+	service := m.services[index]
+	for promptIndex, configured := range service.PromptFiles {
+		if resolvePromptPath(service.Directory, configured) != path {
+			continue
+		}
+		previous := append([]string(nil), service.PromptFiles...)
+		m.services[index].PromptFiles = append(service.PromptFiles[:promptIndex], service.PromptFiles[promptIndex+1:]...)
+		if err := m.saveConfigLocked(); err != nil {
+			m.services[index].PromptFiles = previous
+			return err
+		}
+		return nil
+	}
+	return fmt.Errorf("项目 prompts 目录下的文件由 LAL 自动发现，无法移除关联")
+}
+
+func (m *serviceManager) readCodexPrompt(id, path string) (string, error) {
+	service, err := m.serviceByID(id)
+	if err != nil {
+		return "", err
+	}
+	configured, err := promptPaths(service)
+	if err != nil {
+		return "", err
+	}
+	path = filepath.Clean(strings.TrimSpace(path))
+	if !slices.ContainsFunc(configured, func(item promptPath) bool { return item.path == path }) {
+		return "", fmt.Errorf("该 Prompt 未关联到服务 %s", service.Name)
+	}
+	prompt, readError := readPromptPath(path)
+	if readError != "" {
+		return "", errors.New(readError)
+	}
+	return prompt, nil
+}
+
+func readPromptPath(path string) (string, string) {
+	info, err := os.Stat(path)
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return "", fmt.Sprintf("未找到 Prompt 文件：%s", path)
+		}
+		return "", fmt.Sprintf("读取 Prompt 文件失败：%v", err)
+	}
+	if !info.Mode().IsRegular() {
+		return "", fmt.Sprintf("Prompt 不是普通文件：%s", path)
+	}
+	if info.Size() > maxPromptFileBytes {
+		return "", "Prompt 文件不能超过 2 MB"
+	}
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return "", fmt.Sprintf("读取 Prompt 文件失败：%v", err)
+	}
+	if !utf8.Valid(data) {
+		return "", "Prompt 文件必须是 UTF-8 文本"
+	}
+	prompt := string(data)
+	if strings.TrimSpace(prompt) == "" {
+		return "", fmt.Sprintf("Prompt 文件为空：%s", path)
+	}
+	return prompt, ""
 }
 
 func (m *serviceManager) waitForProcess(id string, process *processState) {
@@ -1065,6 +1231,11 @@ func validateService(service Service) error {
 	if cleanCommand := strings.TrimSpace(service.CleanCommand); len(cleanCommand) > maxCleanCommandLength {
 		return fmt.Errorf("缓存清理脚本不能超过 %d 个字符", maxCleanCommandLength)
 	}
+	for _, promptFile := range service.PromptFiles {
+		if len(strings.TrimSpace(promptFile)) > maxPromptFileLength {
+			return fmt.Errorf("Prompt 文件路径不能超过 %d 个字符", maxPromptFileLength)
+		}
+	}
 	if service.URL != "" {
 		parsed, err := url.Parse(service.URL)
 		if err != nil || (parsed.Scheme != "http" && parsed.Scheme != "https") || parsed.Hostname() == "" {
@@ -1190,6 +1361,104 @@ func normalizeCleanCommand(value string) string {
 		return defaultCleanCommand
 	}
 	return value
+}
+
+func normalizePromptFiles(values []string) []string {
+	result := make([]string, 0, len(values))
+	seen := make(map[string]struct{}, len(values))
+	for _, value := range values {
+		value = strings.TrimSpace(value)
+		if value == "" {
+			continue
+		}
+		value = filepath.Clean(value)
+		if _, exists := seen[value]; exists {
+			continue
+		}
+		seen[value] = struct{}{}
+		result = append(result, value)
+	}
+	return result
+}
+
+func resolvePromptPath(directory, path string) string {
+	if filepath.IsAbs(path) {
+		return filepath.Clean(path)
+	}
+	return filepath.Join(directory, path)
+}
+
+type promptPath struct {
+	path   string
+	source string
+}
+
+func promptPaths(service Service) ([]promptPath, error) {
+	paths := make([]promptPath, 0)
+	seen := make(map[string]struct{})
+	promptsRoot := filepath.Join(service.Directory, defaultPromptsDir)
+	if err := filepath.WalkDir(promptsRoot, func(path string, entry os.DirEntry, walkErr error) error {
+		if walkErr != nil {
+			return walkErr
+		}
+		if strings.HasPrefix(entry.Name(), ".") {
+			if entry.IsDir() && path != promptsRoot {
+				return filepath.SkipDir
+			}
+			return nil
+		}
+		if entry.IsDir() || !isPromptFilename(entry.Name()) {
+			return nil
+		}
+		info, err := os.Stat(path)
+		if err != nil {
+			return err
+		}
+		if !info.Mode().IsRegular() {
+			return nil
+		}
+		path = filepath.Clean(path)
+		seen[path] = struct{}{}
+		paths = append(paths, promptPath{path: path, source: "project"})
+		return nil
+	}); err != nil && !errors.Is(err, os.ErrNotExist) {
+		return nil, fmt.Errorf("扫描 prompts 目录失败：%w", err)
+	}
+	for _, configured := range service.PromptFiles {
+		path := resolvePromptPath(service.Directory, configured)
+		if _, exists := seen[path]; exists {
+			continue
+		}
+		seen[path] = struct{}{}
+		paths = append(paths, promptPath{path: path, source: "added"})
+	}
+	return paths, nil
+}
+
+func isPromptFilename(name string) bool {
+	switch strings.ToLower(filepath.Ext(name)) {
+	case ".md", ".markdown", ".txt", ".prompt":
+		return true
+	default:
+		return false
+	}
+}
+
+func displayPromptPath(directory, path string) string {
+	if relative, err := filepath.Rel(directory, path); err == nil && relative != ".." && !strings.HasPrefix(relative, ".."+string(filepath.Separator)) {
+		return relative
+	}
+	return path
+}
+
+func pathWithin(root, path string) bool {
+	relative, err := filepath.Rel(filepath.Clean(root), filepath.Clean(path))
+	return err == nil && relative != ".." && !strings.HasPrefix(relative, ".."+string(filepath.Separator))
+}
+
+func serviceEqual(left, right Service) bool {
+	return left.ID == right.ID && left.Name == right.Name && left.Directory == right.Directory && left.Command == right.Command &&
+		left.URL == right.URL && left.CleanCommand == right.CleanCommand && left.PromptFile == right.PromptFile && slices.Equal(left.PromptFiles, right.PromptFiles)
 }
 
 func knownServiceURL(directory string) string {

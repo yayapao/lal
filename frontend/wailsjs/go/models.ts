@@ -7,6 +7,8 @@ export namespace main {
 	    command: string;
 	    url?: string;
 	    cleanCommand: string;
+	    promptFiles?: string[];
+	    promptFile?: string;
 	    projectType: string;
 	    status: string;
 	    pid: number;
@@ -28,6 +30,8 @@ export namespace main {
 	        this.command = source["command"];
 	        this.url = source["url"];
 	        this.cleanCommand = source["cleanCommand"];
+	        this.promptFiles = source["promptFiles"];
+	        this.promptFile = source["promptFile"];
 	        this.projectType = source["projectType"];
 	        this.status = source["status"];
 	        this.pid = source["pid"];
@@ -104,6 +108,28 @@ export namespace main {
 	        this.timestamp = source["timestamp"];
 	        this.stream = source["stream"];
 	        this.text = source["text"];
+	    }
+	}
+	export class PromptFileView {
+	    name: string;
+	    path: string;
+	    displayPath: string;
+	    content: string;
+	    source: string;
+	    error: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new PromptFileView(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.name = source["name"];
+	        this.path = source["path"];
+	        this.displayPath = source["displayPath"];
+	        this.content = source["content"];
+	        this.source = source["source"];
+	        this.error = source["error"];
 	    }
 	}
 	export class ResourceUsage {
