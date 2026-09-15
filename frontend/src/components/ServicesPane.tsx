@@ -1,0 +1,92 @@
+import {Folder, LoaderCircle, Play, Square, TerminalSquare, X} from 'lucide-react';
+import {Fragment} from 'react';
+import SelectionCheckbox from './SelectionCheckbox';
+import ServiceRow from './ServiceRow';
+import type {BatchBusyState, ResourceUsage, ServiceView, WorkspaceGroup} from '../types';
+
+export default function ServicesPane({loading, query, total, selectedId, filteredServices, workspaceGroups, showWorkspaceGroups,
+    checkedIds, checkedStartableCount, checkedStoppableCount, allVisibleChecked, someVisibleChecked, batchBusy,
+    iconURLs, resourceUsage, busyIds, onToggleVisibleSelection, onStartSelected, onStopSelected, onClearSelection,
+    onOpenWorkspaceManager, onAdd, onSelectService, onToggleService, onCheckService, onOpenURL, onMenu}: {
+    loading: boolean;
+    query: string;
+    total: number;
+    selectedId: string;
+    filteredServices: ServiceView[];
+    workspaceGroups: WorkspaceGroup[];
+    showWorkspaceGroups: boolean;
+    checkedIds: Set<string>;
+    checkedStartableCount: number;
+    checkedStoppableCount: number;
+    allVisibleChecked: boolean;
+    someVisibleChecked: boolean;
+    batchBusy: BatchBusyState;
+    iconURLs: Record<string, string>;
+    resourceUsage: Record<string, ResourceUsage>;
+    busyIds: Set<string>;
+    onToggleVisibleSelection: () => void;
+    onStartSelected: () => void;
+    onStopSelected: () => void;
+    onClearSelection: () => void;
+    onOpenWorkspaceManager: () => void;
+    onAdd: () => void;
+    onSelectService: (id: string) => void;
+    onToggleService: (service: ServiceView) => void;
+    onCheckService: (id: string) => void;
+    onOpenURL: (service: ServiceView) => void;
+    onMenu: (event: React.MouseEvent<HTMLButtonElement>, service: ServiceView) => void;
+}) {
+    const renderRow = (service: ServiceView) => (
+        <ServiceRow key={service.id} service={service} selected={service.id === selectedId} checked={checkedIds.has(service.id)}
+            iconURL={iconURLs[service.id]}
+            usage={resourceUsage[service.id]}
+            busy={busyIds.has(service.id) || batchBusy?.startsWith('all') === true || (batchBusy?.startsWith('selected') === true && checkedIds.has(service.id))}
+            onSelect={() => onSelectService(service.id)} onToggle={() => onToggleService(service)}
+            onCheck={() => onCheckService(service.id)} selectionDisabled={batchBusy !== null}
+            onOpenURL={() => onOpenURL(service)} onMenu={event => onMenu(event, service)}/>
+    );
+    return (
+        <section className="services-pane" aria-label="服务列表">
+            <div className="pane-heading">
+                <label className="select-all-control">
+                    <SelectionCheckbox checked={allVisibleChecked} indeterminate={someVisibleChecked} disabled={batchBusy !== null || filteredServices.length === 0}
+                        onChange={onToggleVisibleSelection} ariaLabel="选择当前列表中的全部服务"/>
+                    <span>服务</span>
+                </label>
+                {checkedIds.size > 0 ? <div className="selection-actions">
+                    <span className="selection-count">已选 {checkedIds.size}</span>
+                    <button className="selection-action" type="button" onClick={onStartSelected}
+                        disabled={batchBusy !== null || checkedStartableCount === 0} aria-label="启动选中服务" title="启动选中服务">
+                        {batchBusy === 'selected-start' ? <LoaderCircle className="spin" size={14}/> : <Play size={14}/>}
+                    </button>
+                    <button className="selection-action" type="button" onClick={onStopSelected}
+                        disabled={batchBusy !== null || checkedStoppableCount === 0} aria-label="停止选中服务" title="停止选中服务">
+                        {batchBusy === 'selected-stop' ? <LoaderCircle className="spin" size={14}/> : <Square size={12}/>}
+                    </button>
+                    <button className="selection-action" type="button" onClick={onClearSelection} disabled={batchBusy !== null}
+                        aria-label="清除选择" title="清除选择"><X size={14}/></button>
+                </div> : <div className="pane-heading-actions"><span className="service-count">{query ? `${filteredServices.length} / ${total}` : total}</span>
+                    <button className="text-button workspace-manager-button" type="button" onClick={onOpenWorkspaceManager} disabled={total === 0}>Workspace 管理</button></div>}
+            </div>
+            <div className="services-list">
+                {loading ? (
+                    <div className="skeleton-list" aria-label="正在载入服务">
+                        {[0, 1, 2].map(item => <div className="skeleton-row" key={item}><span/><span/><span/></div>)}
+                    </div>
+                ) : filteredServices.length === 0 ? (
+                    <div className="empty-state">
+                        <TerminalSquare size={25}/><span>{query ? '没有匹配的服务' : '暂无服务'}</span>
+                        {!query && <button className="text-button" type="button" onClick={onAdd}>添加服务</button>}
+                    </div>
+                ) : showWorkspaceGroups ? workspaceGroups.map(group => (
+                    <Fragment key={group.name}>
+                        <div className="workspace-heading">
+                            <Folder size={12}/><span title={group.name}>{group.name}</span><span>{group.services.length}</span>
+                        </div>
+                        {group.services.map(renderRow)}
+                    </Fragment>
+                )) : filteredServices.map(renderRow)}
+            </div>
+        </section>
+    );
+}

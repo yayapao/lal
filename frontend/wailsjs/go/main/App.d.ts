@@ -28,6 +28,8 @@ export function GetPrompts(arg1:string):Promise<Array<main.PromptFileView>>;
 
 export function GetResourceUsage():Promise<Array<main.ResourceUsage>>;
 
+export function GetServiceIcon(arg1:string):Promise<string>;
+
 export function OpenCodexWithPrompt(arg1:string,arg2:string):Promise<void>;
 
 export function OpenServiceURL(arg1:string):Promise<void>;
@@ -38,6 +40,10 @@ export function RestartService(arg1:string):Promise<void>;
 
 export function RevealService(arg1:string):Promise<void>;
 
+export function RunPackageScript(arg1:string,arg2:string):Promise<void>;
+
+export function SetServiceWorkspace(arg1:string,arg2:string):Promise<main.ServiceView>;
+
 export function StartAll():Promise<main.BatchResult>;
 
 export function StartService(arg1:string):Promise<void>;
@@ -45,6 +51,8 @@ export function StartService(arg1:string):Promise<void>;
 export function StartServices(arg1:Array<string>):Promise<main.BatchResult>;
 
 export function StopAll():Promise<main.BatchResult>;
+
+export function StopPackageScript(arg1:string):Promise<void>;
 
 export function StopService(arg1:string):Promise<void>;
 

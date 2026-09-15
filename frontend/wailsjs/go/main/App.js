@@ -54,6 +54,10 @@ export function GetResourceUsage() {
   return window['go']['main']['App']['GetResourceUsage']();
 }
 
+export function GetServiceIcon(arg1) {
+  return window['go']['main']['App']['GetServiceIcon'](arg1);
+}
+
 export function OpenCodexWithPrompt(arg1, arg2) {
   return window['go']['main']['App']['OpenCodexWithPrompt'](arg1, arg2);
 }
@@ -74,6 +78,14 @@ export function RevealService(arg1) {
   return window['go']['main']['App']['RevealService'](arg1);
 }
 
+export function RunPackageScript(arg1, arg2) {
+  return window['go']['main']['App']['RunPackageScript'](arg1, arg2);
+}
+
+export function SetServiceWorkspace(arg1, arg2) {
+  return window['go']['main']['App']['SetServiceWorkspace'](arg1, arg2);
+}
+
 export function StartAll() {
   return window['go']['main']['App']['StartAll']();
 }
@@ -88,6 +100,10 @@ export function StartServices(arg1) {
 
 export function StopAll() {
   return window['go']['main']['App']['StopAll']();
+}
+
+export function StopPackageScript(arg1) {
+  return window['go']['main']['App']['StopPackageScript'](arg1);
 }
 
 export function StopService(arg1) {

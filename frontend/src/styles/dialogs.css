@@ -1,0 +1,216 @@
+.menu-scrim {
+    position: fixed;
+    z-index: 40;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    padding: 0;
+    border: 0;
+    background: transparent;
+}
+
+.context-menu {
+    position: fixed;
+    z-index: 41;
+    width: 196px;
+    padding: 4px;
+    border: 1px solid var(--line-strong);
+    border-radius: 4px;
+    background: #171b1e;
+}
+
+.context-menu button {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    width: 100%;
+    height: 36px;
+    padding: 0 9px;
+    border-radius: 3px;
+    color: #c9d0d3;
+    background: transparent;
+    font-size: 11px;
+    text-align: left;
+}
+
+.context-menu button:hover:not(:disabled) { background: #23292d; }
+.context-menu .danger-item { color: var(--red); }
+
+.modal-backdrop {
+    position: fixed;
+    z-index: 50;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    padding: 24px;
+    background: rgba(5, 7, 8, 0.72);
+    backdrop-filter: blur(3px);
+}
+
+.service-dialog,
+.confirm-dialog,
+.issue-dialog {
+    width: min(520px, calc(100vw - 48px));
+    border: 1px solid #3b454b;
+    border-radius: 4px;
+    color: var(--text);
+    background: #15191c;
+    box-shadow: 0 24px 70px rgba(2, 4, 5, 0.55);
+}
+
+.service-dialog { padding: 21px; }
+
+.workspace-manager-dialog {
+    width: min(520px, calc(100vw - 48px));
+    max-height: min(620px, calc(100vh - 64px));
+    padding: 21px;
+    overflow-y: auto;
+}
+
+.workspace-manager-help {
+    margin: 12px 0 16px;
+    color: var(--muted);
+    font-size: 11px;
+}
+
+.workspace-manager-list {
+    display: grid;
+    gap: 12px;
+    max-height: 340px;
+    overflow-y: auto;
+    padding-right: 4px;
+}
+
+.workspace-manager-list label {
+    display: grid;
+    grid-template-columns: 108px minmax(0, 1fr);
+    align-items: center;
+    gap: 10px;
+}
+
+.workspace-manager-list label > span {
+    min-width: 0;
+    overflow: hidden;
+    color: #c9d0d3;
+    font-size: 11px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.workspace-manager-list input {
+    height: 32px;
+    min-width: 0;
+    padding: 0 9px;
+    border: 1px solid #4a555b;
+    border-radius: 4px;
+    color: #dfe5e7;
+    background: #121719;
+    font-size: 11px;
+}
+
+.dialog-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.dialog-heading h2,
+.confirm-dialog h2,
+.issue-dialog h2 {
+    margin: 0;
+    color: #eef2f3;
+    font-size: 17px;
+    font-weight: 680;
+}
+
+.form-fields {
+    display: grid;
+    gap: 15px;
+    margin-top: 21px;
+}
+
+.form-fields label {
+    display: grid;
+    gap: 7px;
+    color: #c0c8cb;
+    font-size: 11px;
+    font-weight: 620;
+}
+
+.form-fields label small {
+    margin-left: 3px;
+    color: var(--faint);
+    font-size: 9px;
+    font-weight: 500;
+}
+
+.form-fields input,
+.form-fields textarea {
+    width: 100%;
+    min-height: 38px;
+    padding: 0 10px;
+    border: 1px solid var(--line-strong);
+    border-radius: 4px;
+    outline: 0;
+    color: var(--text);
+    background: #0f1214;
+    font-size: 12px;
+    transition: border-color 120ms ease, background-color 120ms ease;
+}
+
+.form-fields textarea {
+    height: 58px;
+    padding-top: 9px;
+    padding-bottom: 9px;
+    resize: vertical;
+    line-height: 18px;
+}
+
+.form-fields input:focus,
+.form-fields textarea:focus {
+    border-color: #4e94ad;
+    background: #111619;
+}
+
+.form-fields .command-input,
+.input-with-action input {
+    font-family: var(--mono);
+    font-size: 11px;
+}
+
+.input-with-action {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 38px;
+}
+
+.input-with-action input { border-radius: 4px 0 0 4px; }
+
+.input-with-action button {
+    display: grid;
+    place-items: center;
+    height: 38px;
+    border: 1px solid var(--line-strong);
+    border-left: 0;
+    border-radius: 0 4px 4px 0;
+    color: var(--muted);
+    background: #1a1f22;
+}
+
+.input-with-action button:hover:not(:disabled) {
+    color: var(--text);
+    background: #232a2e;
+}
+
+.form-error {
+    display: flex;
+    align-items: flex-start;
+    gap: 7px;
+    margin-top: 14px;
+    padding: 9px 10px;
+    border: 1px solid #693c3e;
+    border-radius: 4px;
+    color: #f29a9a;
+    background: #291719;
+    font-size: 10px;
+    line-height: 16px;
+}

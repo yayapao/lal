@@ -1,0 +1,57 @@
+import {vi} from 'vitest';
+
+export const api = {
+    ChooseAndAddPrompt: vi.fn(),
+    ChooseDirectory: vi.fn(),
+    ClearNextCache: vi.fn(),
+    ClearLogs: vi.fn(),
+    CopyCodexPrompt: vi.fn(),
+    CreateService: vi.fn(),
+    DeleteService: vi.fn(),
+    DownloadLogs: vi.fn(),
+    GetAppState: vi.fn(),
+    GetLogs: vi.fn(),
+    GetPrompts: vi.fn(),
+    GetResourceUsage: vi.fn(),
+    GetServiceIcon: vi.fn(),
+    OpenCodexWithPrompt: vi.fn(),
+    OpenServiceURL: vi.fn(),
+    RevealService: vi.fn(),
+    RemovePromptFile: vi.fn(),
+    RestartService: vi.fn(),
+    StartAll: vi.fn(),
+    StartServices: vi.fn(),
+    StartService: vi.fn(),
+    StopAll: vi.fn(),
+    StopServices: vi.fn(),
+    StopService: vi.fn(),
+    UpdateService: vi.fn(),
+    SetServiceWorkspace: vi.fn(),
+};
+
+export const alphaService = {
+    id: 'alpha',
+    name: 'Alpha',
+    directory: '/tmp/alpha',
+    command: 'npm run dev',
+    url: '',
+    cleanCommand: 'rm -rf .next',
+    promptFiles: [],
+    status: 'stopped',
+    pid: 0,
+    startedAt: '',
+    lastError: '',
+    pathExists: true,
+    projectType: 'nextjs',
+    health: '',
+    healthInfo: '',
+};
+
+export const startupPrompt = {
+    name: 'codex-startup.md',
+    path: '/tmp/alpha/prompts/codex-startup.md',
+    displayPath: 'prompts/codex-startup.md',
+    content: 'Start this Codex session',
+    source: 'project',
+    error: '',
+};
