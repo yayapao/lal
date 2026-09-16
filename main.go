@@ -13,6 +13,8 @@ import (
 var assets embed.FS
 
 func main() {
+	installMenuBar()
+
 	app := NewApp()
 
 	err := wails.Run(&options.App{
@@ -24,10 +26,11 @@ func main() {
 		AssetServer: &assetserver.Options{
 			Assets: assets,
 		},
-		BackgroundColour: &options.RGBA{R: 11, G: 13, B: 15, A: 1},
-		OnStartup:        app.startup,
-		OnBeforeClose:    app.beforeClose,
-		OnShutdown:       app.shutdown,
+		BackgroundColour:  &options.RGBA{R: 11, G: 13, B: 15, A: 1},
+		HideWindowOnClose: true,
+		OnStartup:         app.startup,
+		OnBeforeClose:     app.beforeClose,
+		OnShutdown:        app.shutdown,
 		Mac: &mac.Options{
 			TitleBar:   mac.TitleBarHiddenInset(),
 			Appearance: mac.DefaultAppearance,

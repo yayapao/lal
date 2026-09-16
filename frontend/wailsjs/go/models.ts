@@ -1,13 +1,13 @@
 export namespace main {
-
+	
 	export class PackageScript {
 	    name: string;
 	    command: string;
-
+	
 	    static createFrom(source: any = {}) {
 	        return new PackageScript(source);
 	    }
-
+	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.name = source["name"];
@@ -20,11 +20,11 @@ export namespace main {
 	    description?: string;
 	    packageManager?: string;
 	    scripts?: PackageScript[];
-
+	
 	    static createFrom(source: any = {}) {
 	        return new PackageInfo(source);
 	    }
-
+	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.name = source["name"];
@@ -33,7 +33,7 @@ export namespace main {
 	        this.packageManager = source["packageManager"];
 	        this.scripts = this.convertValues(source["scripts"], PackageScript);
 	    }
-
+	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
 		    if (!a) {
 		        return a;
@@ -76,11 +76,11 @@ export namespace main {
 	    pathExists: boolean;
 	    health: string;
 	    healthInfo: string;
-
+	
 	    static createFrom(source: any = {}) {
 	        return new ServiceView(source);
 	    }
-
+	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.id = source["id"];
@@ -107,7 +107,7 @@ export namespace main {
 	        this.health = source["health"];
 	        this.healthInfo = source["healthInfo"];
 	    }
-
+	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
 		    if (!a) {
 		        return a;
@@ -130,18 +130,18 @@ export namespace main {
 	    services: ServiceView[];
 	    configPath: string;
 	    warning: string;
-
+	
 	    static createFrom(source: any = {}) {
 	        return new AppState(source);
 	    }
-
+	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.services = this.convertValues(source["services"], ServiceView);
 	        this.configPath = source["configPath"];
 	        this.warning = source["warning"];
 	    }
-
+	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
 		    if (!a) {
 		        return a;
@@ -164,11 +164,11 @@ export namespace main {
 	    changed: number;
 	    skipped: number;
 	    errors: string[];
-
+	
 	    static createFrom(source: any = {}) {
 	        return new BatchResult(source);
 	    }
-
+	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.changed = source["changed"];
@@ -181,11 +181,11 @@ export namespace main {
 	    timestamp: string;
 	    stream: string;
 	    text: string;
-
+	
 	    static createFrom(source: any = {}) {
 	        return new LogEntry(source);
 	    }
-
+	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.serviceId = source["serviceId"];
@@ -194,8 +194,8 @@ export namespace main {
 	        this.text = source["text"];
 	    }
 	}
-
-
+	
+	
 	export class PromptFileView {
 	    name: string;
 	    path: string;
@@ -203,11 +203,11 @@ export namespace main {
 	    content: string;
 	    source: string;
 	    error: string;
-
+	
 	    static createFrom(source: any = {}) {
 	        return new PromptFileView(source);
 	    }
-
+	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.name = source["name"];
@@ -223,11 +223,11 @@ export namespace main {
 	    cpuPercent: number;
 	    memoryBytes: number;
 	    processCount: number;
-
+	
 	    static createFrom(source: any = {}) {
 	        return new ResourceUsage(source);
 	    }
-
+	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.serviceId = source["serviceId"];
@@ -243,11 +243,11 @@ export namespace main {
 	    command: string;
 	    url: string;
 	    cleanCommand: string;
-
+	
 	    static createFrom(source: any = {}) {
 	        return new ServiceInput(source);
 	    }
-
+	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.name = source["name"];

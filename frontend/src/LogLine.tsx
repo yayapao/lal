@@ -190,7 +190,7 @@ function asRecord(value: unknown): Record<string, unknown> | null {
 }
 
 function inferSeverity(message: string, stream: string): Severity {
-    if (stream === 'stderr' || errorPattern.test(message)) return 'error';
+    if (errorPattern.test(message)) return 'error';
     if (warningPattern.test(message)) return 'warn';
     if (successPattern.test(message)) return 'success';
     if (stream === 'system' || infoPattern.test(message)) return 'info';

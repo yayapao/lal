@@ -1,6 +1,28 @@
 .logs-pane {
-    grid-template-rows: 40px 112px minmax(0, 1fr) 26px;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
     background: var(--console);
+}
+
+.logs-pane .log-heading {
+    flex: 0 0 40px;
+}
+
+.logs-pane .resource-monitor {
+    flex: 0 0 112px;
+}
+
+.logs-pane .package-panel {
+    flex: 0 0 72px;
+}
+
+.logs-pane .log-viewport {
+    flex: 1 1 auto;
+}
+
+.logs-pane .console-footer {
+    flex: 0 0 26px;
 }
 
 .prompt-pane {

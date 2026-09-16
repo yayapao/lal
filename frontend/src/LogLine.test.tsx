@@ -86,20 +86,27 @@ describe('LogLine', () => {
 
     it('groups a short stderr burst into one error block', () => {
         const entries = [
-            {timestamp: '2026-08-27T18:04:29.100+08:00', stream: 'stderr', text: "FROM stock_holding_events\\n' +"},
-            {timestamp: '2026-08-27T18:04:29.120+08:00', stream: 'stderr', text: "GROUP BY stock_id\\n' +"},
+            {timestamp: '2026-08-27T18:04:29.100+08:00', stream: 'stderr', text: "FROM stock_holding_events\\n' + failed"},
+            {timestamp: '2026-08-27T18:04:29.120+08:00', stream: 'stderr', text: "GROUP BY stock_id\\n' + failed"},
             {timestamp: '2026-08-27T18:04:30.000+08:00', stream: 'stderr', text: 'a later error'},
         ];
 
         const grouped = groupLogEntries(entries);
 
         expect(grouped).toHaveLength(2);
-        expect(grouped[0].text).toBe("FROM stock_holding_events\\n' +\nGROUP BY stock_id\\n' +");
+        expect(grouped[0].text).toBe("FROM stock_holding_events\\n' + failed\nGROUP BY stock_id\\n' + failed");
         expect(parseLogText(grouped[0].text, grouped[0].stream).severity).toBe('error');
 
         render(<LogLine entry={grouped[0]} fallbackService="myStock"/>);
 
         expect(screen.getAllByText('ERROR')).toHaveLength(1);
-        expect(document.querySelector('.log-message')?.textContent).toBe("FROM stock_holding_events\\n' +\nGROUP BY stock_id\\n' +");
+        expect(document.querySelector('.log-message')?.textContent).toBe("FROM stock_holding_events\\n' + failed\nGROUP BY stock_id\\n' + failed");
+    });
+
+    it('does not mark benign stderr progress as an error', () => {
+        const parsed = parseLogText('/tmp/Niu.app: replacing existing signature', 'stderr');
+
+        expect(parsed.severity).toBe('neutral');
+        expect(parsed.metadata).toHaveLength(0);
     });
 });
