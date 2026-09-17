@@ -15,7 +15,7 @@ LAL（Local App Launcher）是一个基于 Wails v2 的 macOS 本地开发服务
 - 根据项目内容自动识别并显示 Next.js、Vite、React、Vue、Go 等项目图标
 - 多选服务后批量启动、停止
 - 全部启动、全部停止
-- stdout / stderr 实时日志、启动前自动清空、手动清空、下载与自动跟随
+- stdout / stderr 实时日志、启动和脚本执行前自动清空、手动清空、下载与自动跟随
 - PID、运行时长、异常退出码和路径失效提示
 - 按服务进程组汇总 CPU、RSS 内存和进程数，并展示实时趋势
 - HTTP/HTTPS 访问地址展示与一键打开

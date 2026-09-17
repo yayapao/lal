@@ -47,6 +47,7 @@ func (m *serviceManager) RunPackageScript(id, name string) error {
 	m.scriptStatus[id] = "running"
 	m.scriptStatusInfo[id] = ""
 	m.mu.Unlock()
+	m.ClearLogs(id)
 
 	args := append(append([]string(nil), m.commandArgs...), fmt.Sprintf("npm run --silent %s", shellQuote(name)))
 	cmd := exec.Command(m.commandShell, args...)

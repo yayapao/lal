@@ -3,6 +3,7 @@ package main
 /*
 #cgo CFLAGS: -x objective-c
 #cgo LDFLAGS: -framework Cocoa
+#import <stdlib.h>
 #import <Cocoa/Cocoa.h>
 
 @interface LALStatusController : NSObject
@@ -43,14 +44,24 @@ package main
 static LALStatusController *lalStatusController = nil;
 static NSStatusItem *lalStatusItem = nil;
 
-static void installLALStatusItem(void) {
+static void installLALStatusItem(const unsigned char *iconBytes, int iconLength) {
     if (lalStatusItem != nil) {
         return;
     }
 
     lalStatusController = [[LALStatusController alloc] init];
     lalStatusItem = [[NSStatusBar systemStatusBar] statusItemWithLength:NSVariableStatusItemLength];
-    lalStatusItem.button.title = @"LAL";
+    if (iconBytes != NULL && iconLength > 0) {
+        NSData *iconData = [NSData dataWithBytes:iconBytes length:iconLength];
+        NSImage *icon = [[NSImage alloc] initWithData:iconData];
+        icon.size = NSMakeSize(18, 18);
+        icon.template = YES;
+        lalStatusItem.button.image = icon;
+        lalStatusItem.button.imagePosition = NSImageOnly;
+        [icon release];
+    } else {
+        lalStatusItem.button.title = @"LAL";
+    }
     lalStatusItem.button.target = lalStatusController;
     lalStatusItem.button.action = @selector(openLAL:);
 }
@@ -58,6 +69,15 @@ static void installLALStatusItem(void) {
 */
 import "C"
 
+import (
+	_ "embed"
+)
+
+//go:embed frontend/src/assets/images/lal-status-icon.png
+var lalStatusIcon []byte
+
 func installMenuBar() {
-	C.installLALStatusItem()
+	ptr := C.CBytes(lalStatusIcon)
+	defer C.free(ptr)
+	C.installLALStatusItem((*C.uchar)(ptr), C.int(len(lalStatusIcon)))
 }
