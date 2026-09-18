@@ -62,7 +62,6 @@
     line-height: 1;
 }
 
-.stream-stderr .stream-mark,
 .log-line.is-error .stream-mark { border-color: #683d3e; color: #f09a9a; background: #251719; }
 .stream-system .stream-mark { border-color: #315663; color: var(--accent); background: #101d22; }
 

@@ -33,7 +33,7 @@ const httpPhasePattern = /^\s*([^:]+):\s*(\d+(?:\.\d+)?(?:ms|s))\s*$/i;
 export const LogLine = memo(function LogLine({entry, fallbackService}: {entry: LogLineEntry; fallbackService: string}) {
     const parsed = useMemo(() => parseLogText(entry.text, entry.stream), [entry.stream, entry.text]);
     const service = parsed.service || fallbackService;
-    const streamLabel = entry.stream === 'stderr' ? 'ERR' : entry.stream === 'system' ? 'LAL' : 'OUT';
+    const streamLabel = entry.stream === 'stderr' && parsed.severity === 'error' ? 'ERR' : entry.stream === 'system' ? 'LAL' : 'OUT';
     return <div className={`log-line stream-${entry.stream} is-${parsed.severity}${parsed.kind ? ` is-${parsed.kind}` : ''}`}>
         <time dateTime={entry.timestamp} title={formatFullTimestamp(entry.timestamp)}>{formatLogTime(entry.timestamp)}</time>
         <span className="stream-mark">{streamLabel}</span>

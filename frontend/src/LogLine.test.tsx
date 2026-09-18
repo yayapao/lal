@@ -104,9 +104,15 @@ describe('LogLine', () => {
     });
 
     it('does not mark benign stderr progress as an error', () => {
-        const parsed = parseLogText('/tmp/Niu.app: replacing existing signature', 'stderr');
+        const text = '/Users/yango/github/apps/niu/desktop/build/bin/Niu.app: replacing existing signature';
+        const parsed = parseLogText(text, 'stderr');
 
         expect(parsed.severity).toBe('neutral');
         expect(parsed.metadata).toHaveLength(0);
+
+        render(<LogLine entry={{timestamp: '2026-09-18T18:14:20+08:00', stream: 'stderr', text}} fallbackService="Niu"/>);
+
+        expect(screen.queryByText('ERR')).toBeNull();
+        expect(screen.getByText('OUT')).toBeDefined();
     });
 });
