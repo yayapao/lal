@@ -56,6 +56,7 @@ type ServiceView struct {
 	Service
 	PackageInfo         *PackageInfo `json:"packageInfo,omitempty"`
 	IconPath            string       `json:"iconPath,omitempty"`
+	IconVersion         string       `json:"iconVersion,omitempty"`
 	ConfiguredWorkspace string       `json:"configuredWorkspace,omitempty"`
 	ActiveScript        string       `json:"activeScript,omitempty"`
 	ScriptStatus        string       `json:"scriptStatus,omitempty"`

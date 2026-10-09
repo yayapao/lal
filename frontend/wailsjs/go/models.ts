@@ -64,6 +64,7 @@ export namespace main {
 	    promptFile?: string;
 	    packageInfo?: PackageInfo;
 	    iconPath?: string;
+	    iconVersion?: string;
 	    configuredWorkspace?: string;
 	    activeScript?: string;
 	    scriptStatus?: string;
@@ -94,6 +95,7 @@ export namespace main {
 	        this.promptFile = source["promptFile"];
 	        this.packageInfo = this.convertValues(source["packageInfo"], PackageInfo);
 	        this.iconPath = source["iconPath"];
+	        this.iconVersion = source["iconVersion"];
 	        this.configuredWorkspace = source["configuredWorkspace"];
 	        this.activeScript = source["activeScript"];
 	        this.scriptStatus = source["scriptStatus"];

@@ -11,13 +11,15 @@ export function useServiceState(showToast: (message: string, kind?: 'success' | 
     const [checkedIds, setCheckedIds] = useState<Set<string>>(new Set());
     const [logs, setLogs] = useState<LogEntry[]>([]);
     const [loading, setLoading] = useState(true);
+    const [iconRefreshKey, setIconRefreshKey] = useState(0);
     const selectedIdRef = useRef('');
 
-    const refreshState = useCallback(async () => {
+    const refreshState = useCallback(async (forceIconRefresh = false) => {
         try {
             const state = await GetAppState();
             const nextServices = state.services ?? [];
             setServices(nextServices);
+            if (forceIconRefresh) setIconRefreshKey(current => current + 1);
             setSelectedId(current => current && nextServices.some(service => service.id === current)
                 ? current
                 : nextServices[0]?.id ?? '');
@@ -59,5 +61,5 @@ export function useServiceState(showToast: (message: string, kind?: 'success' | 
         return () => { current = false; };
     }, [selectedId, showToast]);
 
-    return {services, selectedId, setSelectedId, checkedIds, setCheckedIds, logs, setLogs, loading, refreshState};
+    return {services, selectedId, setSelectedId, checkedIds, setCheckedIds, logs, setLogs, loading, refreshState, iconRefreshKey};
 }

@@ -74,6 +74,9 @@ func (m *serviceManager) serviceViewLocked(service Service) ServiceView {
 		PathExists:          isDirectory(service.Directory),
 		Health:              "stopped",
 	}
+	if info, err := os.Stat(view.IconPath); err == nil && info.Mode().IsRegular() {
+		view.IconVersion = fmt.Sprintf("%d:%d", info.ModTime().UnixNano(), info.Size())
+	}
 	if service.URL == "" {
 		view.Health = "not_configured"
 	}

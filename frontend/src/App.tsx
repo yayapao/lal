@@ -61,9 +61,9 @@ function App() {
         toastTimerRef.current = window.setTimeout(() => setToast(null), 3200);
     }, []);
 
-    const {services, selectedId, setSelectedId, checkedIds, setCheckedIds, logs, setLogs, loading, refreshState} = useServiceState(showToast);
+    const {services, selectedId, setSelectedId, checkedIds, setCheckedIds, logs, setLogs, loading, refreshState, iconRefreshKey} = useServiceState(showToast);
     const {resourceUsage, resourceHistory} = useResourceUsage();
-    const iconURLs = useServiceIcons(services);
+    const iconURLs = useServiceIcons(services, iconRefreshKey);
 
     const selectedService = services.find(service => service.id === selectedId) ?? null;
     const selectedUsage = selectedService ? resourceUsage[selectedService.id] : undefined;

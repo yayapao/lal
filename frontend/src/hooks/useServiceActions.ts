@@ -28,7 +28,7 @@ type ServiceActionContext = {
     allVisibleChecked: boolean;
     cacheTarget: ServiceView | null;
     deleteTarget: ServiceView | null;
-    refreshState: () => Promise<void>;
+    refreshState: (forceIconRefresh?: boolean) => Promise<void>;
     showToast: (message: string, kind?: 'success' | 'error') => void;
     setBusyIds: Dispatch<SetStateAction<Set<string>>>;
     setBatchBusy: Dispatch<SetStateAction<BatchBusyState>>;
@@ -179,7 +179,7 @@ export function useServiceActions(context: ServiceActionContext) {
     const refreshAppState = async () => {
         setRefreshing(true);
         try {
-            await refreshState();
+            await refreshState(true);
             if (selectedId) setLogs((await GetLogs(selectedId)) ?? []);
             showToast('状态已刷新');
         } catch (error) {
