@@ -1,8 +1,11 @@
-import {Folder, LoaderCircle, Play, Square, TerminalSquare, X} from 'lucide-react';
-import {Fragment} from 'react';
+import {LoaderCircle, Play, Square, TerminalSquare, X} from 'lucide-react';
+import {useEffect, useState} from 'react';
 import SelectionCheckbox from './SelectionCheckbox';
 import ServiceRow from './ServiceRow';
+import WorkspaceGroupSection from './WorkspaceGroupSection';
 import type {BatchBusyState, ResourceUsage, ServiceView, WorkspaceGroup} from '../types';
+
+const collapsedGroupsKey = 'lal:collapsed-workspaces';
 
 export default function ServicesPane({loading, query, total, selectedId, filteredServices, workspaceGroups, showWorkspaceGroups,
     checkedIds, checkedStartableCount, checkedStoppableCount, allVisibleChecked, someVisibleChecked, batchBusy,
@@ -36,6 +39,33 @@ export default function ServicesPane({loading, query, total, selectedId, filtere
     onOpenURL: (service: ServiceView) => void;
     onMenu: (event: React.MouseEvent<HTMLButtonElement>, service: ServiceView) => void;
 }) {
+    const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(() => {
+        try {
+            const saved: unknown = JSON.parse(window.localStorage.getItem(collapsedGroupsKey) ?? '[]');
+            return new Set(Array.isArray(saved) ? saved.filter((name): name is string => typeof name === 'string') : []);
+        } catch { return new Set(); }
+    });
+    const [searchFolds, setSearchFolds] = useState<{query: string; groups: Set<string>}>({query: '', groups: new Set()});
+    const searching = query.trim().length > 0;
+    useEffect(() => {
+        try { window.localStorage.setItem(collapsedGroupsKey, JSON.stringify([...collapsedGroups])); }
+        catch { /* Folding still works when WebView storage is unavailable. */ }
+    }, [collapsedGroups]);
+
+    const toggleGroup = (name: string) => {
+        const toggle = (current: Set<string>) => {
+            const next = new Set(current);
+            if (next.has(name)) next.delete(name);
+            else next.add(name);
+            return next;
+        };
+        if (searching) {
+            setSearchFolds(current => ({query, groups: toggle(current.query === query ? current.groups : new Set())}));
+        } else {
+            setCollapsedGroups(toggle);
+        }
+    };
+
     const renderRow = (service: ServiceView) => (
         <ServiceRow key={service.id} service={service} selected={service.id === selectedId} checked={checkedIds.has(service.id)}
             iconURL={iconURLs[service.id]}
@@ -79,12 +109,11 @@ export default function ServicesPane({loading, query, total, selectedId, filtere
                         {!query && <button className="text-button" type="button" onClick={onAdd}>添加服务</button>}
                     </div>
                 ) : showWorkspaceGroups ? workspaceGroups.map(group => (
-                    <Fragment key={group.name}>
-                        <div className="workspace-heading">
-                            <Folder size={12}/><span title={group.name}>{group.name}</span><span>{group.services.length}</span>
-                        </div>
+                    <WorkspaceGroupSection key={group.name} group={group} checkedIds={checkedIds} resourceUsage={resourceUsage}
+                        collapsed={searching ? searchFolds.query === query && searchFolds.groups.has(group.name) : collapsedGroups.has(group.name)}
+                        onToggle={() => toggleGroup(group.name)}>
                         {group.services.map(renderRow)}
-                    </Fragment>
+                    </WorkspaceGroupSection>
                 )) : filteredServices.map(renderRow)}
             </div>
         </section>

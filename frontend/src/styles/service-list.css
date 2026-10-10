@@ -48,28 +48,83 @@
 
 .workspace-heading {
     display: flex;
-    align-items: center;
+    flex-direction: column;
+    align-items: stretch;
     gap: 6px;
-    height: 26px;
-    padding: 0 14px;
+    width: 100%;
+    min-height: 34px;
+    padding: 8px 12px;
+    border: 0;
     border-bottom: 1px solid var(--line);
-    color: #9ba7ac;
+    color: var(--muted);
     background: #101517;
-    font-family: var(--mono);
-    font-size: 8px;
-    font-weight: 740;
+    text-align: left;
+    cursor: pointer;
+    transition: background-color 120ms ease;
 }
 
-.workspace-heading > span:first-of-type {
+.workspace-heading:hover { background: var(--panel-hover); }
+.workspace-heading:focus-visible { outline: 1px solid var(--accent); outline-offset: -2px; }
+.workspace-heading.has-issues { box-shadow: inset 2px 0 0 var(--red); }
+
+.workspace-heading-main {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+    min-height: 18px;
+    font-size: 11px;
+    font-weight: 650;
+}
+
+.workspace-heading-main > svg { flex: 0 0 13px; }
+.workspace-chevron { transition: transform 120ms ease; }
+.workspace-heading[aria-expanded="true"] .workspace-chevron { transform: rotate(90deg); }
+
+.workspace-name {
+    flex: 1 1 auto;
     min-width: 0;
     overflow: hidden;
+    color: var(--text);
     text-overflow: ellipsis;
     white-space: nowrap;
 }
 
-.workspace-heading > span:last-child {
-    margin-left: auto;
+.workspace-service-count,
+.workspace-selected-count {
+    flex: 0 0 auto;
+    font-size: 9px;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+.workspace-service-count { color: var(--faint); }
+.workspace-selected-count { color: var(--accent); }
+
+.workspace-summary {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px 12px;
+    min-width: 0;
+    padding-left: 38px;
     color: var(--faint);
+    font-family: var(--mono);
+    font-size: 9px;
+    line-height: 15px;
+    font-variant-numeric: tabular-nums;
+}
+
+.workspace-summary > span { white-space: nowrap; }
+.workspace-summary strong { font-weight: 650; }
+.workspace-running,
+.workspace-cpu { color: var(--accent); }
+.workspace-ready,
+.workspace-memory { color: var(--green); }
+.workspace-issues { color: var(--red); }
+
+@media (prefers-reduced-motion: reduce) {
+    .workspace-heading,
+    .workspace-chevron { transition: none; }
 }
 
 .project-icon svg { width: 17px; height: 17px; }
