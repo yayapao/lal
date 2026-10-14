@@ -46,6 +46,10 @@ export function GetAppState() {
   return window['go']['main']['App']['GetAppState']();
 }
 
+export function GetGitStatuses() {
+  return window['go']['main']['App']['GetGitStatuses']();
+}
+
 export function GetLogs(arg1) {
   return window['go']['main']['App']['GetLogs'](arg1);
 }
@@ -56,6 +60,10 @@ export function GetPrompts(arg1) {
 
 export function GetResourceUsage() {
   return window['go']['main']['App']['GetResourceUsage']();
+}
+
+export function GetServiceGitDetails(arg1) {
+  return window['go']['main']['App']['GetServiceGitDetails'](arg1);
 }
 
 export function GetServiceIcon(arg1) {

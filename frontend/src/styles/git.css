@@ -1,0 +1,90 @@
+.service-git-line { display: flex; min-width: 0; margin-top: 2px; }
+.git-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    max-width: 100%;
+    min-width: 0;
+    padding: 2px 0;
+    border: 0;
+    border-radius: 3px;
+    color: var(--muted);
+    background: transparent;
+    font-family: var(--mono);
+    font-size: 9px;
+    line-height: 15px;
+    cursor: pointer;
+}
+.git-badge:hover { color: var(--text); background: var(--accent-soft); }
+.git-badge > svg { flex-shrink: 0; color: var(--muted); }
+.git-branch-name { max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.git-state-text { flex-shrink: 0; white-space: nowrap; }
+.git-clean .git-state-text { color: var(--green); }
+.git-dirty .git-state-text { color: var(--amber); }
+.git-error, .git-error .git-state-text, .git-file-code.is-conflict { color: var(--red); }
+.git-pending, .git-not_repository { color: var(--faint); }
+.log-git-summary {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+    flex: 0 0 32px;
+    padding: 0 12px;
+    border-bottom: 1px solid var(--line);
+    background: var(--panel);
+}
+.log-git-summary > span { overflow: hidden; color: var(--faint); font-size: 9px; text-overflow: ellipsis; white-space: nowrap; }
+.log-git-summary > button:last-child { flex-shrink: 0; margin-left: auto; font-size: 9px; }
+.git-pane {
+    display: grid;
+    grid-template-rows: 40px minmax(0, 1fr) 26px;
+    min-width: 0;
+    min-height: 0;
+    background: var(--console);
+}
+.git-heading, .git-title, .git-heading-actions, .git-overview-title, .git-tabs, .git-config-toolbar, .git-footer { display: flex; align-items: center; min-width: 0; }
+.git-heading { justify-content: space-between; gap: 8px; padding: 0 9px 0 15px; border-bottom: 1px solid var(--line); background: var(--panel); }
+.git-title { gap: 7px; font-size: 11px; font-weight: 650; }
+.git-title > span:first-of-type { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.git-kicker { color: var(--faint); font-family: var(--mono); font-size: 10px; }
+.git-heading-actions { flex-shrink: 0; gap: 5px; }
+.git-heading-actions .text-button { display: flex; align-items: center; gap: 5px; }
+.git-viewport { min-width: 0; min-height: 0; overflow: auto; }
+.git-overview { padding: 22px 18px 18px; border-bottom: 1px solid var(--line); background: #0f1417; }
+.git-overview-title { justify-content: space-between; gap: 12px; font-size: 11px; }
+.git-overview-title strong { min-width: 0; font-family: var(--mono); font-size: 15px; font-weight: 600; overflow-wrap: anywhere; }
+.git-overview p { margin: 10px 0 0; color: var(--muted); font-size: 11px; line-height: 1.6; overflow-wrap: anywhere; }
+.git-overview p.git-error { color: var(--red); }
+.git-upstream small { display: block; color: var(--faint); font-size: 9px; }
+.git-locations { display: grid; grid-template-columns: 62px minmax(0, 1fr); gap: 7px 10px; margin: 18px 0 10px; font-size: 9px; line-height: 1.6; }
+.git-locations dt { color: var(--faint); }
+.git-locations dd { margin: 0; color: var(--muted); font-family: var(--mono); overflow-wrap: anywhere; }
+.git-scope { display: block; margin: 12px 0 0; color: var(--faint); font-size: 9px; line-height: 1.6; }
+.git-pane [role="tabpanel"] > .git-scope, .git-pane [role="tabpanel"] > .git-error { padding: 0 18px; }
+.git-tabs { gap: 18px; padding: 0 18px; border-bottom: 1px solid var(--line); }
+.git-tabs button { display: flex; align-items: center; gap: 6px; height: 42px; padding: 0; border: 0; border-bottom: 2px solid transparent; color: var(--muted); background: transparent; font-size: 11px; cursor: pointer; }
+.git-tabs button:hover { color: var(--text); }
+.git-tabs button[aria-selected="true"] { border-bottom-color: var(--accent); color: var(--text); }
+.git-tabs button span { color: var(--faint); font-family: var(--mono); font-size: 9px; }
+.git-empty { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 140px; padding: 24px 18px; color: var(--faint); font-size: 11px; text-align: center; overflow-wrap: anywhere; }
+.git-empty.is-error { color: var(--red); }
+.git-file-list { margin: 0; padding: 0; list-style: none; }
+.git-file-list li { display: grid; grid-template-columns: 26px minmax(0, 1fr) auto; align-items: start; gap: 10px; padding: 12px 18px; border-bottom: 1px solid var(--line); font-size: 10px; line-height: 1.6; }
+.git-file-list li:hover, .git-config-list > div:hover { background: var(--panel); }
+.git-file-code { color: var(--amber); font-family: var(--mono); letter-spacing: 2px; }
+.git-file-list li > div { min-width: 0; font-family: var(--mono); white-space: pre-wrap; overflow-wrap: anywhere; }
+.git-file-list small { display: block; margin-top: 3px; color: var(--faint); font-size: 9px; }
+.git-file-kind { color: var(--muted); font-size: 9px; white-space: nowrap; }
+.git-config-toolbar { flex-wrap: wrap; justify-content: space-between; gap: 10px; padding: 12px 18px; border-bottom: 1px solid var(--line); }
+.git-config-toolbar code { color: var(--faint); font-family: var(--mono); font-size: 9px; }
+.git-config-toolbar input { min-width: 0; width: 140px; max-width: 100%; padding: 6px 8px; border: 1px solid var(--line-strong); border-radius: 4px; color: var(--text); background: var(--panel); font-size: 10px; }
+.git-config-toolbar input:focus { outline: 1px solid var(--accent); }
+.git-config-list { margin: 0; font-family: var(--mono); font-size: 10px; line-height: 1.7; }
+.git-config-list > div { display: grid; grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr); gap: 14px; padding: 11px 18px; border-bottom: 1px solid var(--line); }
+.git-config-list dt { color: var(--accent); overflow-wrap: anywhere; }
+.git-config-list dd { margin: 0; color: var(--text); white-space: pre-wrap; overflow-wrap: anywhere; }
+.git-empty-value { color: var(--faint); font-family: inherit; font-size: 9px; }
+.git-footer { justify-content: space-between; gap: 12px; padding: 0 12px; border-top: 1px solid var(--line); color: var(--faint); font-family: var(--mono); font-size: 8px; }
+.git-footer span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.git-footer span:last-child { flex-shrink: 0; }
+.git-badge:focus-visible, .git-tabs button:focus-visible { outline: 1px solid var(--accent); outline-offset: 2px; }

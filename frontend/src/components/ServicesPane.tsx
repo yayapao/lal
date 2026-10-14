@@ -3,13 +3,13 @@ import {useEffect, useState} from 'react';
 import SelectionCheckbox from './SelectionCheckbox';
 import ServiceRow from './ServiceRow';
 import WorkspaceGroupSection from './WorkspaceGroupSection';
-import type {BatchBusyState, ResourceUsage, ServiceView, WorkspaceGroup} from '../types';
+import type {BatchBusyState, GitStatus, ResourceUsage, ServiceView, WorkspaceGroup} from '../types';
 
 const collapsedGroupsKey = 'lal:collapsed-workspaces';
 
 export default function ServicesPane({loading, query, total, selectedId, filteredServices, workspaceGroups, showWorkspaceGroups,
     checkedIds, checkedStartableCount, checkedStoppableCount, allVisibleChecked, someVisibleChecked, batchBusy,
-    iconURLs, resourceUsage, busyIds, onToggleVisibleSelection, onStartSelected, onStopSelected, onClearSelection,
+    iconURLs, resourceUsage, gitStatuses, busyIds, onOpenGit, onToggleVisibleSelection, onStartSelected, onStopSelected, onClearSelection,
     onOpenWorkspaceManager, onAdd, onSelectService, onToggleService, onCheckService, onOpenURL, onMenu}: {
     loading: boolean;
     query: string;
@@ -26,6 +26,7 @@ export default function ServicesPane({loading, query, total, selectedId, filtere
     batchBusy: BatchBusyState;
     iconURLs: Record<string, string>;
     resourceUsage: Record<string, ResourceUsage>;
+    gitStatuses: Record<string, GitStatus>;
     busyIds: Set<string>;
     onToggleVisibleSelection: () => void;
     onStartSelected: () => void;
@@ -34,6 +35,7 @@ export default function ServicesPane({loading, query, total, selectedId, filtere
     onOpenWorkspaceManager: () => void;
     onAdd: () => void;
     onSelectService: (id: string) => void;
+    onOpenGit: (service: ServiceView) => void;
     onToggleService: (service: ServiceView) => void;
     onCheckService: (id: string) => void;
     onOpenURL: (service: ServiceView) => void;
@@ -70,6 +72,7 @@ export default function ServicesPane({loading, query, total, selectedId, filtere
         <ServiceRow key={service.id} service={service} selected={service.id === selectedId} checked={checkedIds.has(service.id)}
             iconURL={iconURLs[service.id]}
             usage={resourceUsage[service.id]}
+            gitStatus={gitStatuses[service.id]} onOpenGit={() => onOpenGit(service)}
             busy={busyIds.has(service.id) || batchBusy?.startsWith('all') === true || (batchBusy?.startsWith('selected') === true && checkedIds.has(service.id))}
             onSelect={() => onSelectService(service.id)} onToggle={() => onToggleService(service)}
             onCheck={() => onCheckService(service.id)} selectionDisabled={batchBusy !== null}

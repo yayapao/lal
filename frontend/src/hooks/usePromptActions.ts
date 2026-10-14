@@ -20,7 +20,7 @@ type PromptActionContext = {
     setAddingPrompt: Dispatch<SetStateAction<boolean>>;
     setMenu: Dispatch<SetStateAction<{service: ServiceView; left: number; top: number} | null>>;
     setSelectedId: Dispatch<SetStateAction<string>>;
-    setRightView: Dispatch<SetStateAction<'logs' | 'prompts'>>;
+    setRightView: Dispatch<SetStateAction<'logs' | 'prompts' | 'git'>>;
 };
 
 export function usePromptActions(context: PromptActionContext) {

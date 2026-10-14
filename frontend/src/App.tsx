@@ -8,10 +8,12 @@ import './styles/logs.css';
 import './styles/console.css';
 import './styles/dialogs.css';
 import './styles/overlays.css';
+import './styles/git.css';
 import {groupLogEntries} from './LogLine';
 import ContextMenu from './components/ContextMenu';
 import {CacheDialog, DeleteDialog, IssueDialog} from './components/ConfirmDialogs';
 import LogsPane from './components/LogsPane';
+import GitPane from './components/GitPane';
 import PromptManager from './components/PromptManager';
 import ServiceDialog from './components/ServiceDialog';
 import ServicesPane from './components/ServicesPane';
@@ -23,6 +25,7 @@ import {useResourceUsage} from './hooks/useResourceUsage';
 import {useServiceActions} from './hooks/useServiceActions';
 import {useServiceIcons} from './hooks/useServiceIcons';
 import {useServiceState} from './hooks/useServiceState';
+import {useGitStatuses} from './hooks/useGitStatuses';
 import {useWorkspaceManager} from './hooks/useWorkspaceManager';
 import {ungroupedWorkspace} from './types';
 import type {BatchBusyState, DialogState, MenuState, OperationIssue, PromptFileView, ServiceView, ToastState, WorkspaceGroup} from './types';
@@ -40,7 +43,7 @@ function App() {
     const [refreshing, setRefreshing] = useState(false);
     const [cacheTarget, setCacheTarget] = useState<ServiceView | null>(null);
     const [cacheBusyId, setCacheBusyId] = useState('');
-    const [rightView, setRightView] = useState<'logs' | 'prompts'>('logs');
+    const [rightView, setRightView] = useState<'logs' | 'prompts' | 'git'>('logs');
     const [prompts, setPrompts] = useState<PromptFileView[]>([]);
     const [promptLoading, setPromptLoading] = useState(false);
     const [promptSyncing, setPromptSyncing] = useState(false);
@@ -64,6 +67,7 @@ function App() {
     const workspaceManager = useWorkspaceManager(services, workspaces, refreshState, showToast);
     const {resourceUsage, resourceHistory} = useResourceUsage();
     const iconURLs = useServiceIcons(services, iconRefreshKey);
+    const git = useGitStatuses(services, iconRefreshKey);
 
     const selectedService = services.find(service => service.id === selectedId) ?? null;
     const selectedUsage = selectedService ? resourceUsage[selectedService.id] : undefined;
@@ -145,7 +149,7 @@ function App() {
                     filteredServices={filteredServices} workspaceGroups={workspaceGroups} showWorkspaceGroups={showWorkspaceGroups}
                     checkedIds={checkedIds} checkedStartableCount={checkedStartableCount} checkedStoppableCount={checkedStoppableCount}
                     allVisibleChecked={allVisibleChecked} someVisibleChecked={someVisibleChecked} batchBusy={batchBusy}
-                    iconURLs={iconURLs} resourceUsage={resourceUsage} busyIds={busyIds}
+                    iconURLs={iconURLs} resourceUsage={resourceUsage} gitStatuses={git.statuses} busyIds={busyIds}
                     onToggleVisibleSelection={serviceActions.toggleVisibleSelection}
                     onStartSelected={() => void serviceActions.runSelectedBatch('start')}
                     onStopSelected={() => void serviceActions.runSelectedBatch('stop')}
@@ -153,6 +157,7 @@ function App() {
                     onOpenWorkspaceManager={workspaceManager.open}
                     onAdd={() => setDialog({mode: 'create'})}
                     onSelectService={id => { setSelectedId(id); setRightView('logs'); }}
+                    onOpenGit={service => { setSelectedId(service.id); setRightView('git'); }}
                     onToggleService={service => void serviceActions.toggleService(service)}
                     onCheckService={serviceActions.toggleChecked}
                     onOpenURL={service => void serviceActions.openServiceURL(service)}
@@ -167,7 +172,10 @@ function App() {
                         onOpen={prompt => void promptActions.openCodexWithPrompt(selectedService, prompt)}
                         onRemove={prompt => void promptActions.removePrompt(selectedService, prompt)}
                         onBack={() => setRightView('logs')}/>
-                ) : <LogsPane service={selectedService} logs={logs} logBlocks={logBlocks} autoScroll={autoScroll}
+                ) : rightView === 'git' && selectedService ? <GitPane key={`${selectedService.id}:${selectedService.directory}`} service={selectedService}
+                    refreshKey={iconRefreshKey} onStatus={git.update} onBack={() => setRightView('logs')}/>
+                    : <LogsPane service={selectedService} logs={logs} logBlocks={logBlocks} autoScroll={autoScroll}
+                    gitStatus={selectedService ? git.statuses[selectedService.id] : undefined} onOpenGit={() => setRightView('git')}
                     onToggleAutoScroll={() => setAutoScroll(value => !value)}
                     downloadingLogs={downloadingLogs} onDownloadLogs={() => void serviceActions.downloadSelectedLogs()}
                     onClearLogs={() => void serviceActions.clearSelectedLogs()}

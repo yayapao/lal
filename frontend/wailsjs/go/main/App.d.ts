@@ -24,11 +24,15 @@ export function DownloadLogs(arg1:string):Promise<string>;
 
 export function GetAppState():Promise<main.AppState>;
 
+export function GetGitStatuses():Promise<Array<main.GitStatus>>;
+
 export function GetLogs(arg1:string):Promise<Array<main.LogEntry>>;
 
 export function GetPrompts(arg1:string):Promise<Array<main.PromptFileView>>;
 
 export function GetResourceUsage():Promise<Array<main.ResourceUsage>>;
+
+export function GetServiceGitDetails(arg1:string):Promise<main.GitDetails>;
 
 export function GetServiceIcon(arg1:string):Promise<string>;
 

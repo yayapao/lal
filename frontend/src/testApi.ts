@@ -11,6 +11,8 @@ export const api = {
     DetectProject: vi.fn().mockResolvedValue({name: 'Alpha', directory: '/tmp/alpha', workspace: '', projectType: 'nextjs', command: 'npm run dev', url: '', cleanCommand: 'rm -rf .next', scripts: [], sources: ['package.json'], warnings: []}),
     DownloadLogs: vi.fn(),
     GetAppState: vi.fn(),
+    GetGitStatuses: vi.fn().mockResolvedValue([]),
+    GetServiceGitDetails: vi.fn(),
     GetLogs: vi.fn(),
     GetPrompts: vi.fn(),
     GetResourceUsage: vi.fn(),

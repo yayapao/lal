@@ -1,14 +1,18 @@
 import {Download, ExternalLink, ListEnd, LoaderCircle, TerminalSquare, Trash2} from 'lucide-react';
 import LogLine, {groupLogEntries} from '../LogLine';
+import GitBadge from './GitBadge';
 import PackagePanel from './PackagePanel';
 import ResourceMonitor from './ResourceMonitor';
 import StatusLabel from './StatusLabel';
 import {displayURL} from '../utils';
-import type {LogEntry, ResourceUsage, ServiceView} from '../types';
+import type {GitStatus, LogEntry, ResourceUsage, ServiceView} from '../types';
+import {gitCounts} from '../gitUtils';
 
 export default function LogsPane({service, logs, logBlocks, autoScroll, onToggleAutoScroll, downloadingLogs, onDownloadLogs,
-    onClearLogs, scriptBusy, onRunScript, onStopScript, usage, history, onOpenURL}: {
+    onClearLogs, scriptBusy, onRunScript, onStopScript, usage, history, onOpenURL, gitStatus, onOpenGit}: {
     service: ServiceView | null;
+    gitStatus?: GitStatus;
+    onOpenGit: () => void;
     logs: LogEntry[];
     logBlocks: ReturnType<typeof groupLogEntries>;
     autoScroll: boolean;
@@ -37,6 +41,8 @@ export default function LogsPane({service, logs, logBlocks, autoScroll, onToggle
                 <button className="icon-button subtle" type="button" onClick={onClearLogs} aria-label="清空日志" title="清空日志" disabled={!service || logs.length === 0}><Trash2 size={16}/></button>
             </div>
         </div>
+        {service && <div className="log-git-summary"><GitBadge status={gitStatus} name={service.name} onOpen={onOpenGit}/>
+            <span>{gitStatus && gitCounts(gitStatus)}</span><button className="text-button" type="button" onClick={onOpenGit}>Git 详情</button></div>}
         <ResourceMonitor service={service} usage={usage} history={history}/>
         {service?.packageInfo && <PackagePanel key={service.id} service={service} busy={scriptBusy}
             onRun={scriptName => onRunScript(service, scriptName)} onStop={() => onStopScript(service)}/>}

@@ -1,12 +1,14 @@
 import {CircleAlert, Ellipsis, ExternalLink, LoaderCircle, Play, Square} from 'lucide-react';
 import type {KeyboardEvent} from 'react';
+import GitBadge from './GitBadge';
 import ProjectIcon from './ProjectIcon';
 import StatusLabel from './StatusLabel';
 import {displayURL, formatCPU, formatMemory, formatUptime, isActive, serviceVisualState} from '../utils';
-import type {ResourceUsage, ServiceView} from '../types';
+import type {GitStatus, ResourceUsage, ServiceView} from '../types';
 
-export default function ServiceRow({service, usage, selected, checked, busy, selectionDisabled, iconURL, onSelect, onCheck, onToggle, onOpenURL, onMenu}: {
+export default function ServiceRow({service, usage, selected, checked, busy, selectionDisabled, iconURL, gitStatus, onOpenGit, onSelect, onCheck, onToggle, onOpenURL, onMenu}: {
     service: ServiceView; usage?: ResourceUsage; selected: boolean; checked: boolean; busy: boolean; selectionDisabled: boolean; iconURL?: string;
+    gitStatus?: GitStatus; onOpenGit: () => void;
     onSelect: () => void; onCheck: () => void; onToggle: () => void;
     onOpenURL: () => void;
     onMenu: (event: React.MouseEvent<HTMLButtonElement>) => void;
@@ -35,6 +37,7 @@ export default function ServiceRow({service, usage, selected, checked, busy, sel
                         <ExternalLink size={11}/><span>{displayURL(service.url)}</span>
                     </button>}
                 </div>
+                <div className="service-git-line"><GitBadge status={gitStatus} name={service.name} onOpen={onOpenGit}/></div>
                 {service.lastError && <div className="service-error" title={service.lastError}>{service.lastError}</div>}
             </div>
             <StatusLabel service={service}/>
