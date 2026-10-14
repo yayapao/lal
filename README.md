@@ -9,6 +9,8 @@ LAL（Local App Launcher）是一个基于 Wails v2 的 macOS 本地开发服务
 当前版本包含：
 
 - 服务的添加、编辑、删除和搜索
+- 添加服务时先选择项目目录，自动读取 `package.json`，填充名称、包管理器对应的启动命令和可确定的访问地址；可切换脚本或手动修改配置
+- Workspace 从已有分组下拉选择；管理界面按分组展示项目，支持新增、重命名、删除分组和项目批量移动
 - 单个服务一键启动、停止
 - 服务状态手动刷新、重启，以及执行可自定义的缓存清理脚本后自动重启
 - 按服务读取 Codex 启动提示词，支持一键复制或在对应项目中新建 Codex 对话并粘贴
@@ -37,9 +39,13 @@ LAL（Local App Launcher）是一个基于 Wails v2 的 macOS 本地开发服务
 | myStock | `/Users/yango/github/stock/mystock` | `npm run dev` | `http://localhost:35790` |
 | ViewAI | `/Users/yango/Documents/huyaprojects/ai/viewai` | `npm run dev` | `http://localhost:3900` |
 
-之后的配置保存在 `~/Library/Application Support/LAL/config.json`，不会写入各项目目录。旧版 v1/v2/v3 配置会自动迁移到当前版本；上述两个已知服务还会补充默认访问地址。同版本早期使用的单 Prompt 路径字段也会兼容转换。
+之后的配置保存在 `~/Library/Application Support/LAL/config.json`，不会写入各项目目录。旧版 v1/v2/v3/v4 配置会自动迁移到当前 v5：已有的目录自动分组会保留为明确的项目归属。v1/v2/v3 中上述两个已知服务还会补充默认访问地址；早期的单 Prompt 路径字段也会兼容转换。
+
+Workspace 独立保存，空分组也会保留。管理弹窗左侧选择分组，右侧勾选项目添加、移出或批量移动；创建分组会提供默认名称，也可以重命名。删除分组只会把其中的项目移到“未分组”，不会删除项目或改变启动设置。所有修改在点击“保存”后一次性写入；取消会放弃本次修改。添加项目时可以根据已归属的父项目建议 Workspace，留空则保持未分组。
 
 每个服务都有独立的缓存清理脚本，默认是 `rm -rf .next`。可以在编辑服务时改成项目实际需要的命令，例如 `rm -rf .next dist/.cache .turbo` 或项目内的清理脚本路径；命令会在该服务的项目目录中执行。
+
+添加服务会优先选择 `dev`、`start`、`serve` 等常用脚本，按 `packageManager` 或锁文件识别 npm、pnpm、yarn、bun。访问地址从启动命令的端口参数、内联 `PORT`、Vite 的静态 `server.port` 或 Node 启动文件的静态端口识别；直接使用已知框架启动命令时可采用框架默认端口。无法确定的地址会留空。解析只读取本地文件，不执行项目脚本或配置，也不调用外部模型；自动填写后可以手动调整。
 
 项目头像优先读取项目目录下的 `public/logo.png`，也支持 JPG、JPEG、WebP、SVG、GIF、AVIF 和 ICO，文件不能超过 2 MB。服务状态更新时会检查图片路径、修改时间和大小；替换图片后，点击“刷新状态”可以强制重新读取头像。删除图片后会恢复默认项目图标。
 

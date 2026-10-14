@@ -111,16 +111,17 @@ describe('prompt and workspace management', () => {
         await waitFor(() => expect(api.RemovePromptFile).toHaveBeenCalledWith('alpha', addedPrompt.path));
     });
 
-    it('assigns a service to a workspace from the workspace manager', async () => {
+    it('assigns a project by selecting its workspace without typing a workspace name', async () => {
         const user = userEvent.setup();
-        api.SetServiceWorkspace.mockResolvedValue({...alphaService, configuredWorkspace: 'ViewAI', workspace: 'ViewAI'});
+        api.GetAppState.mockResolvedValue({services: [alphaService], workspaces: ['ViewAI'], configPath: '/tmp/lal.json', warning: ''});
+        api.SaveWorkspaceLayout.mockResolvedValue(undefined);
         render(<App/>);
-
         await user.click(await screen.findByRole('button', {name: 'Workspace 管理'}));
-        const workspace = screen.getByLabelText('Alpha');
-        await user.type(workspace, 'ViewAI');
+        await user.click(screen.getByRole('button', {name: '添加项目'}));
+        await user.click(screen.getByRole('checkbox', {name: '选择项目 Alpha'}));
+        await user.click(screen.getByRole('button', {name: '添加选中项目'}));
         await user.click(screen.getByRole('button', {name: '保存'}));
-
-        await waitFor(() => expect(api.SetServiceWorkspace).toHaveBeenCalledWith('alpha', 'ViewAI'));
+        await waitFor(() => expect(api.SaveWorkspaceLayout).toHaveBeenCalledWith({workspaces: ['ViewAI'], assignments: {alpha: 'ViewAI'}}));
+        expect(api.SetServiceWorkspace).not.toHaveBeenCalled();
     });
 });

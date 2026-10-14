@@ -11,6 +11,7 @@ export type ToastState = {kind: 'success' | 'error'; message: string};
 export type MenuState = {service: ServiceView; left: number; top: number};
 export type OperationIssue = {title: string; message: string};
 export type WorkspaceGroup = {name: string; services: ServiceView[]};
+export type WorkspaceDraft = {workspaces: string[]; assignments: Record<string, string>};
 
 export const defaultCleanCommand = 'rm -rf .next';
 export const ungroupedWorkspace = '未分组';

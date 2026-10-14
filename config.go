@@ -74,7 +74,7 @@ func (m *serviceManager) loadConfig() error {
 		}
 		service.PromptFile = ""
 		service.PromptFiles = normalizePromptFiles(service.PromptFiles)
-		if migrating && service.URL == "" {
+		if config.Version < 4 && service.URL == "" {
 			service.URL = knownServiceURL(service.Directory)
 		}
 		if err := validateService(service); err != nil {
@@ -86,6 +86,17 @@ func (m *serviceManager) loadConfig() error {
 		}
 	}
 	m.services = append([]Service(nil), config.Services...)
+	m.workspaces = append([]string(nil), config.Workspaces...)
+	if config.Version < 5 {
+		assignments := make([]string, len(m.services))
+		for index, service := range m.services {
+			assignments[index] = m.legacyWorkspaceLocked(service)
+		}
+		for index := range m.services {
+			m.services[index].Workspace = assignments[index]
+		}
+	}
+	m.workspaces = m.workspaceNamesLocked()
 	if changed {
 		return m.saveConfigLocked()
 	}
@@ -111,6 +122,7 @@ func (m *serviceManager) GetAppState() AppState {
 	defer m.mu.RUnlock()
 	return AppState{
 		Services:   m.serviceViewsLocked(),
+		Workspaces: m.workspaceNamesLocked(),
 		ConfigPath: m.configPath,
 		Warning:    m.configWarn,
 	}

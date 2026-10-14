@@ -34,6 +34,10 @@ export function DeleteService(arg1) {
   return window['go']['main']['App']['DeleteService'](arg1);
 }
 
+export function DetectProject(arg1) {
+  return window['go']['main']['App']['DetectProject'](arg1);
+}
+
 export function DownloadLogs(arg1) {
   return window['go']['main']['App']['DownloadLogs'](arg1);
 }
@@ -80,6 +84,10 @@ export function RevealService(arg1) {
 
 export function RunPackageScript(arg1, arg2) {
   return window['go']['main']['App']['RunPackageScript'](arg1, arg2);
+}
+
+export function SaveWorkspaceLayout(arg1) {
+  return window['go']['main']['App']['SaveWorkspaceLayout'](arg1);
 }
 
 export function SetServiceWorkspace(arg1, arg2) {

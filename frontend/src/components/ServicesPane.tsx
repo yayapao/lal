@@ -96,7 +96,7 @@ export default function ServicesPane({loading, query, total, selectedId, filtere
                     <button className="selection-action" type="button" onClick={onClearSelection} disabled={batchBusy !== null}
                         aria-label="清除选择" title="清除选择"><X size={14}/></button>
                 </div> : <div className="pane-heading-actions"><span className="service-count">{query ? `${filteredServices.length} / ${total}` : total}</span>
-                    <button className="text-button workspace-manager-button" type="button" onClick={onOpenWorkspaceManager} disabled={total === 0}>Workspace 管理</button></div>}
+                    <button className="text-button workspace-manager-button" type="button" onClick={onOpenWorkspaceManager}>Workspace 管理</button></div>}
             </div>
             <div className="services-list">
                 {loading ? (

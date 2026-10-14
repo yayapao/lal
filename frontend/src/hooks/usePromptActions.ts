@@ -6,15 +6,11 @@ import {
     GetPrompts,
     OpenCodexWithPrompt,
     RemovePromptFile,
-    SetServiceWorkspace,
 } from '../../wailsjs/go/main/App';
 import type {PromptFileView, ServiceView} from '../types';
 import {errorMessage} from '../utils';
 
 type PromptActionContext = {
-    services: ServiceView[];
-    workspaceManager: Record<string, string> | null;
-    refreshState: () => Promise<void>;
     showToast: (message: string, kind?: 'success' | 'error') => void;
     setPrompts: Dispatch<SetStateAction<PromptFileView[]>>;
     setPromptLoading: Dispatch<SetStateAction<boolean>>;
@@ -25,14 +21,11 @@ type PromptActionContext = {
     setMenu: Dispatch<SetStateAction<{service: ServiceView; left: number; top: number} | null>>;
     setSelectedId: Dispatch<SetStateAction<string>>;
     setRightView: Dispatch<SetStateAction<'logs' | 'prompts'>>;
-    setWorkspaceManager: Dispatch<SetStateAction<Record<string, string> | null>>;
-    setWorkspaceSaving: Dispatch<SetStateAction<boolean>>;
 };
 
 export function usePromptActions(context: PromptActionContext) {
-    const {services, workspaceManager, refreshState, showToast, setPrompts, setPromptLoading, setPromptError,
-        setPromptSyncing, setPromptBusy, setAddingPrompt, setMenu, setSelectedId, setRightView, setWorkspaceManager,
-        setWorkspaceSaving} = context;
+    const {showToast, setPrompts, setPromptLoading, setPromptError,
+        setPromptSyncing, setPromptBusy, setAddingPrompt, setMenu, setSelectedId, setRightView} = context;
 
     const loadPrompts = useCallback(async (serviceId: string) => {
         setPromptLoading(true);
@@ -54,33 +47,6 @@ export function usePromptActions(context: PromptActionContext) {
         setPromptLoading(true);
         setSelectedId(service.id);
         setRightView('prompts');
-    };
-
-    const openWorkspaceManager = () => {
-        setWorkspaceManager(Object.fromEntries(services.map(service => [service.id, service.configuredWorkspace ?? ''])));
-    };
-
-    const updateWorkspaceDraft = (serviceId: string, workspace: string) => {
-        setWorkspaceManager(current => current ? {...current, [serviceId]: workspace} : current);
-    };
-
-    const saveWorkspaces = async () => {
-        if (!workspaceManager) return;
-        setWorkspaceSaving(true);
-        try {
-            for (const service of services) {
-                const workspace = (workspaceManager[service.id] ?? '').trim();
-                if (workspace === (service.configuredWorkspace ?? '')) continue;
-                await SetServiceWorkspace(service.id, workspace);
-            }
-            showToast('Workspace 已保存');
-            setWorkspaceManager(null);
-        } catch (error) {
-            showToast(errorMessage(error), 'error');
-        } finally {
-            setWorkspaceSaving(false);
-            await refreshState();
-        }
     };
 
     const copyCodexPrompt = async (service: ServiceView, prompt: PromptFileView) => {
@@ -147,5 +113,5 @@ export function usePromptActions(context: PromptActionContext) {
         }
     };
 
-    return {loadPrompts, openPromptManager, openWorkspaceManager, updateWorkspaceDraft, saveWorkspaces, copyCodexPrompt, openCodexWithPrompt, addPrompt, syncPrompts, removePrompt};
+    return {loadPrompts, openPromptManager, copyCodexPrompt, openCodexWithPrompt, addPrompt, syncPrompts, removePrompt};
 }

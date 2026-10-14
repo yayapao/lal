@@ -154,19 +154,25 @@ func TestServiceIconUsesProjectLogo(t *testing.T) {
 	}
 }
 
-func TestWorkspaceGroupsNestedProjects(t *testing.T) {
-	app := testApp(t)
+func TestLegacyWorkspaceGroupsMigrateToExplicitMembership(t *testing.T) {
 	root := t.TempDir()
 	nested := filepath.Join(root, "x-data")
 	if err := os.MkdirAll(nested, 0o755); err != nil {
 		t.Fatalf("create nested directory: %v", err)
 	}
-	if _, err := app.CreateService(ServiceInput{Name: "ViewAI", Directory: root, Command: "exit 0"}); err != nil {
-		t.Fatalf("create parent service: %v", err)
+	path := emptyConfig(t)
+	legacy := configFile{Version: 4, Services: []Service{
+		{ID: "parent", Name: "ViewAI", Directory: root, Command: "exit 0", CleanCommand: defaultCleanCommand},
+		{ID: "child", Name: "XData", Directory: nested, Command: "exit 0", CleanCommand: defaultCleanCommand},
+	}}
+	data, err := json.Marshal(legacy)
+	if err != nil {
+		t.Fatal(err)
 	}
-	if _, err := app.CreateService(ServiceInput{Name: "XData", Directory: nested, Command: "exit 0"}); err != nil {
-		t.Fatalf("create child service: %v", err)
+	if err := os.WriteFile(path, data, 0o600); err != nil {
+		t.Fatal(err)
 	}
+	app := newAppWithConfigPath(path)
 	state := app.GetAppState()
 	assertServiceNames(t, state.Services, []string{"ViewAI", "XData"})
 	if state.Services[0].Workspace != "ViewAI" || state.Services[1].Workspace != "ViewAI" {
@@ -179,8 +185,8 @@ func TestWorkspaceGroupsNestedProjects(t *testing.T) {
 		t.Fatalf("update parent workspace: %v", err)
 	}
 	state = app.GetAppState()
-	if state.Services[0].Workspace != "AI" || state.Services[1].Workspace != "AI" {
-		t.Fatalf("explicit workspace was not inherited: %#v", state.Services)
+	if state.Services[0].Workspace != "AI" || state.Services[1].Workspace != "ViewAI" {
+		t.Fatalf("explicit memberships should change independently: %#v", state.Services)
 	}
 }
 

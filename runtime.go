@@ -33,7 +33,8 @@ func (m *serviceManager) saveConfigLocked() error {
 	}
 	encoder := json.NewEncoder(temp)
 	encoder.SetIndent("", "  ")
-	if err := encoder.Encode(configFile{Version: configVersion, Services: m.services}); err != nil {
+	workspaces := m.workspaceNamesLocked()
+	if err := encoder.Encode(configFile{Version: configVersion, Services: m.services, Workspaces: workspaces}); err != nil {
 		temp.Close()
 		return fmt.Errorf("写入配置失败：%w", err)
 	}
@@ -47,6 +48,7 @@ func (m *serviceManager) saveConfigLocked() error {
 	if err := os.Rename(tempName, m.configPath); err != nil {
 		return fmt.Errorf("保存配置失败：%w", err)
 	}
+	m.workspaces = workspaces
 	return nil
 }
 

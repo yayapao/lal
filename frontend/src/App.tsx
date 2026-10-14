@@ -23,6 +23,7 @@ import {useResourceUsage} from './hooks/useResourceUsage';
 import {useServiceActions} from './hooks/useServiceActions';
 import {useServiceIcons} from './hooks/useServiceIcons';
 import {useServiceState} from './hooks/useServiceState';
+import {useWorkspaceManager} from './hooks/useWorkspaceManager';
 import {ungroupedWorkspace} from './types';
 import type {BatchBusyState, DialogState, MenuState, OperationIssue, PromptFileView, ServiceView, ToastState, WorkspaceGroup} from './types';
 import {isActive, isStoppable} from './utils';
@@ -48,8 +49,6 @@ function App() {
     const [promptBusy, setPromptBusy] = useState<{path: string; action: 'copy' | 'open' | 'remove'} | null>(null);
     const [operationIssue, setOperationIssue] = useState<OperationIssue | null>(null);
     const [scriptBusyId, setScriptBusyId] = useState('');
-    const [workspaceManager, setWorkspaceManager] = useState<Record<string, string> | null>(null);
-    const [workspaceSaving, setWorkspaceSaving] = useState(false);
     const [toast, setToast] = useState<ToastState | null>(null);
     const [, setClock] = useState(0);
     const logViewportRef = useRef<HTMLDivElement>(null);
@@ -61,7 +60,8 @@ function App() {
         toastTimerRef.current = window.setTimeout(() => setToast(null), 3200);
     }, []);
 
-    const {services, selectedId, setSelectedId, checkedIds, setCheckedIds, logs, setLogs, loading, refreshState, iconRefreshKey} = useServiceState(showToast);
+    const {services, workspaces, selectedId, setSelectedId, checkedIds, setCheckedIds, logs, setLogs, loading, refreshState, iconRefreshKey} = useServiceState(showToast);
+    const workspaceManager = useWorkspaceManager(services, workspaces, refreshState, showToast);
     const {resourceUsage, resourceHistory} = useResourceUsage();
     const iconURLs = useServiceIcons(services, iconRefreshKey);
 
@@ -74,7 +74,7 @@ function App() {
     const filteredServices = useMemo(() => {
         const keyword = query.trim().toLocaleLowerCase();
         if (!keyword) return services;
-        return services.filter(service => [service.name, service.directory, service.command, service.url ?? '']
+        return services.filter(service => [service.name, service.workspace ?? '', service.directory, service.command, service.url ?? '']
             .some(value => value.toLocaleLowerCase().includes(keyword)));
     }, [query, services]);
     const workspaceGroups = useMemo(() => {
@@ -85,7 +85,7 @@ function App() {
             if (group) group.services.push(service);
             else groups.set(name, {name, services: [service]});
         }
-        return [...groups.values()];
+        return [...groups.values()].sort((a, b) => a.name === ungroupedWorkspace ? 1 : b.name === ungroupedWorkspace ? -1 : a.name.localeCompare(b.name, 'zh-CN'));
     }, [filteredServices]);
     const showWorkspaceGroups = workspaceGroups.length > 1 || workspaceGroups[0]?.name !== ungroupedWorkspace;
     const checkedServices = useMemo(() => services.filter(service => checkedIds.has(service.id)), [checkedIds, services]);
@@ -101,9 +101,8 @@ function App() {
         setCacheTarget, setCacheBusyId, setScriptBusyId, setCheckedIds, setLogs, setRefreshing, setDownloadingLogs,
     });
     const promptActions = usePromptActions({
-        services, workspaceManager, refreshState, showToast, setPrompts, setPromptLoading, setPromptError,
+        showToast, setPrompts, setPromptLoading, setPromptError,
         setPromptSyncing, setPromptBusy, setAddingPrompt, setMenu, setSelectedId, setRightView,
-        setWorkspaceManager, setWorkspaceSaving,
     });
 
     useEffect(() => {
@@ -151,7 +150,7 @@ function App() {
                     onStartSelected={() => void serviceActions.runSelectedBatch('start')}
                     onStopSelected={() => void serviceActions.runSelectedBatch('stop')}
                     onClearSelection={() => setCheckedIds(new Set())}
-                    onOpenWorkspaceManager={promptActions.openWorkspaceManager}
+                    onOpenWorkspaceManager={workspaceManager.open}
                     onAdd={() => setDialog({mode: 'create'})}
                     onSelectService={id => { setSelectedId(id); setRightView('logs'); }}
                     onToggleService={service => void serviceActions.toggleService(service)}
@@ -188,7 +187,7 @@ function App() {
                 onRemove={service => { setDeleteTarget(service); setMenu(null); }}/>}
 
             {dialog && (
-                <ServiceDialog state={dialog} onClose={() => setDialog(null)} onSaved={async service => {
+                <ServiceDialog state={dialog} services={services} workspaces={workspaces} onClose={() => setDialog(null)} onSaved={async service => {
                     setDialog(null); setSelectedId(service.id);
                     showToast(dialog.mode === 'create' ? `${service.name} 已添加` : `${service.name} 已更新`);
                     await refreshState();
@@ -198,8 +197,8 @@ function App() {
             {deleteTarget && <DeleteDialog target={deleteTarget} onClose={() => setDeleteTarget(null)} onConfirm={() => void serviceActions.confirmDelete()}/>}
             {cacheTarget && <CacheDialog target={cacheTarget} busy={cacheBusyId !== ''} onClose={() => setCacheTarget(null)} onConfirm={() => void serviceActions.confirmClearNextCache()}/>}
             {operationIssue && <IssueDialog issue={operationIssue} onClose={() => setOperationIssue(null)}/>}
-            {workspaceManager && <WorkspaceManagerDialog services={services} drafts={workspaceManager} saving={workspaceSaving}
-                onDraftChange={promptActions.updateWorkspaceDraft} onClose={() => setWorkspaceManager(null)} onSave={() => void promptActions.saveWorkspaces()}/>}
+            {workspaceManager.draft && <WorkspaceManagerDialog services={services} draft={workspaceManager.draft} saving={workspaceManager.saving} error={workspaceManager.error}
+                onChange={workspaceManager.setDraft} onClose={workspaceManager.close} onSave={() => void workspaceManager.save()}/>}
             {toast && <Toast toast={toast}/>}
         </div>
     );

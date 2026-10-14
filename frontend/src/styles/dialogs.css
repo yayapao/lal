@@ -60,54 +60,6 @@
 
 .service-dialog { padding: 21px; }
 
-.workspace-manager-dialog {
-    width: min(520px, calc(100vw - 48px));
-    max-height: min(620px, calc(100vh - 64px));
-    padding: 21px;
-    overflow-y: auto;
-}
-
-.workspace-manager-help {
-    margin: 12px 0 16px;
-    color: var(--muted);
-    font-size: 11px;
-}
-
-.workspace-manager-list {
-    display: grid;
-    gap: 12px;
-    max-height: 340px;
-    overflow-y: auto;
-    padding-right: 4px;
-}
-
-.workspace-manager-list label {
-    display: grid;
-    grid-template-columns: 108px minmax(0, 1fr);
-    align-items: center;
-    gap: 10px;
-}
-
-.workspace-manager-list label > span {
-    min-width: 0;
-    overflow: hidden;
-    color: #c9d0d3;
-    font-size: 11px;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.workspace-manager-list input {
-    height: 32px;
-    min-width: 0;
-    padding: 0 9px;
-    border: 1px solid #4a555b;
-    border-radius: 4px;
-    color: #dfe5e7;
-    background: #121719;
-    font-size: 11px;
-}
-
 .dialog-heading {
     display: flex;
     align-items: center;

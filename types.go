@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	configVersion         = 4
+	configVersion         = 5
 	maxLogEntries         = 1200
 	maxCommandLength      = 1000
 	maxCleanCommandLength = 2000
@@ -95,6 +95,7 @@ type PackageInfo struct {
 
 type AppState struct {
 	Services   []ServiceView `json:"services"`
+	Workspaces []string      `json:"workspaces"`
 	ConfigPath string        `json:"configPath"`
 	Warning    string        `json:"warning"`
 }
@@ -120,8 +121,9 @@ type ResourceUsage struct {
 }
 
 type configFile struct {
-	Version  int       `json:"version"`
-	Services []Service `json:"services"`
+	Version    int       `json:"version"`
+	Services   []Service `json:"services"`
+	Workspaces []string  `json:"workspaces"`
 }
 
 type processState struct {
@@ -173,6 +175,7 @@ type serviceManager struct {
 	mu               sync.RWMutex
 	configPath       string
 	services         []Service
+	workspaces       []string
 	processes        map[string]*processState
 	lastStatus       map[string]string
 	lastError        map[string]string

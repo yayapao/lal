@@ -103,8 +103,7 @@ func (m *serviceManager) serviceViewLocked(service Service) ServiceView {
 	return view
 }
 
-// SetServiceWorkspace updates only the persistent workspace assignment. An
-// empty value restores automatic grouping from configured directory nesting.
+// SetServiceWorkspace updates only membership. Empty means unassigned.
 func (m *serviceManager) SetServiceWorkspace(id, workspace string) (ServiceView, error) {
 	workspace = strings.TrimSpace(workspace)
 	if len([]rune(workspace)) > 80 {
@@ -182,6 +181,26 @@ func (m *serviceManager) GetServiceIcon(id string) (string, error) {
 }
 
 func (m *serviceManager) effectiveWorkspaceLocked(service Service) string {
+	return strings.TrimSpace(service.Workspace)
+}
+
+func (m *serviceManager) suggestedWorkspaceLocked(directory string) string {
+	var parent *Service
+	for index := range m.services {
+		candidate := &m.services[index]
+		if candidate.Workspace != "" && pathWithin(candidate.Directory, directory) &&
+			(parent == nil || len(candidate.Directory) > len(parent.Directory)) {
+			parent = candidate
+		}
+	}
+	if parent != nil {
+		return parent.Workspace
+	}
+	return ""
+}
+
+// Used once when migrating directory-based groups to explicit membership.
+func (m *serviceManager) legacyWorkspaceLocked(service Service) string {
 	if workspace := strings.TrimSpace(service.Workspace); workspace != "" {
 		return workspace
 	}

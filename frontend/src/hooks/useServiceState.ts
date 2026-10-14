@@ -7,6 +7,7 @@ import {errorMessage} from '../utils';
 
 export function useServiceState(showToast: (message: string, kind?: 'success' | 'error') => void) {
     const [services, setServices] = useState<ServiceView[]>([]);
+    const [workspaces, setWorkspaces] = useState<string[]>([]);
     const [selectedId, setSelectedId] = useState('');
     const [checkedIds, setCheckedIds] = useState<Set<string>>(new Set());
     const [logs, setLogs] = useState<LogEntry[]>([]);
@@ -19,6 +20,7 @@ export function useServiceState(showToast: (message: string, kind?: 'success' | 
             const state = await GetAppState();
             const nextServices = state.services ?? [];
             setServices(nextServices);
+            setWorkspaces([...new Set([...(state.workspaces ?? []), ...nextServices.map(service => service.workspace ?? '').filter(Boolean)])]);
             if (forceIconRefresh) setIconRefreshKey(current => current + 1);
             setSelectedId(current => current && nextServices.some(service => service.id === current)
                 ? current
@@ -61,5 +63,5 @@ export function useServiceState(showToast: (message: string, kind?: 'success' | 
         return () => { current = false; };
     }, [selectedId, showToast]);
 
-    return {services, selectedId, setSelectedId, checkedIds, setCheckedIds, logs, setLogs, loading, refreshState, iconRefreshKey};
+    return {services, workspaces, selectedId, setSelectedId, checkedIds, setCheckedIds, logs, setLogs, loading, refreshState, iconRefreshKey};
 }

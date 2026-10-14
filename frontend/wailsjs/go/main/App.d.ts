@@ -18,6 +18,8 @@ export function CreateService(arg1:main.ServiceInput):Promise<main.ServiceView>;
 
 export function DeleteService(arg1:string):Promise<void>;
 
+export function DetectProject(arg1:string):Promise<main.ProjectDetection>;
+
 export function DownloadLogs(arg1:string):Promise<string>;
 
 export function GetAppState():Promise<main.AppState>;
@@ -41,6 +43,8 @@ export function RestartService(arg1:string):Promise<void>;
 export function RevealService(arg1:string):Promise<void>;
 
 export function RunPackageScript(arg1:string,arg2:string):Promise<void>;
+
+export function SaveWorkspaceLayout(arg1:main.WorkspaceLayout):Promise<void>;
 
 export function SetServiceWorkspace(arg1:string,arg2:string):Promise<main.ServiceView>;
 

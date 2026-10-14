@@ -8,6 +8,7 @@ export const api = {
     CopyCodexPrompt: vi.fn(),
     CreateService: vi.fn(),
     DeleteService: vi.fn(),
+    DetectProject: vi.fn().mockResolvedValue({name: 'Alpha', directory: '/tmp/alpha', workspace: '', projectType: 'nextjs', command: 'npm run dev', url: '', cleanCommand: 'rm -rf .next', scripts: [], sources: ['package.json'], warnings: []}),
     DownloadLogs: vi.fn(),
     GetAppState: vi.fn(),
     GetLogs: vi.fn(),
@@ -27,6 +28,7 @@ export const api = {
     StopService: vi.fn(),
     UpdateService: vi.fn(),
     SetServiceWorkspace: vi.fn(),
+    SaveWorkspaceLayout: vi.fn().mockResolvedValue(undefined),
 };
 
 export const alphaService = {

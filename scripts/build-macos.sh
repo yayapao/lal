@@ -100,6 +100,7 @@ log "installing to $INSTALL_APP"
 touch "$INSTALL_APP"
 
 log "refreshing LaunchServices"
+"$LSREGISTER" -u "$INSTALL_APP" >/dev/null 2>&1 || true
 "$LSREGISTER" -f "$INSTALL_APP"
 open -Ra "$INSTALL_APP"
 REGISTERED_ID="$(osascript -e 'id of app "'"$INSTALL_APP"'"' 2>/dev/null || true)"
