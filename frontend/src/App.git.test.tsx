@@ -90,3 +90,29 @@ it('distinguishes an unavailable repository and a local configuration error', as
     expect(screen.queryByRole('tablist')).toBeNull();
     expect(screen.queryByText('工作区干净')).toBeNull();
 });
+
+it('keeps a configuration draft while switching tabs and refreshes details after saving', async () => {
+    const user = userEvent.setup();
+    render(<App/>);
+    await user.click(await screen.findByRole('button', {name: 'Git 详情'}));
+    await screen.findByText('src/new name.ts');
+    await user.click(screen.getByRole('tab', {name: '本地配置 5'}));
+    await user.click(screen.getByRole('button', {name: '用户名'}));
+    await user.clear(screen.getByRole('textbox', {name: '配置值'}));
+    await user.type(screen.getByRole('textbox', {name: '配置值'}), 'New Name');
+    await user.click(screen.getByRole('tab', {name: '变更文件 2'}));
+    await user.click(screen.getByRole('tab', {name: '本地配置 5'}));
+    expect(screen.getByRole('textbox', {name: '配置值'})).toHaveProperty('value', 'New Name');
+    await user.click(screen.getByRole('button', {name: '刷新状态'}));
+    await waitFor(() => expect(api.GetGitStatuses).toHaveBeenCalledTimes(2));
+    expect(api.GetServiceGitDetails).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole('textbox', {name: '配置值'})).toHaveProperty('value', 'New Name');
+    api.GetServiceGitDetails.mockResolvedValue({...details, config: details.config.map(entry => entry.key === 'user.name' ? {...entry, value: 'New Name'} : entry)});
+    await user.click(screen.getByRole('button', {name: '保存配置'}));
+    await waitFor(() => expect(api.UpdateGitConfig).toHaveBeenCalledWith('alpha', {
+        directory: '/tmp/alpha', root: '/tmp/alpha', key: 'user.name', expectedValues: ['Yango'], values: ['New Name'],
+    }));
+    expect(await screen.findByText('user.name 已保存')).toBeDefined();
+    expect(screen.getByText('New Name')).toBeDefined();
+    expect(api.GetServiceGitDetails).toHaveBeenCalledTimes(2);
+});

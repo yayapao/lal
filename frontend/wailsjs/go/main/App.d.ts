@@ -66,4 +66,6 @@ export function StopService(arg1:string):Promise<void>;
 
 export function StopServices(arg1:Array<string>):Promise<main.BatchResult>;
 
+export function UpdateGitConfig(arg1:string,arg2:main.GitConfigEdit):Promise<void>;
+
 export function UpdateService(arg1:string,arg2:main.ServiceInput):Promise<main.ServiceView>;

@@ -202,6 +202,26 @@ export namespace main {
 	        this.conflict = source["conflict"];
 	    }
 	}
+	export class GitConfigEdit {
+	    directory: string;
+	    root: string;
+	    key: string;
+	    expectedValues: string[];
+	    values: string[];
+
+	    static createFrom(source: any = {}) {
+	        return new GitConfigEdit(source);
+	    }
+
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.directory = source["directory"];
+	        this.root = source["root"];
+	        this.key = source["key"];
+	        this.expectedValues = source["expectedValues"];
+	        this.values = source["values"];
+	    }
+	}
 	export class GitConfigEntry {
 	    key: string;
 	    value: string;

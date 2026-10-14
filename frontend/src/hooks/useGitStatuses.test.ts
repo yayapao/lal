@@ -61,3 +61,38 @@ it('never displays old Git details after the project directory changes', async (
     expect(result.current.details?.status.directory).toBe('/tmp/new');
     expect(onStatus).toHaveBeenCalledTimes(1);
 });
+
+it('pauses automatic detail refresh during editing and preserves data through toolbar refresh', async () => {
+    vi.useFakeTimers();
+    api.GetServiceGitDetails.mockResolvedValue(details('/tmp/alpha'));
+    const onStatus = vi.fn();
+    const {result, rerender} = renderHook(({paused, key}) => useGitDetails(service(), key, onStatus, paused), {initialProps: {paused: false, key: 0}});
+    await act(async () => undefined);
+    expect(result.current.details?.status.directory).toBe('/tmp/alpha');
+    rerender({paused: true, key: 0});
+    await act(async () => { vi.advanceTimersByTime(15000); });
+    expect(api.GetServiceGitDetails).toHaveBeenCalledTimes(1);
+    rerender({paused: true, key: 1});
+    expect(result.current.details?.status.directory).toBe('/tmp/alpha');
+    expect(api.GetServiceGitDetails).toHaveBeenCalledTimes(1);
+    await act(async () => { await result.current.refresh(); });
+    expect(api.GetServiceGitDetails).toHaveBeenCalledTimes(2);
+});
+
+it('rereads after saving even when an earlier automatic detail request is still pending', async () => {
+    vi.useFakeTimers();
+    let resolve!: (value: main.GitDetails) => void;
+    const oldDetails = details('/tmp/alpha');
+    const newDetails = main.GitDetails.createFrom({...oldDetails, config: [{key: 'user.name', value: 'new'}]});
+    api.GetServiceGitDetails.mockResolvedValueOnce(oldDetails)
+        .mockReturnValueOnce(new Promise(done => { resolve = done; })).mockResolvedValue(newDetails);
+    const onStatus = vi.fn();
+    const {result, rerender} = renderHook(({paused}) => useGitDetails(service(), 0, onStatus, paused), {initialProps: {paused: false}});
+    await act(async () => undefined);
+    await act(async () => { vi.advanceTimersByTime(15000); });
+    rerender({paused: true});
+    const refresh = result.current.refresh();
+    await act(async () => { resolve(oldDetails); await refresh; });
+    expect(api.GetServiceGitDetails).toHaveBeenCalledTimes(3);
+    expect(result.current.details?.config[0].value).toBe('new');
+});

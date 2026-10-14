@@ -13,6 +13,7 @@ export const api = {
     GetAppState: vi.fn(),
     GetGitStatuses: vi.fn().mockResolvedValue([]),
     GetServiceGitDetails: vi.fn(),
+    UpdateGitConfig: vi.fn().mockResolvedValue(undefined),
     GetLogs: vi.fn(),
     GetPrompts: vi.fn(),
     GetResourceUsage: vi.fn(),

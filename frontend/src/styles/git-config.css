@@ -1,0 +1,33 @@
+.git-config-toolbar .text-button, .git-config-editor-actions .text-button { display: inline-flex; align-items: center; gap: 4px; font-size: 10px; }
+.git-config-toolbar { gap: 8px; }
+.git-config-toolbar input { flex: 1 1 100px; width: 100px; }
+.git-config-toolbar .text-button:disabled, .git-config-shortcuts button:disabled, .git-config-editor .text-button:disabled { opacity: 0.4; cursor: default; }
+.git-config-shortcuts { display: flex; flex-wrap: wrap; align-items: center; gap: 5px 10px; padding: 8px 18px; border-bottom: 1px solid var(--line); }
+.git-config-shortcuts > span { color: var(--faint); font-size: 9px; }
+.git-config-shortcuts .text-button { padding: 3px 0; font-size: 10px; }
+.git-config-success { margin: 10px 18px; color: var(--green); font-size: 10px; }
+.git-config-editor { margin: 12px 18px; padding: 12px; border: 1px solid var(--line-strong); border-radius: 5px; background: var(--panel); }
+.git-config-editor-heading { display: flex; align-items: center; gap: 10px; min-width: 0; margin-bottom: 8px; }
+.git-config-editor-heading strong { font-size: 11px; font-weight: 650; }
+.git-config-editor-heading > span { color: var(--faint); font-size: 9px; }
+.git-config-editor-heading > button { width: 25px; height: 25px; flex-basis: 25px; margin-left: auto; }
+.git-config-editor label { display: flex; flex-direction: column; gap: 6px; color: var(--muted); font-size: 9px; }
+.git-config-editor input, .git-config-editor textarea { width: 100%; min-width: 0; padding: 8px; border: 1px solid var(--line-strong); border-radius: 3px; color: var(--text); background: var(--console); font-family: var(--mono); font-size: 11px; line-height: 1.6; }
+.git-config-editor input:read-only { color: var(--accent); border-color: var(--line); }
+.git-config-editor textarea { resize: vertical; }
+.git-config-editor input:focus, .git-config-editor textarea:focus { outline: 1px solid var(--accent); }
+.git-config-values { display: grid; gap: 8px; margin-top: 10px; }
+.git-config-values > div { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.git-config-values label { flex: 1; min-width: 0; }
+.git-config-values button { width: 24px; height: 24px; flex-basis: 24px; }
+.git-config-editor .git-error { margin: 10px 0; font-size: 10px; line-height: 1.6; overflow-wrap: anywhere; }
+.git-config-editor-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 12px; }
+.git-config-editor-actions > span { flex: 1; }
+.git-config-editor .button { height: 28px; padding: 0 9px; font-size: 10px; }
+.git-config-editor .git-config-remove { color: var(--red); }
+.git-config-delete { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 14px; }
+.git-config-delete > span { flex: 1 1 100%; color: var(--red); font-size: 10px; overflow-wrap: anywhere; }
+.git-config-list > div { grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr) 24px; gap: 10px; }
+.git-config-edit-button { display: grid; place-items: center; width: 24px; height: 24px; padding: 0; border: 0; border-radius: 3px; color: var(--faint); background: transparent; cursor: pointer; }
+.git-config-edit-button:hover:not(:disabled), .git-config-edit-button:focus-visible { color: var(--accent); background: var(--accent-soft); }
+.git-config-edit-button:disabled { opacity: 0.4; cursor: default; }

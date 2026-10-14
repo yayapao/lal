@@ -3,32 +3,32 @@ import {useState} from 'react';
 import type {GitStatus, ServiceView} from '../types';
 import {gitBranch, gitCounts, gitStateLabel} from '../gitUtils';
 import {useGitDetails} from '../hooks/useGitDetails';
+import GitConfigPanel from './GitConfigPanel';
 
 export default function GitPane({service, refreshKey, onStatus, onBack}: {
     service: ServiceView; refreshKey: number; onStatus: (status: GitStatus) => void; onBack: () => void;
 }) {
-    const {details, loading, error, refresh} = useGitDetails(service, refreshKey, onStatus);
+    const [editing, setEditing] = useState(false);
+    const {details, loading, error, refresh} = useGitDetails(service, refreshKey, onStatus, editing);
     const [tab, setTab] = useState<'files' | 'config'>('files');
-    const [query, setQuery] = useState('');
     const status = details?.status;
     const repository = status?.state === 'clean' || status?.state === 'dirty';
-    const keyword = query.trim().toLocaleLowerCase();
-    const config = details?.config.filter(entry => `${entry.key}\n${entry.value}`.toLocaleLowerCase().includes(keyword)) ?? [];
 
     return <section className="git-pane" aria-label={`${service.name} Git 详情`}>
         <div className="git-heading">
             <div className="git-title"><GitBranch size={16}/><span>{service.name}</span><span className="git-kicker">Git</span></div>
             <div className="git-heading-actions">
-                <button className="icon-button subtle" type="button" onClick={() => void refresh()} disabled={loading} aria-label="刷新 Git 状态" title="刷新 Git 状态">
+                <button className="icon-button subtle" type="button" onClick={() => void refresh()} disabled={loading || editing} aria-label="刷新 Git 状态" title={editing ? '保存或取消编辑后刷新' : '刷新 Git 状态'}>
                     {loading ? <LoaderCircle className="spin" size={15}/> : <RefreshCw size={15}/>}
                 </button>
                 <button className="text-button" type="button" onClick={onBack}><ArrowLeft size={13}/>日志</button>
             </div>
         </div>
         <div className="git-viewport">
-            {error ? <div className="git-empty is-error" role="alert">{error}</div>
+            {error && !details ? <div className="git-empty is-error" role="alert">{error}</div>
                 : !details ? <div className="git-empty"><LoaderCircle className="spin" size={20}/>正在读取 Git 信息…</div>
                     : <>
+                        {error && <p className="git-error" role="alert">刷新失败：{error}</p>}
                         <div className={`git-overview git-${status?.state}`}>
                             <div className="git-overview-title"><strong>{repository ? gitBranch(details.status) : 'Git 仓库'}</strong><span className="git-state-text">{gitStateLabel(status)}</span></div>
                             {repository && <p>{gitCounts(details.status) || '没有待提交的变更'}</p>}
@@ -49,7 +49,7 @@ export default function GitPane({service, refreshKey, onStatus, onBack}: {
                                 <button id="git-files-tab" role="tab" type="button" tabIndex={tab === 'files' ? 0 : -1} aria-selected={tab === 'files'} aria-controls="git-files-panel" onClick={() => setTab('files')}>变更文件 <span>{status.changed}</span></button>
                                 <button id="git-config-tab" role="tab" type="button" tabIndex={tab === 'config' ? 0 : -1} aria-selected={tab === 'config'} aria-controls="git-config-panel" onClick={() => setTab('config')}>本地配置 <span>{details.config.length}</span></button>
                             </div>
-                            {tab === 'files' ? <div id="git-files-panel" role="tabpanel" aria-labelledby="git-files-tab">
+                            <div id="git-files-panel" role="tabpanel" aria-labelledby="git-files-tab" hidden={tab !== 'files'}>
                                 {status.state === 'error' ? <div className="git-empty">无法读取变更，请刷新重试。</div>
                                     : details.files.length === 0 ? <div className="git-empty">工作区干净</div>
                                         : <ul className="git-file-list">{details.files.map((file, index) => <li key={`${file.path}-${index}`}>
@@ -58,12 +58,9 @@ export default function GitPane({service, refreshKey, onStatus, onBack}: {
                                             <span className="git-file-kind">{file.conflict ? '冲突' : file.untracked ? '未跟踪' : file.indexStatus !== '.' && file.worktreeStatus !== '.' ? '暂存 / 修改' : file.indexStatus !== '.' ? '已暂存' : '未暂存'}</span>
                                         </li>)}</ul>}
                                 {details.truncated && <p className="git-scope">显示前 {details.files.length} 个文件，共 {status.changed} 个变更。</p>}
-                            </div> : <div id="git-config-panel" role="tabpanel" aria-labelledby="git-config-tab">
-                                <div className="git-config-toolbar"><code>git config --list --local</code><input type="search" aria-label="搜索 Git 配置" placeholder="搜索配置" value={query} onChange={event => setQuery(event.target.value)}/></div>
-                                {details.configError ? <p className="git-error" role="alert">{details.configError}</p>
-                                    : config.length === 0 ? <div className="git-empty">{query ? '没有匹配的配置' : '暂无本地配置'}</div>
-                                        : <dl className="git-config-list">{config.map((entry, index) => <div key={`${entry.key}-${index}`}><dt>{entry.key}</dt><dd>{entry.value || <span className="git-empty-value">空值</span>}</dd></div>)}</dl>}
-                            </div>}
+                            </div><div id="git-config-panel" role="tabpanel" aria-labelledby="git-config-tab" hidden={tab !== 'config'}>
+                                <GitConfigPanel service={service} details={details} onEditingChange={setEditing} onSaved={refresh}/>
+                            </div>
                         </>}
                     </>}
         </div>

@@ -130,6 +130,10 @@ export function StopServices(arg1) {
   return window['go']['main']['App']['StopServices'](arg1);
 }
 
+export function UpdateGitConfig(arg1, arg2) {
+  return window['go']['main']['App']['UpdateGitConfig'](arg1, arg2);
+}
+
 export function UpdateService(arg1, arg2) {
   return window['go']['main']['App']['UpdateService'](arg1, arg2);
 }

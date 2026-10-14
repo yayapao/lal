@@ -1,5 +1,10 @@
 import type {GitStatus} from './types';
 
+export function canonicalGitConfigKey(key: string) {
+    const parts = key.trim().split('.');
+    return parts.map((part, index) => index === 0 || index === parts.length - 1 ? part.toLowerCase() : part).join('.');
+}
+
 export function gitBranch(status: GitStatus) {
     if (status.detached) return `HEAD · ${status.commit.slice(0, 8)}`;
     return status.branch + (status.unborn ? ' · 无提交' : '');
