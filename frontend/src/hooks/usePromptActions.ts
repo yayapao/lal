@@ -7,7 +7,7 @@ import {
     OpenCodexWithPrompt,
     RemovePromptFile,
 } from '../../wailsjs/go/main/App';
-import type {PromptFileView, ServiceView} from '../types';
+import type {PromptFileView, RightView, ServiceView} from '../types';
 import {errorMessage} from '../utils';
 
 type PromptActionContext = {
@@ -20,7 +20,7 @@ type PromptActionContext = {
     setAddingPrompt: Dispatch<SetStateAction<boolean>>;
     setMenu: Dispatch<SetStateAction<{service: ServiceView; left: number; top: number} | null>>;
     setSelectedId: Dispatch<SetStateAction<string>>;
-    setRightView: Dispatch<SetStateAction<'logs' | 'prompts' | 'git'>>;
+    setRightView: Dispatch<SetStateAction<RightView>>;
 };
 
 export function usePromptActions(context: PromptActionContext) {

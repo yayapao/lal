@@ -9,6 +9,8 @@ import './styles/console.css';
 import './styles/dialogs.css';
 import './styles/overlays.css';
 import './styles/git.css';
+import './styles/network.css';
+import './styles/compact.css';
 import {groupLogEntries} from './LogLine';
 import ContextMenu from './components/ContextMenu';
 import {CacheDialog, DeleteDialog, IssueDialog} from './components/ConfirmDialogs';
@@ -19,6 +21,9 @@ import ServiceDialog from './components/ServiceDialog';
 import ServicesPane from './components/ServicesPane';
 import Toast from './components/Toast';
 import Toolbar from './components/Toolbar';
+import ServiceToolbar from './components/ServiceToolbar';
+import NetworkPane from './components/NetworkPane';
+import NetworkSummary from './components/NetworkSummary';
 import WorkspaceManagerDialog from './components/WorkspaceManagerDialog';
 import {usePromptActions} from './hooks/usePromptActions';
 import {useResourceUsage} from './hooks/useResourceUsage';
@@ -27,8 +32,9 @@ import {useServiceIcons} from './hooks/useServiceIcons';
 import {useServiceState} from './hooks/useServiceState';
 import {useGitStatuses} from './hooks/useGitStatuses';
 import {useWorkspaceManager} from './hooks/useWorkspaceManager';
+import {useNetworkInfo} from './hooks/useNetworkInfo';
 import {ungroupedWorkspace} from './types';
-import type {BatchBusyState, DialogState, MenuState, OperationIssue, PromptFileView, ServiceView, ToastState, WorkspaceGroup} from './types';
+import type {BatchBusyState, DialogState, MenuState, OperationIssue, PromptFileView, RightView, ServiceView, ToastState, WorkspaceGroup} from './types';
 import {isActive, isStoppable} from './utils';
 
 function App() {
@@ -43,7 +49,7 @@ function App() {
     const [refreshing, setRefreshing] = useState(false);
     const [cacheTarget, setCacheTarget] = useState<ServiceView | null>(null);
     const [cacheBusyId, setCacheBusyId] = useState('');
-    const [rightView, setRightView] = useState<'logs' | 'prompts' | 'git'>('logs');
+    const [rightView, setRightView] = useState<RightView>('logs');
     const [prompts, setPrompts] = useState<PromptFileView[]>([]);
     const [promptLoading, setPromptLoading] = useState(false);
     const [promptSyncing, setPromptSyncing] = useState(false);
@@ -68,13 +74,14 @@ function App() {
     const {resourceUsage, resourceHistory} = useResourceUsage();
     const iconURLs = useServiceIcons(services, iconRefreshKey);
     const git = useGitStatuses(services, iconRefreshKey);
+    const network = useNetworkInfo();
+    const networkError = (message: string) => showToast(message, 'error');
 
     const selectedService = services.find(service => service.id === selectedId) ?? null;
     const selectedUsage = selectedService ? resourceUsage[selectedService.id] : undefined;
     const selectedResourceHistory = selectedService ? resourceHistory[selectedService.id] ?? [] : [];
     const logBlocks = useMemo(() => groupLogEntries(logs), [logs]);
     const runningCount = services.filter(isActive).length;
-    const readyCount = services.filter(service => service.health === 'ready').length;
     const filteredServices = useMemo(() => {
         const keyword = query.trim().toLocaleLowerCase();
         if (!keyword) return services;
@@ -139,13 +146,13 @@ function App() {
 
     return (
         <div className="app-shell">
-            <Toolbar query={query} onQueryChange={setQuery} total={services.length} running={runningCount} ready={readyCount}
-                refreshing={refreshing} batchBusy={batchBusy}
-                onRefresh={() => void serviceActions.refreshAppState()} onBatch={action => void serviceActions.runBatch(action)}
-                onAdd={() => setDialog({mode: 'create'})}/>
+            <Toolbar query={query} onQueryChange={setQuery} onAdd={() => setDialog({mode: 'create'})}/>
 
             <main className="workspace">
                 <ServicesPane loading={loading} query={query} total={services.length} selectedId={selectedId}
+                    toolbar={<ServiceToolbar total={services.length} running={runningCount} refreshing={refreshing} batchBusy={batchBusy}
+                        onRefresh={() => void serviceActions.refreshAppState()} onBatch={action => void serviceActions.runBatch(action)}/>}
+                    footer={<NetworkSummary network={network} active={rightView === 'network'} onDetails={() => setRightView('network')} onError={networkError}/>}
                     filteredServices={filteredServices} workspaceGroups={workspaceGroups} showWorkspaceGroups={showWorkspaceGroups}
                     checkedIds={checkedIds} checkedStartableCount={checkedStartableCount} checkedStoppableCount={checkedStoppableCount}
                     allVisibleChecked={allVisibleChecked} someVisibleChecked={someVisibleChecked} batchBusy={batchBusy}
@@ -163,7 +170,8 @@ function App() {
                     onOpenURL={service => void serviceActions.openServiceURL(service)}
                     onMenu={(event, service) => serviceActions.openMenu(event, service)}/>
 
-                {rightView === 'prompts' && selectedService ? (
+                {rightView === 'network' ? <NetworkPane network={network} onBack={() => setRightView('logs')} onError={networkError}/>
+                : rightView === 'prompts' && selectedService ? (
                     <PromptManager service={selectedService} prompts={prompts} loading={promptLoading} error={promptError}
                         adding={addingPrompt} syncing={promptSyncing} busy={promptBusy}
                         onAdd={() => void promptActions.addPrompt(selectedService)} onRetry={() => void promptActions.loadPrompts(selectedService.id)}

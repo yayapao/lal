@@ -14,6 +14,8 @@ export function ClearNextCache(arg1:string):Promise<void>;
 
 export function CopyCodexPrompt(arg1:string,arg2:string):Promise<void>;
 
+export function CopyNetworkValue(arg1:string):Promise<void>;
+
 export function CreateService(arg1:main.ServiceInput):Promise<main.ServiceView>;
 
 export function DeleteService(arg1:string):Promise<void>;
@@ -27,6 +29,8 @@ export function GetAppState():Promise<main.AppState>;
 export function GetGitStatuses():Promise<Array<main.GitStatus>>;
 
 export function GetLogs(arg1:string):Promise<Array<main.LogEntry>>;
+
+export function GetNetworkInfo():Promise<main.NetworkSnapshot>;
 
 export function GetPrompts(arg1:string):Promise<Array<main.PromptFileView>>;
 

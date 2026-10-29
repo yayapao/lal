@@ -26,14 +26,14 @@ func main() {
 		AssetServer: &assetserver.Options{
 			Assets: assets,
 		},
-		BackgroundColour:  &options.RGBA{R: 11, G: 13, B: 15, A: 1},
+		BackgroundColour:  &options.RGBA{R: 28, G: 28, B: 30, A: 1},
 		HideWindowOnClose: true,
 		OnStartup:         app.startup,
 		OnBeforeClose:     app.beforeClose,
 		OnShutdown:        app.shutdown,
 		Mac: &mac.Options{
 			TitleBar:   mac.TitleBarHiddenInset(),
-			Appearance: mac.DefaultAppearance,
+			Appearance: mac.NSAppearanceNameDarkAqua,
 			About: &mac.AboutInfo{
 				Title:   "LAL",
 				Message: "本地开发服务控制台",

@@ -1,0 +1,81 @@
+.network-summary { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, .86fr) auto; align-items: center; gap: 12px; min-width: 0; padding: 8px 16px; border-top: 1px solid var(--line); background: #242529; }
+.network-summary-field { min-width: 0; }
+.network-summary-field + .network-summary-field { border-left: 1px solid var(--line); padding-left: 12px; }
+.network-summary-label { display: flex; align-items: center; gap: 5px; color: var(--muted); font-size: 10px; line-height: 15px; }
+.network-summary-label > span { display: inline-flex; color: var(--amber); }
+.network-summary-label em { color: var(--amber); font-size: 10px; font-style: normal; }
+.network-summary-field > div { display: flex; align-items: center; justify-content: space-between; gap: 3px; min-width: 0; }
+.network-summary-value { font-family: var(--mono); font-size: 14px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.network-summary-empty { color: var(--muted); font-size: 12px; }
+.network-copy { color: var(--muted); width: 28px; height: 28px; flex-basis: 28px; border-radius: 5px; }
+.network-copy:hover:not(:disabled) { color: var(--text); background: #3a3b42; }
+.network-copy.is-copied { color: var(--green); }
+.network-details-button { display: flex; align-items: center; gap: 2px; height: 28px; padding: 0 5px; border: 1px solid #4c4e56; border-radius: 6px; background: #303238; color: var(--text); font: inherit; font-size: 11px; cursor: pointer; }
+.network-details-button[aria-pressed="true"] { color: #b5d8ff; border-color: #45678f; background: #253a54; }
+.network-details-button:hover { border-color: var(--accent); }
+.network-summary.is-stale .network-summary-value { color: var(--amber); }
+.network-pane { display: grid; grid-template-rows: 46px minmax(0, 1fr) 28px; min-width: 0; min-height: 0; background: var(--canvas); }
+.network-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 0 24px; border-bottom: 1px solid var(--line); background: var(--titlebar); }
+.network-tabs { display: flex; align-items: center; flex-shrink: 0; padding: 2px; height: 30px; border: 1px solid var(--line-strong); border-radius: 6px; background: var(--canvas); }
+.network-tabs button { min-width: 72px; height: 24px; padding: 0 12px; border: 0; border-radius: 4px; background: transparent; color: var(--muted); font: inherit; font-size: 11px; cursor: pointer; }
+.network-tabs button:last-child { font-family: var(--mono); }
+.network-tabs button[aria-selected="true"] { color: var(--text); background: #41434b; box-shadow: 0 1px 2px #0003; }
+.network-toolbar-actions { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
+.network-toolbar-actions .icon-button { width: 28px; height: 28px; flex-basis: 28px; }
+.network-back { display: inline-flex; align-items: center; gap: 6px; min-height: 28px; font-size: 11px; font-weight: 400; white-space: nowrap; }
+.network-body { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+.network-tab-panel { min-height: 0; min-width: 0; overflow: auto; flex: 1; padding: 20px 24px; overscroll-behavior: contain; }
+.network-tab-panel[hidden] { display: none; }
+.network-card { overflow: hidden; border: 1px solid var(--line-strong); border-radius: 10px; background: var(--panel-raised); }
+.network-interface-header { display: flex; align-items: center; min-width: 0; gap: 10px; padding: 12px 16px; }
+.network-interface-icon { display: grid; place-items: center; width: 30px; height: 30px; flex-shrink: 0; border-radius: 7px; color: var(--accent); background: #25374c; }
+.network-interface-header > div { min-width: 0; }
+.network-interface-header strong { display: block; font-size: 13px; font-weight: 500; overflow-wrap: anywhere; }
+.network-interface-header small { display: flex; align-items: center; gap: 5px; margin-top: 3px; color: var(--muted); font-size: 10px; }
+.network-interface-header small.is-connected { color: var(--green); }
+.network-interface-header .is-connected .status-dot { background: var(--green); }
+.network-interface-header .status-dot { width: 5px; height: 5px; }
+.network-interface-header > code { flex-shrink: 0; margin-left: auto; padding: 3px 7px; color: var(--muted); border-radius: 4px; background: #303136; font: 11px var(--mono); }
+.network-card dl { margin: 0; padding: 0 16px; border-top: 1px solid var(--line); }
+.network-field { display: grid; grid-template-columns: 90px minmax(0, 1fr); align-items: center; gap: 12px; min-height: 42px; padding: 6px 0; border-bottom: 1px solid var(--line); font-size: 12px; line-height: 22px; }
+.network-field:last-child { border-bottom: 0; }
+.network-field dt { color: var(--muted); }
+.network-field dd { display: flex; align-items: center; justify-content: flex-end; gap: 14px; min-width: 0; margin: 0; }
+.network-field dd > span:first-child { min-width: 0; font-family: var(--mono); font-size: 12px; text-align: right; white-space: pre-wrap; overflow-wrap: anywhere; }
+.network-unavailable { color: var(--faint); }
+.network-other { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 46px; margin-top: 12px; padding: 0 16px; border: 1px solid var(--line-strong); border-radius: 10px; color: var(--text); background: var(--panel-raised); font: inherit; font-size: 12px; text-align: left; cursor: pointer; }
+.network-other > svg { color: var(--muted); }
+.network-other small { margin-left: auto; color: var(--muted); font: 11px var(--mono); }
+.network-other:hover { background: var(--panel-hover); }
+.network-interface + .network-interface { margin-top: 12px; }
+.network-interface > summary { display: flex; align-items: center; list-style: none; cursor: pointer; padding-right: 16px; }
+.network-interface > summary::-webkit-details-marker { display: none; }
+.network-interface > summary .network-interface-header { flex: 1; }
+.network-interface > summary > svg { margin-left: 10px; color: var(--muted); flex-shrink: 0; }
+.network-interface[open] > summary > svg { transform: rotate(90deg); }
+.network-interface > summary:hover { background: var(--panel-hover); }
+.network-interface > summary:focus-visible { outline: 2px solid var(--accent); outline-offset: -3px; border-radius: 8px; }
+.network-raw-toolbar { display: flex; align-items: center; justify-content: space-between; padding: 5px 12px; border: 1px solid var(--line); border-radius: 8px 8px 0 0; color: var(--muted); background: var(--panel-raised); font: 11px var(--mono); }
+.network-raw { margin: 0; padding: 16px; border: 1px solid var(--line); border-top: 0; border-radius: 0 0 8px 8px; color: var(--text); font: 11px/1.8 var(--mono); white-space: pre-wrap; overflow-wrap: anywhere; tab-size: 4; user-select: text; }
+.network-footer { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 0 24px; border-top: 1px solid var(--line); color: var(--muted); background: var(--panel); font-size: 10px; }
+.network-footer > span { display: inline-flex; align-items: center; gap: 6px; }
+.network-footer .status-dot { width: 5px; height: 5px; background: var(--green); }
+.network-footer .status-dot.has-error { background: var(--amber); }
+.network-warning { padding: 8px 24px; border-bottom: 1px solid #65543c; color: var(--amber); background: #332d23; font-size: 11px; line-height: 1.6; overflow-wrap: anywhere; }
+.network-empty { padding: 40px 24px; color: var(--muted); font-size: 12px; }
+.network-offline { display: flex; align-items: center; gap: 10px; padding: 20px 16px; color: var(--muted); font-size: 12px; }
+@media (max-width: 1120px) {
+    .network-toolbar { padding: 0 16px; }
+    .network-tabs button { min-width: 60px; padding: 0 10px; }
+    .network-toolbar-actions { gap: 6px; }
+    .network-tab-panel { padding: 16px; }
+    .network-field { grid-template-columns: 80px minmax(0, 1fr); gap: 8px; }
+    .network-field dd { gap: 6px; }
+    .network-summary { padding: 8px 12px; gap: 8px; }
+    .network-summary-value { font-size: 12px; }
+    .network-summary-field + .network-summary-field { padding-left: 8px; }
+}
+@media (prefers-contrast: more) {
+    .network-card, .network-other, .network-tabs, .network-details-button { border-color: #92929e; }
+    .network-summary-label, .network-field dt, .network-footer { color: #c4c4ce; }
+}

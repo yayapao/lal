@@ -1,5 +1,6 @@
 import {LoaderCircle, Play, Square, TerminalSquare, X} from 'lucide-react';
 import {useEffect, useState} from 'react';
+import type {ReactNode} from 'react';
 import SelectionCheckbox from './SelectionCheckbox';
 import ServiceRow from './ServiceRow';
 import WorkspaceGroupSection from './WorkspaceGroupSection';
@@ -10,7 +11,9 @@ const collapsedGroupsKey = 'lal:collapsed-workspaces';
 export default function ServicesPane({loading, query, total, selectedId, filteredServices, workspaceGroups, showWorkspaceGroups,
     checkedIds, checkedStartableCount, checkedStoppableCount, allVisibleChecked, someVisibleChecked, batchBusy,
     iconURLs, resourceUsage, gitStatuses, busyIds, onOpenGit, onToggleVisibleSelection, onStartSelected, onStopSelected, onClearSelection,
-    onOpenWorkspaceManager, onAdd, onSelectService, onToggleService, onCheckService, onOpenURL, onMenu}: {
+    onOpenWorkspaceManager, onAdd, onSelectService, onToggleService, onCheckService, onOpenURL, onMenu, toolbar, footer}: {
+    toolbar: ReactNode;
+    footer: ReactNode;
     loading: boolean;
     query: string;
     total: number;
@@ -80,6 +83,7 @@ export default function ServicesPane({loading, query, total, selectedId, filtere
     );
     return (
         <section className="services-pane" aria-label="服务列表">
+            {toolbar}
             <div className="pane-heading">
                 <label className="select-all-control">
                     <SelectionCheckbox checked={allVisibleChecked} indeterminate={someVisibleChecked} disabled={batchBusy !== null || filteredServices.length === 0}
@@ -119,6 +123,7 @@ export default function ServicesPane({loading, query, total, selectedId, filtere
                     </WorkspaceGroupSection>
                 )) : filteredServices.map(renderRow)}
             </div>
+            {footer}
         </section>
     );
 }

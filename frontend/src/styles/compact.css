@@ -1,0 +1,104 @@
+.titlebar-add { --wails-draggable: no-drag; height: 30px; margin-left: auto; }
+.titlebar-search kbd { flex-shrink: 0; font: inherit; font-size: 11px; color: var(--faint); }
+.search-field input { font-size: 12px; }
+.service-toolbar { padding: 0 12px 0 16px; gap: 8px; background: var(--titlebar); }
+.service-toolbar .summary { gap: 10px; min-width: 0; font-family: inherit; font-size: 11px; }
+.service-toolbar .summary > span { display: inline-flex; align-items: center; gap: 5px; }
+.service-toolbar .summary > span + span { color: var(--muted); font-size: 10px; }
+.service-toolbar .summary .status-dot { width: 5px; height: 5px; background: var(--green); }
+.service-toolbar .toolbar-actions { gap: 6px; }
+.service-toolbar .button { height: 28px; padding: 0 9px; gap: 5px; font-size: 11px; border-radius: 6px; font-weight: 500; }
+.service-toolbar .icon-button { width: 28px; height: 28px; flex-basis: 28px; }
+.pane-heading { border-bottom: 0; padding: 0 12px 0 17px; font-weight: 500; }
+.pane-heading-actions { gap: 4px; }
+.workspace-manager-button { color: var(--muted); font-size: 10px; }
+.services-list { padding: 0 10px; }
+.service-row {
+    grid-template-columns: 64px minmax(0, 1fr) 58px;
+    grid-template-rows: 28px auto;
+    align-content: center;
+    min-height: 90px;
+    padding: 9px 8px;
+    border-radius: 7px;
+    border-bottom: 1px solid var(--line);
+    background: transparent;
+}
+.service-row.is-selected { box-shadow: inset 0 0 0 1px #41434b; }
+.service-row.is-checked:not(.is-selected) { background: #2a2d33; }
+.service-row .service-accent { display: none; }
+.service-leading { grid-area: 1 / 1 / 3 / 2; align-self: start; gap: 10px; padding-top: 2px; }
+.service-copy { grid-area: 1 / 2 / 3 / 3; padding-right: 4px; }
+.service-row > .status-label { grid-area: 1 / 3; align-self: start; justify-self: end; width: auto; padding-top: 3px; font-size: 10px; font-weight: 400; gap: 4px; }
+.service-row > .row-actions { grid-area: 2 / 3; align-self: start; gap: 0; }
+.service-name-line { height: 20px; }
+.service-name-line h3 { font-size: 13px; font-weight: 600; }
+.service-resources { gap: 5px; padding-left: 7px; font-size: 10px; }
+.service-resources span { color: var(--muted) !important; }
+.service-path { height: 17px; font-size: 10px; margin-top: 1px; }
+.service-meta { height: 18px; margin-top: 0; gap: 9px; }
+.service-command, .service-url { font-size: 10px; }
+.service-command::before { content: none; }
+.service-row .pid, .service-row .uptime { display: none; }
+.project-icon { width: 32px; height: 32px; flex-basis: 32px; border-radius: 8px; background: var(--panel-raised); }
+.project-logo { width: 30px; height: 30px; }
+.service-row .icon-button { width: 28px; height: 28px; flex-basis: 28px; border: 0; background: transparent; color: var(--muted); }
+.service-row .icon-button:hover:not(:disabled) { background: #42434b; color: var(--text); }
+.state-running, .state-ready { color: var(--green); }
+.state-running .status-dot { background: var(--green); }
+.service-row .service-git-line { margin-top: 0; }
+.service-row .git-badge { font-family: inherit; font-size: 10px; line-height: 15px; padding: 0; }
+.service-row .git-state-text { color: var(--muted); }
+.workspace-heading { min-height: 29px; padding: 5px 7px; border-bottom: 0; background: transparent; }
+.workspace-heading-main { gap: 7px; font-size: 11px; }
+.workspace-name { color: var(--muted); flex: initial; }
+.workspace-summary { font-size: 10px; padding-left: 25px; }
+.workspace-service-count, .workspace-selected-count { font-size: 10px; }
+.selection-checkbox { background: transparent; border-color: #71717b; border-radius: 3px; width: 13px; height: 13px; flex-basis: 13px; }
+.log-heading, .prompt-heading, .git-heading { background: var(--titlebar); min-height: 46px; }
+.logs-pane .log-heading { flex-basis: 46px; }
+.prompt-pane, .git-pane { grid-template-rows: 46px minmax(0, 1fr) 28px; }
+.console-footer, .git-footer, .prompt-footer { background: var(--panel); color: var(--muted); font-size: 10px; }
+.git-overview, .resource-monitor, .package-panel, .script-preview { background: var(--panel-raised); }
+.log-git-summary { background: var(--panel); }
+.log-lines { background: var(--console); }
+.log-line { font-size: 11px; }
+.log-line time { font-size: 10px; }
+.resource-kicker, .resource-live, .resource-processes, .resource-window,
+.trend-heading small, .package-summary span, .package-manager, .package-status,
+.stream-mark, .log-service, .log-meta-chip, .log-details summary, .log-details pre,
+.git-badge, .git-locations, .git-scope, .git-file-list small, .git-file-kind { font-size: 10px; }
+.stream-mark { min-width: 30px; }
+.git-branch-name { max-width: 130px; }
+.modal-backdrop { background: rgba(0, 0, 0, .5); }
+.service-dialog, .confirm-dialog, .issue-dialog, .context-menu { background: var(--panel-raised); border-color: var(--line-strong); border-radius: 10px; }
+.form-fields input, .input-with-action input, .form-fields select, .form-fields textarea { background: var(--canvas); border-color: var(--line-strong); }
+.package-script-select { background: var(--canvas); border-color: var(--line-strong); }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+@media (max-width: 1120px) {
+    .service-toolbar { padding-left: 12px; gap: 4px; }
+    .service-toolbar .summary { gap: 6px; font-size: 10px; }
+    .service-toolbar .button { padding: 0 7px; font-size: 10px; }
+    .service-toolbar .toolbar-actions { gap: 4px; }
+    .service-resources { display: none; }
+    .service-row { grid-template-columns: 60px minmax(0, 1fr) 58px; }
+    .titlebar-search { width: 296px; }
+    .package-panel { grid-template-columns: minmax(0, 1fr) auto; gap: 6px 12px; height: auto; min-height: 76px; }
+    .logs-pane .package-panel { flex-basis: auto; }
+    .package-identity { grid-column: 1; }
+    .package-run { grid-column: 2; grid-row: 1 / 3; }
+    .package-status { grid-column: 1; }
+}
+@media (max-width: 700px) {
+    html, body, #root { height: auto; min-height: 100%; overflow: auto; }
+    .app-shell { min-width: 0; height: auto; min-height: 100vh; }
+    .titlebar { padding-left: 80px; gap: 12px; }
+    .titlebar-search { width: auto; flex: 1; }
+    .titlebar-search kbd { display: none; }
+    .workspace { grid-template-columns: minmax(0, 1fr); }
+    .services-pane { height: 480px; border-right: 0; border-bottom: 1px solid var(--line); }
+    .network-pane, .logs-pane, .prompt-pane, .git-pane { min-height: 640px; }
+    .network-pane { height: 700px; }
+}
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+}

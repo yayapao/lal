@@ -144,7 +144,6 @@
 @media (max-width: 1120px) {
     .summary { min-width: 220px; }
     .summary svg { display: none; }
-    .workspace { grid-template-columns: minmax(510px, 1.08fr) minmax(430px, 0.92fr); }
     .log-url { max-width: 125px; }
 }
 

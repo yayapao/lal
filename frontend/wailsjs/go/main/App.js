@@ -26,6 +26,10 @@ export function CopyCodexPrompt(arg1, arg2) {
   return window['go']['main']['App']['CopyCodexPrompt'](arg1, arg2);
 }
 
+export function CopyNetworkValue(arg1) {
+  return window['go']['main']['App']['CopyNetworkValue'](arg1);
+}
+
 export function CreateService(arg1) {
   return window['go']['main']['App']['CreateService'](arg1);
 }
@@ -52,6 +56,10 @@ export function GetGitStatuses() {
 
 export function GetLogs(arg1) {
   return window['go']['main']['App']['GetLogs'](arg1);
+}
+
+export function GetNetworkInfo() {
+  return window['go']['main']['App']['GetNetworkInfo']();
 }
 
 export function GetPrompts(arg1) {

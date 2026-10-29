@@ -27,7 +27,7 @@ export default function ServiceRow({service, usage, selected, checked, busy, sel
                 <ProjectIcon projectType={service.projectType} projectName={service.name} iconURL={iconURL}/>
             </div>
             <div className="service-copy">
-                <div className="service-name-line"><h3>{service.name}</h3>{service.pid > 0 && <span className="pid">PID {service.pid}</span>}{service.startedAt && isActive(service) && <span className="uptime">{formatUptime(service.startedAt)}</span>}
+                <div className="service-name-line"><h3 title={[service.name, service.pid > 0 ? `PID ${service.pid}` : '', service.startedAt && isActive(service) ? formatUptime(service.startedAt) : ''].filter(Boolean).join(' · ')}>{service.name}</h3>{service.pid > 0 && <span className="pid">PID {service.pid}</span>}{service.startedAt && isActive(service) && <span className="uptime">{formatUptime(service.startedAt)}</span>}
                     {isActive(service) && <span className="service-resources"><span>CPU {formatCPU(usage?.cpuPercent ?? 0)}</span><span>MEM {formatMemory(usage?.memoryBytes ?? 0)}</span></span>}
                 </div>
                 <div className={service.pathExists ? 'service-path' : 'service-path path-invalid'} title={service.directory}>{!service.pathExists && <CircleAlert size={12}/>}<span>{service.directory}</span></div>

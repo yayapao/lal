@@ -187,11 +187,11 @@ export namespace main {
 	    worktreeStatus: string;
 	    untracked: boolean;
 	    conflict: boolean;
-
+	
 	    static createFrom(source: any = {}) {
 	        return new GitChange(source);
 	    }
-
+	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.path = source["path"];
@@ -208,11 +208,11 @@ export namespace main {
 	    key: string;
 	    expectedValues: string[];
 	    values: string[];
-
+	
 	    static createFrom(source: any = {}) {
 	        return new GitConfigEdit(source);
 	    }
-
+	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.directory = source["directory"];
@@ -225,11 +225,11 @@ export namespace main {
 	export class GitConfigEntry {
 	    key: string;
 	    value: string;
-
+	
 	    static createFrom(source: any = {}) {
 	        return new GitConfigEntry(source);
 	    }
-
+	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.key = source["key"];
@@ -255,11 +255,11 @@ export namespace main {
 	    conflicts: number;
 	    error: string;
 	    checkedAt: string;
-
+	
 	    static createFrom(source: any = {}) {
 	        return new GitStatus(source);
 	    }
-
+	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.serviceId = source["serviceId"];
@@ -289,11 +289,11 @@ export namespace main {
 	    truncated: boolean;
 	    config: GitConfigEntry[];
 	    configError: string;
-
+	
 	    static createFrom(source: any = {}) {
 	        return new GitDetails(source);
 	    }
-
+	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.status = this.convertValues(source["status"], GitStatus);
@@ -303,7 +303,7 @@ export namespace main {
 	        this.config = this.convertValues(source["config"], GitConfigEntry);
 	        this.configError = source["configError"];
 	    }
-
+	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
 		    if (!a) {
 		        return a;
@@ -322,7 +322,7 @@ export namespace main {
 		    return a;
 		}
 	}
-
+	
 	export class LogEntry {
 	    serviceId: string;
 	    timestamp: string;
@@ -341,18 +341,92 @@ export namespace main {
 	        this.text = source["text"];
 	    }
 	}
+	export class NetworkInterface {
+	    name: string;
+	    label: string;
+	    up: boolean;
+	    loopback: boolean;
+	    hardware: boolean;
+	    ipv4: string[];
+	    ipv6: string[];
+	    subnetMask: string;
+	    gateway: string;
+	    mac: string;
+	    mtu: number;
 	
-
+	    static createFrom(source: any = {}) {
+	        return new NetworkInterface(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.name = source["name"];
+	        this.label = source["label"];
+	        this.up = source["up"];
+	        this.loopback = source["loopback"];
+	        this.hardware = source["hardware"];
+	        this.ipv4 = source["ipv4"];
+	        this.ipv6 = source["ipv6"];
+	        this.subnetMask = source["subnetMask"];
+	        this.gateway = source["gateway"];
+	        this.mac = source["mac"];
+	        this.mtu = source["mtu"];
+	    }
+	}
+	export class NetworkSnapshot {
+	    primaryInterface: string;
+	    interfaces: NetworkInterface[];
+	    dns: string[];
+	    hostname: string;
+	    ifconfig: string;
+	    warnings: string[];
+	    checkedAt: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new NetworkSnapshot(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.primaryInterface = source["primaryInterface"];
+	        this.interfaces = this.convertValues(source["interfaces"], NetworkInterface);
+	        this.dns = source["dns"];
+	        this.hostname = source["hostname"];
+	        this.ifconfig = source["ifconfig"];
+	        this.warnings = source["warnings"];
+	        this.checkedAt = source["checkedAt"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	
+	
 	export class ProjectScript {
 	    name: string;
 	    command: string;
 	    preview: string;
 	    url: string;
-
+	
 	    static createFrom(source: any = {}) {
 	        return new ProjectScript(source);
 	    }
-
+	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.name = source["name"];
@@ -372,11 +446,11 @@ export namespace main {
 	    scripts: ProjectScript[];
 	    sources: string[];
 	    warnings: string[];
-
+	
 	    static createFrom(source: any = {}) {
 	        return new ProjectDetection(source);
 	    }
-
+	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.directory = source["directory"];
@@ -390,7 +464,7 @@ export namespace main {
 	        this.sources = source["sources"];
 	        this.warnings = source["warnings"];
 	    }
-
+	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
 		    if (!a) {
 		        return a;
@@ -472,15 +546,15 @@ export namespace main {
 	        this.cleanCommand = source["cleanCommand"];
 	    }
 	}
-
+	
 	export class WorkspaceLayout {
 	    workspaces: string[];
 	    assignments: Record<string, string>;
-
+	
 	    static createFrom(source: any = {}) {
 	        return new WorkspaceLayout(source);
 	    }
-
+	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.workspaces = source["workspaces"];
