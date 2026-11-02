@@ -5,11 +5,11 @@ import PackagePanel from './PackagePanel';
 import ResourceMonitor from './ResourceMonitor';
 import StatusLabel from './StatusLabel';
 import {displayURL} from '../utils';
-import type {GitStatus, LogEntry, ResourceUsage, ServiceView} from '../types';
+import type {AppModule, GitStatus, LogEntry, ResourceUsage, ServiceView} from '../types';
 import {gitCounts} from '../gitUtils';
 
 export default function LogsPane({service, logs, logBlocks, autoScroll, onToggleAutoScroll, downloadingLogs, onDownloadLogs,
-    onClearLogs, scriptBusy, onRunScript, onStopScript, usage, history, onOpenURL, gitStatus, onOpenGit}: {
+    onClearLogs, scriptBusy, onRunScript, onStopScript, usage, history, onOpenURL, gitStatus, onOpenGit, module = 'service'}: {
     service: ServiceView | null;
     gitStatus?: GitStatus;
     onOpenGit: () => void;
@@ -26,10 +26,12 @@ export default function LogsPane({service, logs, logBlocks, autoScroll, onToggle
     usage?: ResourceUsage;
     history: ResourceUsage[];
     onOpenURL: (service: ServiceView) => void;
+    module?: AppModule;
 }) {
-    return <section className="logs-pane" aria-label="服务日志">
+    const noun = module === 'game' ? '游戏' : '服务';
+    return <section className="logs-pane" aria-label={`${noun}日志`}>
         <div className="log-heading">
-            <div className="log-title"><TerminalSquare size={17}/><span>{service?.name ?? '日志'}</span>{service && <StatusLabel service={service} compact/>}</div>
+            <div className="log-title"><TerminalSquare size={17}/><span>{service?.name ?? `${noun}日志`}</span>{service && <StatusLabel service={service} compact/>}</div>
             <div className="log-actions">
                 {service?.url && <button className="log-url" type="button" onClick={() => void onOpenURL(service)} title={`打开 ${service.url}`}>
                     <ExternalLink size={13}/><span>{displayURL(service.url)}</span>
@@ -47,7 +49,7 @@ export default function LogsPane({service, logs, logBlocks, autoScroll, onToggle
         {service?.packageInfo && <PackagePanel key={service.id} service={service} busy={scriptBusy}
             onRun={scriptName => onRunScript(service, scriptName)} onStop={() => onStopScript(service)}/>}
         <div className="log-viewport">
-            {!service ? <div className="console-empty">未选择服务</div>
+            {!service ? <div className="console-empty">未选择{noun}</div>
                 : logs.length === 0 ? <div className="console-empty">暂无日志</div>
                     : <div className="log-lines">{logBlocks.map((entry, index) => (
                         <LogLine entry={entry} fallbackService={service.name} key={`${entry.timestamp}-${index}`}/>

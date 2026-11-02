@@ -21,6 +21,7 @@ export const api = {
     GetResourceUsage: vi.fn(),
     GetServiceIcon: vi.fn(),
     OpenCodexWithPrompt: vi.fn(),
+    OpenServiceInVSCode: vi.fn(),
     OpenServiceURL: vi.fn(),
     RevealService: vi.fn(),
     RemovePromptFile: vi.fn(),
@@ -39,6 +40,7 @@ export const api = {
 export const alphaService = {
     id: 'alpha',
     name: 'Alpha',
+    module: 'service',
     directory: '/tmp/alpha',
     command: 'npm run dev',
     url: '',

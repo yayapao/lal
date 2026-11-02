@@ -80,6 +80,7 @@ it('distinguishes an unavailable repository and a local configuration error', as
     api.GetServiceGitDetails.mockResolvedValue({...details, config: [], configError: '无法读取本地配置'});
     render(<App/>);
     await user.click(await screen.findByRole('button', {name: 'Git 详情'}));
+    const pane = await screen.findByRole('region', {name: 'Alpha Git 详情'});
     await screen.findByText('src/new name.ts');
     await user.click(screen.getByRole('tab', {name: '本地配置 0'}));
     expect(await screen.findByRole('alert')).toHaveProperty('textContent', '无法读取本地配置');
@@ -87,7 +88,7 @@ it('distinguishes an unavailable repository and a local configuration error', as
     api.GetServiceGitDetails.mockResolvedValue({...details, status: {...status, state: 'not_repository', root: ''}, files: [], config: [], gitDir: ''});
     await user.click(screen.getByRole('button', {name: '刷新 Git 状态'}));
     expect(await screen.findByText('项目目录及其父目录中未发现 Git 仓库。')).toBeDefined();
-    expect(screen.queryByRole('tablist')).toBeNull();
+    expect(within(pane).queryByRole('tablist')).toBeNull();
     expect(screen.queryByText('工作区干净')).toBeNull();
 });
 

@@ -161,7 +161,7 @@ describe('selected service actions', () => {
         await user.click(screen.getByRole('button', {name: '保存'}));
 
         await waitFor(() => expect(api.UpdateService).toHaveBeenCalledWith('alpha', {
-            name: 'Alpha', workspace: '', directory: '/tmp/alpha', command: 'npm run dev', url: '', cleanCommand: 'rm -rf .next dist/.cache',
+            name: 'Alpha', module: 'service', workspace: '', directory: '/tmp/alpha', command: 'npm run dev', url: '', cleanCommand: 'rm -rf .next dist/.cache',
         }));
     });
 });

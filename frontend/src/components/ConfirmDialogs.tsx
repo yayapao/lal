@@ -1,7 +1,7 @@
 import {CircleAlert, LoaderCircle, Trash2, X} from 'lucide-react';
 import {defaultCleanCommand} from '../types';
 import type {OperationIssue, ServiceView} from '../types';
-import {isActive} from '../utils';
+import {isActive, projectNoun} from '../utils';
 
 export function DeleteDialog({target, onClose, onConfirm}: {target: ServiceView; onClose: () => void; onConfirm: () => void}) {
     return <div className="modal-backdrop" role="presentation" onMouseDown={event => { if (event.target === event.currentTarget) onClose(); }}>
@@ -14,10 +14,11 @@ export function DeleteDialog({target, onClose, onConfirm}: {target: ServiceView;
 }
 
 export function CacheDialog({target, busy, onClose, onConfirm}: {target: ServiceView; busy: boolean; onClose: () => void; onConfirm: () => void}) {
+    const noun = projectNoun(target);
     return <div className="modal-backdrop" role="presentation" onMouseDown={event => { if (event.target === event.currentTarget && !busy) onClose(); }}>
         <div className="confirm-dialog" role="alertdialog" aria-modal="true" aria-labelledby="cache-title">
             <div className="confirm-icon"><Trash2 size={18}/></div><h2 id="cache-title">执行 {target.name} 的缓存清理？</h2>
-            <p>将在项目目录执行以下脚本：</p><pre className="cache-command-preview">{target.cleanCommand || defaultCleanCommand}</pre><p>{isActive(target) ? '当前服务会先停止，清理后自动重启。' : '当前服务未运行，清理后保持停止。'}</p>
+            <p>将在项目目录执行以下脚本：</p><pre className="cache-command-preview">{target.cleanCommand || defaultCleanCommand}</pre><p>{isActive(target) ? `当前${noun}会先停止，清理后自动重启。` : `当前${noun}未运行，清理后保持停止。`}</p>
             <div className="dialog-actions"><button className="button secondary" type="button" onClick={onClose} disabled={busy}>取消</button><button className="button danger" type="button" onClick={onConfirm} disabled={busy}>{busy ? <LoaderCircle className="spin" size={16}/> : <Trash2 size={15}/>}清除缓存</button></div>
         </div>
     </div>;

@@ -84,6 +84,12 @@ func shellQuote(value string) string {
 }
 
 func detectProjectType(directory, command string) string {
+	if isFile(filepath.Join(directory, "project.godot")) {
+		return "godot"
+	}
+	if isFile(filepath.Join(directory, "ProjectSettings", "ProjectVersion.txt")) {
+		return "unity"
+	}
 	hasPackageManifest := false
 	manifestPath := filepath.Join(directory, "package.json")
 	if data, err := os.ReadFile(manifestPath); err == nil && len(data) <= 2*1024*1024 {
@@ -106,6 +112,7 @@ func detectProjectType(directory, command string) string {
 				{projectType: "angular", packages: []string{"@angular/core"}},
 				{projectType: "vue", packages: []string{"vue"}},
 				{projectType: "svelte", packages: []string{"svelte"}},
+				{projectType: "phaser", packages: []string{"phaser"}},
 				{projectType: "react", packages: []string{"react", "react-dom"}},
 			} {
 				for _, packageName := range candidate.packages {

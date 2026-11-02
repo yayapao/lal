@@ -53,11 +53,18 @@ func (m *serviceManager) saveConfigLocked() error {
 }
 
 func (m *serviceManager) serviceIDs() []string {
+	return m.serviceIDsForModule(moduleService)
+}
+
+func (m *serviceManager) serviceIDsForModule(module string) []string {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
+	module = normalizeModule(module)
 	ids := make([]string, 0, len(m.services))
 	for _, service := range m.services {
-		ids = append(ids, service.ID)
+		if normalizeModule(service.Module) == module {
+			ids = append(ids, service.ID)
+		}
 	}
 	return ids
 }
@@ -119,6 +126,9 @@ func validateService(service Service) error {
 	if strings.TrimSpace(service.ID) == "" {
 		return fmt.Errorf("服务 ID 不能为空")
 	}
+	if service.Module != moduleService && service.Module != moduleGame {
+		return fmt.Errorf("项目模块必须是 service 或 game")
+	}
 	if name := strings.TrimSpace(service.Name); name == "" {
 		return fmt.Errorf("服务名称不能为空")
 	} else if len([]rune(name)) > 80 {
@@ -166,8 +176,15 @@ func uniqueIDs(ids []string) []string {
 }
 
 func serviceEqual(left, right Service) bool {
-	return left.ID == right.ID && left.Name == right.Name && left.Workspace == right.Workspace && left.Directory == right.Directory && left.Command == right.Command &&
+	return left.ID == right.ID && left.Name == right.Name && left.Module == right.Module && left.Workspace == right.Workspace && left.Directory == right.Directory && left.Command == right.Command &&
 		left.URL == right.URL && left.CleanCommand == right.CleanCommand && left.PromptFile == right.PromptFile && slices.Equal(left.PromptFiles, right.PromptFiles)
+}
+
+func normalizeModule(value string) string {
+	if strings.EqualFold(strings.TrimSpace(value), moduleGame) {
+		return moduleGame
+	}
+	return moduleService
 }
 
 func knownServiceURL(directory string) string {

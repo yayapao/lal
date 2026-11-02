@@ -1,6 +1,6 @@
 # LAL
 
-LAL（Local App Launcher）是一个基于 Wails v2 的 macOS 本地开发服务控制台。它把分散在不同目录中的独立项目收拢到同一个窗口，提供单个和批量启停、端口可用性、访问地址、PID、运行时长与实时日志。
+LAL（Local App Launcher）是一个基于 Wails v2 的 macOS 本地开发控制台。它把分散在不同目录中的开发服务与游戏项目收拢到同一个窗口，提供单个和批量启停、端口可用性、访问地址、PID、运行时长与实时日志。
 
 ## 第一版产品边界
 
@@ -9,6 +9,9 @@ LAL（Local App Launcher）是一个基于 Wails v2 的 macOS 本地开发服务
 当前版本包含：
 
 - 服务的添加、编辑、删除和搜索
+- 顶栏切换“服务 / 游戏”模块；游戏库单独展示启动状态、引擎、启动命令和预览地址
+- 添加游戏时自动识别 Godot `project.godot`、Unity `ProjectSettings/ProjectVersion.txt` 和 Web 游戏脚本，Godot 默认使用本机应用或 `godot --path .` 启动
+- 游戏卡片可直接启动/停止，并提供 VS Code、Finder 和 Web 预览快捷入口
 - 深色紧凑分栏布局，支持 `⌘F` 搜索；左下常驻局域网 IPv4 和网关，可分别复制，点击“详情”在右侧查看接口、IPv6、MAC、MTU、系统 DNS、主机名及完整 `ifconfig -a` 输出
 - 添加服务时先选择项目目录，自动读取 `package.json`，填充名称、包管理器对应的启动命令和可确定的访问地址；可切换脚本或手动修改配置
 - Workspace 从已有分组下拉选择；管理界面按分组展示项目，支持新增、重命名、删除分组和项目批量移动
@@ -41,7 +44,9 @@ LAL（Local App Launcher）是一个基于 Wails v2 的 macOS 本地开发服务
 | myStock | `/Users/yango/github/stock/mystock` | `npm run dev` | `http://localhost:35790` |
 | ViewAI | `/Users/yango/Documents/huyaprojects/ai/viewai` | `npm run dev` | `http://localhost:3900` |
 
-之后的配置保存在 `~/Library/Application Support/LAL/config.json`，不会写入各项目目录。旧版 v1/v2/v3/v4 配置会自动迁移到当前 v5：已有的目录自动分组会保留为明确的项目归属。v1/v2/v3 中上述两个已知服务还会补充默认访问地址；早期的单 Prompt 路径字段也会兼容转换。
+之后的配置保存在 `~/Library/Application Support/LAL/config.json`，不会写入各项目目录。旧版 v1/v2/v3/v4/v5 配置会自动迁移到当前 v6：原有项目归入“服务”模块，已有的目录自动分组会保留为明确的项目归属。v1/v2/v3 中上述两个已知服务还会补充默认访问地址；早期的单 Prompt 路径字段也会兼容转换。
+
+Games 模块与 Services 共用同一套进程组启停、端口占用检查、资源采样、日志与 Git 面板，但列表和配置入口相互独立。游戏配置由名称、目录、启动命令、可选预览地址与资源缓存清理命令组成；Godot 项目会自动读取 `project.godot` 的应用名称。点击卡片上的 VS Code 或 Finder 按钮可直接打开项目目录；VS Code 入口要求系统已安装 Visual Studio Code。
 
 Workspace 独立保存，空分组也会保留。管理弹窗左侧选择分组，右侧勾选项目添加、移出或批量移动；创建分组会提供默认名称，也可以重命名。删除分组只会把其中的项目移到“未分组”，不会删除项目或改变启动设置。所有修改在点击“保存”后一次性写入；取消会放弃本次修改。添加项目时可以根据已归属的父项目建议 Workspace，留空则保持未分组。
 

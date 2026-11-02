@@ -130,7 +130,7 @@ export function useServiceActions(context: ServiceActionContext) {
     const openMenu = (event: React.MouseEvent<HTMLButtonElement>, service: ServiceView) => {
         event.stopPropagation();
         const rect = event.currentTarget.getBoundingClientRect();
-        const width = 196, height = 240;
+        const width = 196, height = 280;
         setMenu({
             service,
             left: Math.min(rect.right - width, window.innerWidth - width - 12),

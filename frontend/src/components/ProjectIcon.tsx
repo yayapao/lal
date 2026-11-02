@@ -1,4 +1,4 @@
-import {Atom, Box, Code2, Package, TerminalSquare, Zap} from 'lucide-react';
+import {Atom, Box, Code2, Gamepad2, Package, TerminalSquare, Zap} from 'lucide-react';
 import type {ReactNode} from 'react';
 
 const projectTypeLabels: Record<string, string> = {
@@ -12,6 +12,9 @@ const projectTypeLabels: Record<string, string> = {
     rust: 'Rust',
     python: 'Python',
     node: 'Node.js',
+    godot: 'Godot',
+    unity: 'Unity',
+    phaser: 'Phaser',
     generic: '本地服务',
 };
 
@@ -36,6 +39,7 @@ export default function ProjectIcon({projectType, projectName, iconURL}: {projec
     else if (type === 'vite') mark = <Zap size={17}/>;
     else if (type === 'vue' || type === 'svelte' || type === 'angular') mark = <Code2 size={17}/>;
     else if (type === 'go' || type === 'rust') mark = <Box size={17}/>;
+    else if (type === 'godot' || type === 'unity' || type === 'phaser') mark = <Gamepad2 size={17}/>;
     else if (type === 'python' || type === 'node') mark = <Package size={17}/>;
     return <span className={`project-icon project-icon-${type}`} role="img" aria-label={`${projectName}：${label}`} title={label}>{mark}</span>;
 }

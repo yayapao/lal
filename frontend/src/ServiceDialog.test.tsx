@@ -19,7 +19,7 @@ const onSaved = vi.fn().mockResolvedValue(undefined);
 const onClose = vi.fn();
 
 function createDialog() {
-    return render(<ServiceDialog state={{mode: 'create'}} services={[
+    return render(<ServiceDialog state={{mode: 'create', module: 'service'}} services={[
         main.ServiceView.createFrom({...alphaService, workspace: 'ViewAI'}),
         main.ServiceView.createFrom({...alphaService, id: 'beta', workspace: 'ViewAI'}),
     ]} onClose={onClose} onSaved={onSaved}/>);
@@ -41,7 +41,7 @@ beforeEach(() => {
 afterEach(cleanup);
 
 it('offers saved workspaces even when they do not have any projects', () => {
-    render(<ServiceDialog state={{mode: 'create'}} services={[]} workspaces={['Empty']} onClose={onClose} onSaved={onSaved}/>);
+    render(<ServiceDialog state={{mode: 'create', module: 'service'}} services={[]} workspaces={['Empty']} onClose={onClose} onSaved={onSaved}/>);
     expect(screen.getByRole('option', {name: 'Empty'})).toBeDefined();
 });
 
@@ -57,7 +57,7 @@ it('starts with the directory and fills project settings before saving a selecte
     await user.selectOptions(screen.getByRole('combobox', {name: 'Workspace'}), 'ViewAI');
     await user.click(screen.getByRole('button', {name: '添加服务'}));
     expect(api.CreateService).toHaveBeenCalledWith({
-        name: 'niu', workspace: 'ViewAI', directory: '/tmp/niu', command: 'pnpm run dev',
+        name: 'niu', module: 'service', workspace: 'ViewAI', directory: '/tmp/niu', command: 'pnpm run dev',
         url: 'http://localhost:35790', cleanCommand: 'pnpm run clean',
     });
     expect(onSaved).toHaveBeenCalled();

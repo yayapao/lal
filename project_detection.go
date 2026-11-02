@@ -51,6 +51,12 @@ func (m *serviceManager) DetectProject(directory string) (ProjectDetection, erro
 		ProjectType: detectProjectType(directory, ""), CleanCommand: defaultCleanCommand,
 		Scripts: []ProjectScript{}, Sources: []string{}, Warnings: []string{},
 	}
+	if gameResult, ok := detectStandaloneGameProject(directory); ok {
+		m.mu.RLock()
+		gameResult.Workspace = m.suggestedWorkspaceLocked(directory)
+		m.mu.RUnlock()
+		return gameResult, nil
+	}
 	info := readPackageInfo(directory)
 	if info != nil {
 		result.Sources = append(result.Sources, "package.json")

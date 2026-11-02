@@ -82,6 +82,10 @@ export function OpenCodexWithPrompt(arg1, arg2) {
   return window['go']['main']['App']['OpenCodexWithPrompt'](arg1, arg2);
 }
 
+export function OpenServiceInVSCode(arg1) {
+  return window['go']['main']['App']['OpenServiceInVSCode'](arg1);
+}
+
 export function OpenServiceURL(arg1) {
   return window['go']['main']['App']['OpenServiceURL'](arg1);
 }

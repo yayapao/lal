@@ -64,6 +64,7 @@ func (m *serviceManager) loadConfig() error {
 	changed := migrating
 	for index, service := range config.Services {
 		original := service
+		service.Module = normalizeModule(service.Module)
 		service.Workspace = strings.TrimSpace(service.Workspace)
 		service.URL = normalizeAccessURL(service.URL)
 		if strings.TrimSpace(service.CleanCommand) == "" {
@@ -105,8 +106,8 @@ func (m *serviceManager) loadConfig() error {
 
 func defaultServices() []Service {
 	candidates := []Service{
-		{ID: "mystock", Name: "myStock", Directory: "/Users/yango/github/stock/mystock", Command: "npm run dev", URL: "http://localhost:35790", CleanCommand: defaultCleanCommand},
-		{ID: "viewai", Name: "ViewAI", Directory: "/Users/yango/Documents/huyaprojects/ai/viewai", Command: "npm run dev", URL: "http://localhost:3900", CleanCommand: defaultCleanCommand},
+		{ID: "mystock", Name: "myStock", Module: moduleService, Directory: "/Users/yango/github/stock/mystock", Command: "npm run dev", URL: "http://localhost:35790", CleanCommand: defaultCleanCommand},
+		{ID: "viewai", Name: "ViewAI", Module: moduleService, Directory: "/Users/yango/Documents/huyaprojects/ai/viewai", Command: "npm run dev", URL: "http://localhost:3900", CleanCommand: defaultCleanCommand},
 	}
 	services := make([]Service, 0, len(candidates))
 	for _, candidate := range candidates {
@@ -132,6 +133,7 @@ func (m *serviceManager) CreateService(input ServiceInput) (ServiceView, error) 
 	service := Service{
 		ID:           newID(),
 		Name:         strings.TrimSpace(input.Name),
+		Module:       normalizeModule(input.Module),
 		Workspace:    strings.TrimSpace(input.Workspace),
 		Directory:    cleanDirectory(input.Directory),
 		Command:      strings.TrimSpace(input.Command),
@@ -163,6 +165,7 @@ func (m *serviceManager) UpdateService(id string, input ServiceInput) (ServiceVi
 	updated := Service{
 		ID:           id,
 		Name:         strings.TrimSpace(input.Name),
+		Module:       normalizeModule(input.Module),
 		Workspace:    strings.TrimSpace(input.Workspace),
 		Directory:    cleanDirectory(input.Directory),
 		Command:      strings.TrimSpace(input.Command),

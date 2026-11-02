@@ -1,7 +1,12 @@
 import type {ServiceView} from './types';
+import {moduleOf} from './types';
 
 export function isActive(service: ServiceView) {
     return service.status === 'running' || service.status === 'starting' || service.status === 'stopping';
+}
+
+export function projectNoun(service?: ServiceView | null) {
+    return service && moduleOf(service) === 'game' ? '游戏' : '服务';
 }
 
 export function isStoppable(service: ServiceView) {

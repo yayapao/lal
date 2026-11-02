@@ -55,6 +55,7 @@ export namespace main {
 	export class ServiceView {
 	    id: string;
 	    name: string;
+	    module?: string;
 	    workspace?: string;
 	    directory: string;
 	    command: string;
@@ -86,6 +87,7 @@ export namespace main {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.id = source["id"];
 	        this.name = source["name"];
+	        this.module = source["module"];
 	        this.workspace = source["workspace"];
 	        this.directory = source["directory"];
 	        this.command = source["command"];
@@ -526,6 +528,7 @@ export namespace main {
 	}
 	export class ServiceInput {
 	    name: string;
+	    module: string;
 	    workspace: string;
 	    directory: string;
 	    command: string;
@@ -539,6 +542,7 @@ export namespace main {
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.name = source["name"];
+	        this.module = source["module"];
 	        this.workspace = source["workspace"];
 	        this.directory = source["directory"];
 	        this.command = source["command"];

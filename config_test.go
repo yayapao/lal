@@ -38,6 +38,9 @@ func TestServiceConfigLifecycle(t *testing.T) {
 	if created.ID == "" || created.Name != "API" || !created.PathExists || created.URL != "http://localhost:4321" || created.CleanCommand != defaultCleanCommand || len(created.PromptFiles) != 0 {
 		t.Fatalf("unexpected created service: %#v", created)
 	}
+	if created.Module != moduleService {
+		t.Fatalf("legacy service module = %q, want %q", created.Module, moduleService)
+	}
 
 	if _, err := app.CreateService(ServiceInput{Name: "api", Directory: projectDir, Command: "go run ."}); err == nil {
 		t.Fatal("expected duplicate service name to fail")
@@ -67,6 +70,43 @@ func TestServiceConfigLifecycle(t *testing.T) {
 	}
 	if services := newAppWithConfigPath(configPath).GetAppState().Services; len(services) != 0 {
 		t.Fatalf("deleted service was persisted: %#v", services)
+	}
+}
+
+func TestGameModulePersistsSeparately(t *testing.T) {
+	configPath := emptyConfig(t)
+	projectDir := t.TempDir()
+	app := newAppWithConfigPath(configPath)
+	game, err := app.CreateService(ServiceInput{
+		Name: "Anti-Magic Gem", Module: moduleGame, Directory: projectDir, Command: "godot --path .", CleanCommand: "rm -rf .godot",
+	})
+	if err != nil {
+		t.Fatalf("create game: %v", err)
+	}
+	if game.Module != moduleGame {
+		t.Fatalf("game module = %q, want %q", game.Module, moduleGame)
+	}
+	reloaded := newAppWithConfigPath(configPath).GetAppState()
+	if len(reloaded.Services) != 1 || reloaded.Services[0].Module != moduleGame || reloaded.Services[0].Command != "godot --path ." {
+		t.Fatalf("game was not persisted: %#v", reloaded.Services)
+	}
+}
+
+func TestServiceIDsRemainScopedToServicesModule(t *testing.T) {
+	app := testApp(t)
+	service, err := app.CreateService(ServiceInput{Name: "Web", Directory: t.TempDir(), Command: "true"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	game, err := app.CreateService(ServiceInput{Name: "Game", Module: moduleGame, Directory: t.TempDir(), Command: "true"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if ids := app.serviceIDs(); len(ids) != 1 || ids[0] != service.ID {
+		t.Fatalf("service ids = %#v, want only %s", ids, service.ID)
+	}
+	if ids := app.serviceIDsForModule(moduleGame); len(ids) != 1 || ids[0] != game.ID {
+		t.Fatalf("game ids = %#v, want only %s", ids, game.ID)
 	}
 }
 

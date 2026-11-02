@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	configVersion         = 5
+	configVersion         = 6
 	maxLogEntries         = 1200
 	maxCommandLength      = 1000
 	maxCleanCommandLength = 2000
@@ -25,6 +25,8 @@ const (
 	defaultPromptsDir     = "prompts"
 	maxScriptNameLength   = 120
 	maxIconFileBytes      = 2 * 1024 * 1024
+	moduleService         = "service"
+	moduleGame            = "game"
 )
 
 var ansiPattern = regexp.MustCompile(`\x1b(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])`)
@@ -34,6 +36,7 @@ const shellCommandWrapper = `if [[ -r "$HOME/.zshrc" ]]; then source "$HOME/.zsh
 type Service struct {
 	ID           string   `json:"id"`
 	Name         string   `json:"name"`
+	Module       string   `json:"module,omitempty"`
 	Workspace    string   `json:"workspace,omitempty"`
 	Directory    string   `json:"directory"`
 	Command      string   `json:"command"`
@@ -45,6 +48,7 @@ type Service struct {
 
 type ServiceInput struct {
 	Name         string `json:"name"`
+	Module       string `json:"module"`
 	Workspace    string `json:"workspace"`
 	Directory    string `json:"directory"`
 	Command      string `json:"command"`

@@ -61,6 +61,7 @@ func (m *serviceManager) serviceViewsLocked() []ServiceView {
 
 func (m *serviceManager) serviceViewLocked(service Service) ServiceView {
 	service.PromptFiles = append([]string(nil), service.PromptFiles...)
+	service.Module = normalizeModule(service.Module)
 	configuredWorkspace := strings.TrimSpace(service.Workspace)
 	service.Workspace = m.effectiveWorkspaceLocked(service)
 	view := ServiceView{

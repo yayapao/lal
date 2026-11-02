@@ -4,6 +4,7 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
+	"strings"
 	"testing"
 )
 
@@ -96,5 +97,27 @@ func TestDetectProjectFallbacks(t *testing.T) {
 	}
 	if isFile(filepath.Join(directory, "executed")) {
 		t.Fatal("project config was executed")
+	}
+}
+
+func TestDetectGodotGameProject(t *testing.T) {
+	app := testApp(t)
+	directory := t.TempDir()
+	writeDetectionFile(t, directory, "project.godot", `config_version=5
+
+[application]
+
+config/name="Anti-Magic Gem"
+run/main_scene="res://scenes/main.tscn"
+`)
+	result, err := app.DetectProject(directory)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Name != "Anti-Magic Gem" || result.ProjectType != "godot" || !strings.Contains(result.Command, "--path .") {
+		t.Fatalf("unexpected Godot detection: %#v", result)
+	}
+	if result.CleanCommand != "rm -rf .godot" || !slices.Contains(result.Sources, "project.godot") {
+		t.Fatalf("unexpected Godot metadata: %#v", result)
 	}
 }

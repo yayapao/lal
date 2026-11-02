@@ -11,11 +11,13 @@ import './styles/overlays.css';
 import './styles/git.css';
 import './styles/network.css';
 import './styles/compact.css';
+import './styles/games.css';
 import {groupLogEntries} from './LogLine';
 import ContextMenu from './components/ContextMenu';
 import {CacheDialog, DeleteDialog, IssueDialog} from './components/ConfirmDialogs';
 import LogsPane from './components/LogsPane';
 import GitPane from './components/GitPane';
+import GamesPane from './components/GamesPane';
 import PromptManager from './components/PromptManager';
 import ServiceDialog from './components/ServiceDialog';
 import ServicesPane from './components/ServicesPane';
@@ -33,11 +35,13 @@ import {useServiceState} from './hooks/useServiceState';
 import {useGitStatuses} from './hooks/useGitStatuses';
 import {useWorkspaceManager} from './hooks/useWorkspaceManager';
 import {useNetworkInfo} from './hooks/useNetworkInfo';
-import {ungroupedWorkspace} from './types';
-import type {BatchBusyState, DialogState, MenuState, OperationIssue, PromptFileView, RightView, ServiceView, ToastState, WorkspaceGroup} from './types';
+import {useProjectOpeners} from './hooks/useProjectOpeners';
+import {moduleOf, ungroupedWorkspace} from './types';
+import type {AppModule, BatchBusyState, DialogState, MenuState, OperationIssue, PromptFileView, RightView, ServiceView, ToastState, WorkspaceGroup} from './types';
 import {isActive, isStoppable} from './utils';
 
 function App() {
+    const [activeModule, setActiveModule] = useState<AppModule>('service');
     const [query, setQuery] = useState('');
     const [busyIds, setBusyIds] = useState<Set<string>>(new Set());
     const [batchBusy, setBatchBusy] = useState<BatchBusyState>(null);
@@ -75,19 +79,21 @@ function App() {
     const iconURLs = useServiceIcons(services, iconRefreshKey);
     const git = useGitStatuses(services, iconRefreshKey);
     const network = useNetworkInfo();
+    const projectOpeners = useProjectOpeners(showToast);
     const networkError = (message: string) => showToast(message, 'error');
 
-    const selectedService = services.find(service => service.id === selectedId) ?? null;
+    const activeServices = useMemo(() => services.filter(service => moduleOf(service) === activeModule), [activeModule, services]);
+    const selectedService = activeServices.find(service => service.id === selectedId) ?? null;
     const selectedUsage = selectedService ? resourceUsage[selectedService.id] : undefined;
     const selectedResourceHistory = selectedService ? resourceHistory[selectedService.id] ?? [] : [];
     const logBlocks = useMemo(() => groupLogEntries(logs), [logs]);
-    const runningCount = services.filter(isActive).length;
+    const runningCount = activeServices.filter(isActive).length;
     const filteredServices = useMemo(() => {
         const keyword = query.trim().toLocaleLowerCase();
-        if (!keyword) return services;
-        return services.filter(service => [service.name, service.workspace ?? '', service.directory, service.command, service.url ?? '']
+        if (!keyword) return activeServices;
+        return activeServices.filter(service => [service.name, service.workspace ?? '', service.directory, service.command, service.url ?? '', service.projectType]
             .some(value => value.toLocaleLowerCase().includes(keyword)));
-    }, [query, services]);
+    }, [query, activeServices]);
     const workspaceGroups = useMemo(() => {
         const groups = new Map<string, WorkspaceGroup>();
         for (const service of filteredServices) {
@@ -99,7 +105,7 @@ function App() {
         return [...groups.values()].sort((a, b) => a.name === ungroupedWorkspace ? 1 : b.name === ungroupedWorkspace ? -1 : a.name.localeCompare(b.name, 'zh-CN'));
     }, [filteredServices]);
     const showWorkspaceGroups = workspaceGroups.length > 1 || workspaceGroups[0]?.name !== ungroupedWorkspace;
-    const checkedServices = useMemo(() => services.filter(service => checkedIds.has(service.id)), [checkedIds, services]);
+    const checkedServices = useMemo(() => activeServices.filter(service => checkedIds.has(service.id)), [checkedIds, activeServices]);
     const checkedStartableCount = checkedServices.filter(service => !isActive(service) && service.pathExists).length;
     const checkedStoppableCount = checkedServices.filter(isStoppable).length;
     const visibleCheckedCount = filteredServices.filter(service => checkedIds.has(service.id)).length;
@@ -115,6 +121,16 @@ function App() {
         showToast, setPrompts, setPromptLoading, setPromptError,
         setPromptSyncing, setPromptBusy, setAddingPrompt, setMenu, setSelectedId, setRightView,
     });
+
+    const changeModule = (next: AppModule) => {
+        setActiveModule(next); setQuery(''); setCheckedIds(new Set()); setRightView('logs');
+        setSelectedId(services.find(service => moduleOf(service) === next)?.id ?? '');
+    };
+
+    useEffect(() => {
+        if (loading || selectedService) return;
+        setSelectedId(activeServices[0]?.id ?? '');
+    }, [activeServices, loading, selectedService, setSelectedId]);
 
     useEffect(() => {
         if (rightView !== 'prompts' || !selectedId) return;
@@ -146,11 +162,18 @@ function App() {
 
     return (
         <div className="app-shell">
-            <Toolbar query={query} onQueryChange={setQuery} onAdd={() => setDialog({mode: 'create'})}/>
+            <Toolbar query={query} module={activeModule} onModuleChange={changeModule} onQueryChange={setQuery} onAdd={() => setDialog({mode: 'create', module: activeModule})}/>
 
             <main className="workspace">
-                <ServicesPane loading={loading} query={query} total={services.length} selectedId={selectedId}
-                    toolbar={<ServiceToolbar total={services.length} running={runningCount} refreshing={refreshing} batchBusy={batchBusy}
+                {activeModule === 'game' ? <GamesPane loading={loading} query={query} total={activeServices.length} games={filteredServices} selectedId={selectedId}
+                    busyIds={busyIds} refreshing={refreshing} iconURLs={iconURLs} resourceUsage={resourceUsage}
+                    footer={<NetworkSummary network={network} active={rightView === 'network'} onDetails={() => setRightView('network')} onError={networkError}/>}
+                    onAdd={() => setDialog({mode: 'create', module: 'game'})} onRefresh={() => void serviceActions.refreshAppState()}
+                    onSelect={id => { setSelectedId(id); setRightView('logs'); }} onToggle={game => void serviceActions.toggleService(game)}
+                    onOpenVSCode={game => void projectOpeners.openInVSCode(game)} onReveal={game => void serviceActions.revealService(game)}
+                    onOpenURL={game => void serviceActions.openServiceURL(game)} onMenu={(event, game) => serviceActions.openMenu(event, game)}/>
+                : <ServicesPane loading={loading} query={query} total={activeServices.length} selectedId={selectedId}
+                    toolbar={<ServiceToolbar total={activeServices.length} running={runningCount} refreshing={refreshing} batchBusy={batchBusy}
                         onRefresh={() => void serviceActions.refreshAppState()} onBatch={action => void serviceActions.runBatch(action)}/>}
                     footer={<NetworkSummary network={network} active={rightView === 'network'} onDetails={() => setRightView('network')} onError={networkError}/>}
                     filteredServices={filteredServices} workspaceGroups={workspaceGroups} showWorkspaceGroups={showWorkspaceGroups}
@@ -162,13 +185,13 @@ function App() {
                     onStopSelected={() => void serviceActions.runSelectedBatch('stop')}
                     onClearSelection={() => setCheckedIds(new Set())}
                     onOpenWorkspaceManager={workspaceManager.open}
-                    onAdd={() => setDialog({mode: 'create'})}
+                    onAdd={() => setDialog({mode: 'create', module: 'service'})}
                     onSelectService={id => { setSelectedId(id); setRightView('logs'); }}
                     onOpenGit={service => { setSelectedId(service.id); setRightView('git'); }}
                     onToggleService={service => void serviceActions.toggleService(service)}
                     onCheckService={serviceActions.toggleChecked}
                     onOpenURL={service => void serviceActions.openServiceURL(service)}
-                    onMenu={(event, service) => serviceActions.openMenu(event, service)}/>
+                    onMenu={(event, service) => serviceActions.openMenu(event, service)}/>}
 
                 {rightView === 'network' ? <NetworkPane network={network} onBack={() => setRightView('logs')} onError={networkError}/>
                 : rightView === 'prompts' && selectedService ? (
@@ -191,7 +214,7 @@ function App() {
                     onRunScript={(service, scriptName) => void serviceActions.runPackageScript(service, scriptName)}
                     onStopScript={service => void serviceActions.stopPackageScript(service)}
                     usage={selectedUsage} history={selectedResourceHistory}
-                    onOpenURL={service => void serviceActions.openServiceURL(service)}/>}
+                    onOpenURL={service => void serviceActions.openServiceURL(service)} module={activeModule}/>}
             </main>
 
             {menu && <ContextMenu menu={menu} cacheBusy={cacheBusyId !== ''} onClose={() => setMenu(null)}
@@ -199,6 +222,7 @@ function App() {
                 onEdit={service => { setDialog({mode: 'edit', service}); setMenu(null); }}
                 onRestart={service => void serviceActions.restartService(service)}
                 onCache={service => { setCacheTarget(service); setMenu(null); }}
+                onOpenVSCode={service => { setMenu(null); void projectOpeners.openInVSCode(service); }}
                 onReveal={service => void serviceActions.revealService(service)}
                 onRemove={service => { setDeleteTarget(service); setMenu(null); }}/>}
 
