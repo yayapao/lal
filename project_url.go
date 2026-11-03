@@ -14,10 +14,12 @@ var (
 	portFlag         = regexp.MustCompile(`(?:^|\s)(?:--port|-p)(?:=|\s+)["']?([0-9]{1,5})(?:["']?(?:\s|$))`)
 	portOption       = regexp.MustCompile(`(?:^|\s)(?:--port|-p)(?:=|\s|$)`)
 	portAssignment   = regexp.MustCompile(`(?:^|\s)PORT=["']?([0-9]{1,5})(?:["']?(?:\s|$))`)
-	hostFlag         = regexp.MustCompile(`(?:^|\s)--(?:host|hostname)(?:=|\s+)["']?([A-Za-z0-9_.-]+)`)
+	listenPort       = regexp.MustCompile(`(?:^|\s)(?:--listen|-l)(?:=|\s+)["']?(?:[A-Za-z0-9_.-]+:)?([0-9]{1,5})(?:["']?(?:\s|$))`)
+	httpServerPort   = regexp.MustCompile(`(?:^|\s)python(?:3(?:\.\d+)?)?\s+-m\s+http\.server(?:\s+(?:--port\s+)?)([0-9]{1,5})(?:\s|$)`)
+	hostFlag         = regexp.MustCompile(`(?:^|\s)--(?:host|hostname|bind)(?:=|\s+)["']?([A-Za-z0-9_.-]+)`)
 	scriptReference  = regexp.MustCompile(`(?:npm|pnpm|yarn|bun)\s+run\s+([A-Za-z0-9_:.-]+)`)
 	nodeEntry        = regexp.MustCompile(`(?:^|\s)(?:node|tsx|ts-node)\s+(?:--[\w-]+(?:=[^\s]+)?\s+)*["']?([\w./-]+\.(?:js|mjs|cjs|ts))`)
-	listenPort       = regexp.MustCompile(`(?:\.listen\s*\(|\bport\s*[:=]\s*)(?:process\.env\.PORT\s*(?:\|\||\?\?)\s*)?["']?([0-9]{1,5})\b`)
+	serverListenPort = regexp.MustCompile(`(?:\.listen\s*\(|\bport\s*[:=]\s*)(?:process\.env\.PORT\s*(?:\|\||\?\?)\s*)?["']?([0-9]{1,5})\b`)
 	portFallback     = regexp.MustCompile(`process\.env\.PORT\s*(?:\|\||\?\?)\s*["']?([0-9]{1,5})\b`)
 	viteServer       = regexp.MustCompile(`(?s)\bserver\s*:\s*\{([^}]+)\}`)
 	vitePort         = regexp.MustCompile(`\bport\s*:\s*([0-9]{1,5})\b`)
@@ -31,6 +33,12 @@ func detectProjectURL(directory, command string, scripts []PackageScript, source
 	port := matchedPort(portFlag, command)
 	if port == 0 {
 		port = matchedPort(portAssignment, command)
+	}
+	if port == 0 {
+		port = matchedPort(listenPort, command)
+	}
+	if port == 0 {
+		port = matchedPort(httpServerPort, command)
 	}
 	if port == 0 && portOption.MatchString(command) {
 		return ""
@@ -50,7 +58,7 @@ func detectProjectURL(directory, command string, scripts []PackageScript, source
 				if text := readDetectionText(path); text != "" {
 					port = matchedPort(portFallback, text)
 					if port == 0 {
-						port = matchedPort(listenPort, text)
+						port = matchedPort(serverListenPort, text)
 					}
 					if port != 0 {
 						addDetectionSource(sources, filename)

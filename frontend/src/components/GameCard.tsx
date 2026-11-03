@@ -19,16 +19,17 @@ export default function GameCard({service, index, selected, busy, usage, iconURL
     onMenu: (event: React.MouseEvent<HTMLButtonElement>) => void;
 }) {
     const transition = service.status === 'starting' || service.status === 'stopping';
+    const engine = service.projectType in engineLabels ? service.projectType : 'generic';
     const handleKeyDown = (event: KeyboardEvent<HTMLElement>) => {
         if ((event.target as HTMLElement).closest('button, input')) return;
         if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); onSelect(); }
     };
-    return <article className={`game-card state-${serviceVisualState(service)}${selected ? ' is-selected' : ''}`}
+    return <article className={`game-card engine-${engine} state-${serviceVisualState(service)}${selected ? ' is-selected' : ''}`}
         onClick={onSelect} onKeyDown={handleKeyDown} tabIndex={0} aria-current={selected}>
         <div className="game-card-top">
             <span className="game-sequence">{String(index + 1).padStart(2, '0')}</span>
             <ProjectIcon projectType={service.projectType} projectName={service.name} iconURL={iconURL}/>
-            <div className="game-identity"><span>{engineLabels[service.projectType] ?? 'GAME'}</span><h3 title={service.name}>{service.name}</h3></div>
+            <div className="game-identity"><span>{engineLabels[engine]}</span><h3 title={service.name}>{service.name}</h3></div>
             <StatusLabel service={service} compact/>
             <button className="icon-button game-menu" type="button" aria-label={`${service.name} 更多操作`} title="更多操作" onClick={event => { event.stopPropagation(); onMenu(event); }}><MoreHorizontal size={17}/></button>
         </div>

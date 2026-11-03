@@ -51,7 +51,12 @@ func (m *serviceManager) DetectProject(directory string) (ProjectDetection, erro
 		ProjectType: detectProjectType(directory, ""), CleanCommand: defaultCleanCommand,
 		Scripts: []ProjectScript{}, Sources: []string{}, Warnings: []string{},
 	}
+	manifestURL, manifestFound, manifestWarning := detectManifestURL(directory)
 	if gameResult, ok := detectStandaloneGameProject(directory); ok {
+		if manifestURL != "" {
+			gameResult.URL = manifestURL
+		}
+		appendManifestNotice(&gameResult, manifestFound, manifestWarning)
 		m.mu.RLock()
 		gameResult.Workspace = m.suggestedWorkspaceLocked(directory)
 		m.mu.RUnlock()
@@ -65,10 +70,14 @@ func (m *serviceManager) DetectProject(directory string) (ProjectDetection, erro
 		}
 		manager := detectPackageManager(directory, info.PackageManager)
 		for _, script := range info.Scripts {
+			scriptURL := detectProjectURL(directory, script.Command, info.Scripts, &result.Sources)
+			if manifestURL != "" {
+				scriptURL = manifestURL
+			}
 			result.Scripts = append(result.Scripts, ProjectScript{
 				Name: script.Name, Preview: script.Command,
 				Command: packageScriptCommand(manager, script.Name),
-				URL:     detectProjectURL(directory, script.Command, info.Scripts, &result.Sources),
+				URL:     scriptURL,
 			})
 		}
 		if script := preferredProjectScript(result.Scripts); script != nil {
@@ -82,6 +91,10 @@ func (m *serviceManager) DetectProject(directory string) (ProjectDetection, erro
 	} else if isFile(filepath.Join(directory, "package.json")) {
 		result.Warnings = append(result.Warnings, "package.json 无法解析，请手动填写启动命令。")
 	}
+	if manifestURL != "" {
+		result.URL = manifestURL
+	}
+	appendManifestNotice(&result, manifestFound, manifestWarning)
 	if result.ProjectType == "vite" && result.CleanCommand == defaultCleanCommand {
 		result.CleanCommand = "rm -rf node_modules/.vite"
 	}

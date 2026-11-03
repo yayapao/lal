@@ -24,7 +24,7 @@ beforeEach(() => {
     api.ChooseDirectory.mockResolvedValue('/tmp/amg');
     api.DetectProject.mockResolvedValue({
         name: 'Anti-Magic Gem', directory: '/tmp/amg', workspace: '', projectType: 'godot',
-        command: 'godot --path .', url: '', cleanCommand: 'rm -rf .godot', scripts: [], sources: ['project.godot'], warnings: [],
+        command: 'godot --path .', url: 'http://127.0.0.1:18040/index.html', cleanCommand: 'rm -rf .godot', scripts: [], sources: ['project.godot', '.lal.json'], warnings: [],
     });
     api.CreateService.mockResolvedValue({...game, id: 'new-game', directory: '/tmp/amg'});
 });
@@ -55,6 +55,7 @@ it('detects a Godot project in the game form and saves it as a game', async () =
     await waitFor(() => expect((screen.getByRole('textbox', {name: '游戏名称'}) as HTMLInputElement).value).toBe('Anti-Magic Gem'));
     await user.click(within(dialog).getByRole('button', {name: '添加游戏'}));
     await waitFor(() => expect(api.CreateService).toHaveBeenCalledWith(expect.objectContaining({
-        name: 'Anti-Magic Gem', module: 'game', command: 'godot --path .', cleanCommand: 'rm -rf .godot',
+        name: 'Anti-Magic Gem', module: 'game', command: 'godot --path .',
+        url: 'http://127.0.0.1:18040/index.html', cleanCommand: 'rm -rf .godot',
     })));
 });

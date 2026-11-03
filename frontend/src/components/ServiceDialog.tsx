@@ -57,7 +57,7 @@ export default function ServiceDialog({state, services, workspaces: catalog = []
                 <div className={`project-detection-status${detectionError ? ' has-warning' : ''}`} role="status" aria-live="polite">
                     {analyzing ? <><LoaderCircle className="spin" size={14}/><span>正在解析项目配置…</span></> : detectionError ? <><CircleAlert size={14}/><span>{detectionError}，仍可手动填写。</span></> : detection ? <><Check size={14}/><span>{detection.sources.length ? `已读取 ${detection.sources.join('、')}，请确认下方配置。` : `已选择目录，请补充${noun}配置。`}</span></> : <><FolderOpen size={14}/><span>选择项目后读取名称、启动脚本和端口。</span></>}
                 </div>
-                {detection?.warnings.filter(warning => warning.startsWith('package.json')).map(warning => <p className="field-hint" key={warning}>{warning}</p>)}
+                {detection?.warnings.filter(warning => warning.startsWith('package.json') || warning.startsWith('.lal.json')).map(warning => <p className="field-hint" key={warning}>{warning}</p>)}
                 <div className="service-identity-fields">
                     <label><span>{noun}名称</span><input value={form.name} onChange={event => change('name', event.target.value)} maxLength={80} required placeholder={isGame ? '例如 Anti-Magic Gem' : '例如 myStock'} disabled={saving}/></label>
                     <label><span>Workspace <small>可选</small></span><select value={form.workspace} onChange={event => change('workspace', event.target.value)} aria-label="Workspace" disabled={saving}>
@@ -69,7 +69,7 @@ export default function ServiceDialog({state, services, workspaces: catalog = []
                     <option value="">自定义命令</option>{detection?.scripts.map(script => <option key={script.name} value={script.command}>{script.name} · {script.preview}</option>)}
                 </select>}<input aria-label="启动命令" className="command-input" value={form.command} onChange={event => change('command', event.target.value)} required maxLength={1000} placeholder="npm run dev" spellCheck={false} disabled={saving}/></label>
                 <label><span>{isGame ? '游戏预览地址' : '访问地址'} <small>可选</small></span><input className="command-input" value={form.url} onChange={event => change('url', event.target.value)} maxLength={500} inputMode="url" placeholder={isGame ? 'http://localhost:18040/index.html' : 'http://localhost:3900'} spellCheck={false} disabled={saving}/>
-                    {detection && !form.url && <span className="field-hint">未确定端口，可手动填写，也可以留空。</span>}</label>
+                    {detection && !form.url && <span className="field-hint">未解析到地址；可用项目根目录 .lal.json 的 url 字段声明，或手动填写。</span>}</label>
                 {detection && !form.command && <p className="field-hint">未识别到常用启动脚本，请选择脚本或填写命令。</p>}
                 <label><span>{isGame ? '资源缓存清理' : '缓存清理脚本'} <small>在项目目录执行</small></span><textarea className="command-input cache-command-input" value={form.cleanCommand} onChange={event => change('cleanCommand', event.target.value)} required maxLength={2000} rows={2} placeholder={isGame ? 'rm -rf .godot' : 'rm -rf .next'} spellCheck={false} disabled={saving}/></label>
             </div>

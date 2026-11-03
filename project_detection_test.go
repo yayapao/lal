@@ -34,6 +34,8 @@ func TestDetectProjectCommandsAndPorts(t *testing.T) {
 		{"unknown port", `{"scripts":{"dev":"node server.js"}}`, "server.js", `server.listen(getPort());`, "npm run dev", "", defaultCleanCommand},
 		{"dynamic vite", `{"scripts":{"dev":"vite"}}`, "vite.config.ts", `export default {server: {port: Number(process.env.WEB_PORT)}}`, "npm run dev", "", defaultCleanCommand},
 		{"dynamic next", `{"scripts":{"dev":"next dev --port $WEB_PORT"}}`, "", "", "npm run dev", "", defaultCleanCommand},
+		{"serve listen", `{"scripts":{"serve":"serve dist -l 18040"}}`, "", "", "npm run serve", "http://localhost:18040", defaultCleanCommand},
+		{"python server", `{"scripts":{"dev":"python3 -m http.server 8000 --bind 127.0.0.1"}}`, "", "", "npm run dev", "http://127.0.0.1:8000", defaultCleanCommand},
 		{"invalid port", `{"scripts":{"dev":"next dev --port 99999"}}`, "", "", "npm run dev", "", defaultCleanCommand},
 		{"no launch", `{"scripts":{"build":"next build","lint":"eslint"}}`, "", "", "", "", defaultCleanCommand},
 	} {
@@ -119,5 +121,43 @@ run/main_scene="res://scenes/main.tscn"
 	}
 	if result.CleanCommand != "rm -rf .godot" || !slices.Contains(result.Sources, "project.godot") {
 		t.Fatalf("unexpected Godot metadata: %#v", result)
+	}
+}
+
+func TestDetectProjectManifestURL(t *testing.T) {
+	app := testApp(t)
+	directory := t.TempDir()
+	writeDetectionFile(t, directory, "project.godot", `config_version=5
+
+[application]
+
+config/name="Anti-Magic Gem"
+`)
+	writeDetectionFile(t, directory, lalManifestFilename, `{"url":"127.0.0.1:18040/index.html/"}`)
+	result, err := app.DetectProject(directory)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.URL != "http://127.0.0.1:18040/index.html" {
+		t.Fatalf("manifest URL = %q", result.URL)
+	}
+	if !slices.Contains(result.Sources, lalManifestFilename) {
+		t.Fatalf("manifest source missing: %#v", result.Sources)
+	}
+}
+
+func TestDetectProjectManifestTakesPrecedenceAndReportsInvalidURL(t *testing.T) {
+	app := testApp(t)
+	directory := t.TempDir()
+	writeDetectionFile(t, directory, "package.json", `{"scripts":{"dev":"next dev --port 3000"}}`)
+	writeDetectionFile(t, directory, lalManifestFilename, `{"url":"http://localhost:18040/index.html"}`)
+	result, err := app.DetectProject(directory)
+	if err != nil || result.URL != "http://localhost:18040/index.html" || result.Scripts[0].URL != result.URL {
+		t.Fatalf("manifest did not take precedence: %#v, %v", result, err)
+	}
+	writeDetectionFile(t, directory, lalManifestFilename, `{"url":"/index.html"}`)
+	result, err = app.DetectProject(directory)
+	if err != nil || result.URL != "http://localhost:3000" || len(result.Warnings) == 0 {
+		t.Fatalf("invalid manifest should fall back: %#v, %v", result, err)
 	}
 }
