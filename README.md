@@ -4,8 +4,10 @@
 
 <h1 align="center">LAL · Local App Launcher</h1>
 
+<p align="center"><strong>简体中文</strong> · <a href="README.en.md">English</a></p>
+
 <p align="center"><strong>AI 帮你写出更多项目，LAL 帮你把它们跑起来。</strong></p>
-<p align="center">A local project manager for macOS — launch dev servers and games, inspect logs, ports and Git, and get back to building.</p>
+<p align="center">macOS 本地项目管理器：启动开发服务与游戏，查看日志、端口和 Git 状态。</p>
 <p align="center">
   <a href="#开始使用">开始使用</a> · <a href="#一个窗口管理开发现场">功能预览</a> · <a href="#参与项目">参与项目</a> · <a href="LICENSE">MIT License</a>
 </p>
@@ -134,15 +136,6 @@ lal/
 欢迎通过 [Issues](https://github.com/yayapao/lal/issues) 分享多项目开发中的具体问题，或提交 Pull Request。报错时请附 macOS 版本、项目类型、复现步骤，以及已去除敏感信息的命令与日志。
 
 LAL 聚焦单机本地项目管理。目前不提供远程部署、团队权限或启动依赖编排。
-
-<details>
-<summary>English overview</summary>
-
-**LAL (Local App Launcher)** is a macOS desktop workbench for people building several projects with AI coding tools. Keep local development servers, scripts and games in one place: group projects into workspaces, start and stop processes, inspect logs and resource usage, diagnose occupied ports, review Git changes, and open your editor or project folder.
-
-LAL supports Godot, Unity and Web game projects alongside regular services. Codex prompt handoff helps resume project context without sending prompts automatically. It runs locally with Go, Wails and React; the current UI is primarily Chinese. Download the macOS universal preview from [Releases](https://github.com/yayapao/lal/releases/tag/v0.1.0), or build from source using the commands above. The preview is ad-hoc signed and not Apple notarized; see the release notes for validation limits.
-
-</details>
 
 ## 许可证
 
