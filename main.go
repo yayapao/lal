@@ -52,7 +52,8 @@ func main() {
 		dialog.Show()
 	}
 	guard.quit = app.Quit
-	tray := app.SystemTray.New().SetTemplateIcon(statusIcon)
+	// Preserve the white artwork instead of applying macOS template tinting.
+	tray := app.SystemTray.New().SetIcon(statusIcon)
 	tray.OnClick(show)
 	menu := app.Menu.New()
 	menu.Add("显示 LAL").OnClick(func(*application.Context) { show() })
