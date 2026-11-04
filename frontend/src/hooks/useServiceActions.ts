@@ -23,6 +23,7 @@ import {errorMessage, isActive} from '../utils';
 
 type ServiceActionContext = {
     selectedId: string;
+    onSelectService: (id: string) => void;
     logs: LogEntry[];
     checkedServices: ServiceView[];
     filteredServices: ServiceView[];
@@ -55,9 +56,10 @@ export function useServiceActions(context: ServiceActionContext) {
         () => setDialog({mode: 'edit', service}), refreshState, showToast);
 
     const toggleService = async (service: ServiceView) => {
+        const starting = !isActive(service);
+        if (starting) context.onSelectService(service.id);
         if (handlePort(service)) return;
         if (service.status === 'starting' || service.status === 'stopping') return;
-        const starting = !isActive(service);
         setBusyIds(current => new Set(current).add(service.id));
         try {
             if (!starting) {

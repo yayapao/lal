@@ -113,6 +113,7 @@ function App() {
     const someVisibleChecked = visibleCheckedCount > 0 && !allVisibleChecked;
 
     const serviceActions = useServiceActions({
+        onSelectService: id => { setSelectedId(id); setRightView('logs'); },
         selectedId, logs, checkedServices, filteredServices, allVisibleChecked, cacheTarget, deleteTarget,
         refreshState, showToast, setBusyIds, setBatchBusy, setOperationIssue, setMenu, setDialog, setDeleteTarget,
         setCacheTarget, setCacheBusyId, setScriptBusyId, setCheckedIds, setLogs, setRefreshing, setDownloadingLogs,

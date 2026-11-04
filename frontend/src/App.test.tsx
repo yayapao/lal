@@ -1,4 +1,4 @@
-import {cleanup, render, screen, waitFor} from '@testing-library/react';
+import {act, cleanup, render, screen, waitFor, within} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {alphaService, api} from './testApi';
@@ -34,6 +34,35 @@ describe('selected service actions', () => {
 
         await waitFor(() => expect(api.StartServices).toHaveBeenCalledWith(['alpha']));
         expect(api.StartAll).not.toHaveBeenCalled();
+    });
+
+    it('shows the started service logs immediately while startup is still pending', async () => {
+        const user = userEvent.setup();
+        const beta = {...alphaService, id: 'beta', name: 'Beta', directory: '/tmp/beta'};
+        api.GetAppState.mockResolvedValue({services: [alphaService, beta], warning: ''});
+        api.GetLogs.mockImplementation(async id => [{
+            serviceId: id, timestamp: '2026-11-04T12:00:00+08:00', stream: 'stdout', text: `${id} output`,
+        }]);
+        let finishStartup!: () => void;
+        const startup = new Promise<void>(resolve => { finishStartup = resolve; });
+        api.StartService.mockReturnValueOnce(startup);
+        render(<App/>);
+
+        const initialPane = await screen.findByRole('region', {name: '服务日志'});
+        expect(within(initialPane).getByText('Alpha', {selector: '.log-title > span'})).toBeDefined();
+        await user.click(screen.getByRole('button', {name: '查看网络详情'}));
+        expect(screen.queryByRole('region', {name: '服务日志'})).toBeNull();
+        await user.click(screen.getByRole('button', {name: '启动 Beta'}));
+
+        const pane = screen.getByRole('region', {name: '服务日志'});
+        expect(within(pane).getByText('Beta', {selector: '.log-title > span'})).toBeDefined();
+        expect(await within(pane).findByText('beta output')).toBeDefined();
+        expect(within(pane).queryByText('alpha output')).toBeNull();
+        expect(api.StartService).toHaveBeenCalledWith('beta');
+        expect(api.GetAppState).toHaveBeenCalledTimes(1);
+
+        await act(async () => { finishStartup(); await startup; });
+        expect(within(pane).getByText('Beta', {selector: '.log-title > span'})).toBeDefined();
     });
 
     it('refreshes the service state on demand', async () => {
