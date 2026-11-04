@@ -228,7 +228,7 @@ func promptPaths(service Service) ([]promptPath, error) {
 			}
 			return nil
 		}
-		if entry.IsDir() || !isPromptFilename(entry.Name()) {
+		if entry.IsDir() || entry.Type()&os.ModeSymlink != 0 || !isPromptFilename(entry.Name()) {
 			return nil
 		}
 		info, err := os.Stat(path)

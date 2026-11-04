@@ -3,11 +3,13 @@ package launcher
 import (
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"slices"
 	"sort"
 	"strings"
+	"syscall"
 	"unicode/utf8"
 )
 
@@ -28,7 +30,7 @@ func (m *serviceManager) GetPrompts(id string) ([]PromptFileView, error) {
 			DisplayPath: displayPromptPath(service.Directory, item.path),
 			Source:      item.source,
 		}
-		prompt.Content, prompt.Error = readPromptPath(item.path)
+		prompt.Content, prompt.Error = readAssociatedPrompt(service, item)
 		prompts = append(prompts, prompt)
 	}
 	sort.SliceStable(prompts, func(i, j int) bool {
@@ -114,10 +116,11 @@ func (m *serviceManager) readCodexPrompt(id, path string) (string, error) {
 		return "", err
 	}
 	path = filepath.Clean(strings.TrimSpace(path))
-	if !slices.ContainsFunc(configured, func(item promptPath) bool { return item.path == path }) {
+	index := slices.IndexFunc(configured, func(item promptPath) bool { return item.path == path })
+	if index < 0 {
 		return "", fmt.Errorf("该 Prompt 未关联到服务 %s", service.Name)
 	}
-	prompt, readError := readPromptPath(path)
+	prompt, readError := readAssociatedPrompt(service, configured[index])
 	if readError != "" {
 		return "", errors.New(readError)
 	}
@@ -125,29 +128,64 @@ func (m *serviceManager) readCodexPrompt(id, path string) (string, error) {
 }
 
 func readPromptPath(path string) (string, string) {
-	info, err := os.Stat(path)
+	file, err := os.OpenFile(path, os.O_RDONLY|syscall.O_NONBLOCK, 0)
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
 			return "", fmt.Sprintf("未找到 Prompt 文件：%s", path)
 		}
 		return "", fmt.Sprintf("读取 Prompt 文件失败：%v", err)
 	}
+	defer file.Close()
+	return readPromptFile(file)
+}
+
+// Project discovery is untrusted; constrain the actual open as well as the scan.
+// Explicitly associated external prompts retain their user-selected scope.
+func readAssociatedPrompt(service Service, item promptPath) (string, string) {
+	if item.source == "added" {
+		return readPromptPath(item.path)
+	}
+	root, err := os.OpenRoot(service.Directory)
+	if err != nil {
+		return "", fmt.Sprintf("无法打开项目目录：%v", err)
+	}
+	defer root.Close()
+	relative, err := filepath.Rel(service.Directory, item.path)
+	if err != nil {
+		return "", "Prompt 文件不在项目目录内"
+	}
+	file, err := root.OpenFile(relative, os.O_RDONLY|syscall.O_NONBLOCK, 0)
+	if err != nil {
+		return "", fmt.Sprintf("无法安全读取项目 Prompt：%v", err)
+	}
+	defer file.Close()
+	return readPromptFile(file)
+}
+
+func readPromptFile(file *os.File) (string, string) {
+	info, err := file.Stat()
+	if err != nil {
+		return "", fmt.Sprintf("读取 Prompt 文件失败：%v", err)
+	}
 	if !info.Mode().IsRegular() {
-		return "", fmt.Sprintf("Prompt 不是普通文件：%s", path)
+		return "", "Prompt 不是普通文件"
 	}
 	if info.Size() > maxPromptFileBytes {
 		return "", "Prompt 文件不能超过 2 MB"
 	}
-	data, err := os.ReadFile(path)
+	data, err := io.ReadAll(io.LimitReader(file, maxPromptFileBytes+1))
 	if err != nil {
 		return "", fmt.Sprintf("读取 Prompt 文件失败：%v", err)
+	}
+	if len(data) > maxPromptFileBytes {
+		return "", "Prompt 文件不能超过 2 MB"
 	}
 	if !utf8.Valid(data) {
 		return "", "Prompt 文件必须是 UTF-8 文本"
 	}
 	prompt := string(data)
 	if strings.TrimSpace(prompt) == "" {
-		return "", fmt.Sprintf("Prompt 文件为空：%s", path)
+		return "", "Prompt 文件为空"
 	}
 	return prompt, ""
 }

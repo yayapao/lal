@@ -43,7 +43,7 @@ func (a *App) DownloadLogs(id string) (string, error) {
 	if err != nil || path == "" {
 		return path, err
 	}
-	if err := os.WriteFile(filepath.Clean(path), []byte(formatLogEntries(entries)), 0o600); err != nil {
+	if err := writePrivateLog(filepath.Clean(path), formatLogEntries(entries)); err != nil {
 		return "", fmt.Errorf("保存日志失败：%w", err)
 	}
 	return path, nil
@@ -56,7 +56,7 @@ func formatLogEntries(entries []LogEntry) string {
 		if parsed, err := time.Parse(time.RFC3339Nano, entry.Timestamp); err == nil {
 			timestamp = parsed.Local().Format("2006-01-02 15:04:05.000")
 		}
-		for _, line := range strings.Split(entry.Text, "\n") {
+		for _, line := range strings.Split(redactLog(entry.Text), "\n") {
 			fmt.Fprintf(&output, "%s [%s] %s\n", timestamp, strings.ToUpper(entry.Stream), line)
 		}
 	}

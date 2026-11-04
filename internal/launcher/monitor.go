@@ -51,8 +51,16 @@ func (m *serviceManager) waitForProcess(id string, process *processState) {
 func (m *serviceManager) captureOutput(id, stream string, reader io.Reader) {
 	scanner := bufio.NewScanner(reader)
 	scanner.Buffer(make([]byte, 64*1024), 1024*1024)
+	privateKey := false
 	for scanner.Scan() {
 		line := strings.TrimRight(ansiPattern.ReplaceAllString(scanner.Text(), ""), "\r")
+		if strings.Contains(line, "-----BEGIN ") && strings.Contains(line, "PRIVATE KEY-----") {
+			privateKey = true
+		}
+		if privateKey {
+			privateKey = !(strings.Contains(line, "-----END ") && strings.Contains(line, "PRIVATE KEY-----"))
+			line = redactedValue
+		}
 		m.appendLog(id, stream, line)
 	}
 	if err := scanner.Err(); err != nil {
@@ -151,6 +159,7 @@ func checkServicePort(accessURL string) error {
 }
 
 func (m *serviceManager) appendLog(id, stream, text string) {
+	text = redactLog(text)
 	entry := LogEntry{
 		ServiceID: id,
 		Timestamp: time.Now().Format(time.RFC3339Nano),

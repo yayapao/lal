@@ -1,0 +1,51 @@
+name: Security checks
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  secrets:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+        with:
+          go-version: '1.26.10'
+          cache: false
+      - name: Scan Git history for credentials
+        run: |
+          go install github.com/zricethezav/gitleaks/v8@v8.30.1
+          "$(go env GOPATH)/bin/gitleaks" git . --log-opts=--all --redact=100 --ignore-gitleaks-allow --no-banner
+
+  dependencies:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '22'
+      - name: Require public HTTPS package downloads
+        run: |
+          node --input-type=module <<'JS'
+          import fs from 'node:fs';
+          const {packages} = JSON.parse(fs.readFileSync('package-lock.json', 'utf8'));
+          const invalid = Object.values(packages).some(item => item.resolved &&
+            !item.resolved.startsWith('https://registry.npmjs.org/'));
+          if (invalid) throw new Error('Lockfile must use the public HTTPS npm registry');
+          JS
+      - run: npm ci --ignore-scripts --no-audit
+      - run: npm audit --audit-level=low
