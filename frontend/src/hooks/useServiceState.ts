@@ -1,6 +1,6 @@
 import {useCallback, useEffect, useRef, useState} from 'react';
 import {GetAppState, GetLogs} from '../../wailsjs/go/main/App';
-import {main} from '../../wailsjs/go/models';
+import {launcher as main} from '../../wailsjs/go/models';
 import {EventsOn} from '../../wailsjs/runtime/runtime';
 import type {LogEntry, ServiceView} from '../types';
 import {errorMessage} from '../utils';
@@ -14,10 +14,13 @@ export function useServiceState(showToast: (message: string, kind?: 'success' | 
     const [loading, setLoading] = useState(true);
     const [iconRefreshKey, setIconRefreshKey] = useState(0);
     const selectedIdRef = useRef('');
+    const refreshSequence = useRef(0);
 
     const refreshState = useCallback(async (forceIconRefresh = false) => {
+        const sequence = ++refreshSequence.current;
         try {
             const state = await GetAppState();
+            if (sequence !== refreshSequence.current) return;
             const nextServices = state.services ?? [];
             setServices(nextServices);
             setWorkspaces([...new Set([...(state.workspaces ?? []), ...nextServices.map(service => service.workspace ?? '').filter(Boolean)])]);
@@ -50,7 +53,15 @@ export function useServiceState(showToast: (message: string, kind?: 'success' | 
         const offClear = EventsOn('service:logs-cleared', (payload: {serviceId: string}) => {
             if (payload.serviceId === selectedIdRef.current) setLogs([]);
         });
-        return () => { offState(); offServices(); offLog(); offClear(); };
+        let polling = false;
+        const poll = async () => {
+            if (polling || document.hidden) return;
+            polling = true;
+            try { await refreshState(); } finally { polling = false; }
+        };
+        const timer = window.setInterval(() => void poll(), 5000);
+        window.addEventListener('focus', poll);
+        return () => { window.clearInterval(timer); window.removeEventListener('focus', poll); offState(); offServices(); offLog(); offClear(); };
     }, [refreshState]);
 
     useEffect(() => {

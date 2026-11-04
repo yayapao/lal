@@ -1,115 +1,147 @@
-# LAL
+<p align="center">
+  <img src="frontend/src/assets/images/lal-logo-color.png" width="72" alt="LAL logo">
+</p>
 
-LAL（Local App Launcher）是一个基于 Wails v2 的 macOS 本地开发控制台。它把分散在不同目录中的开发服务与游戏项目收拢到同一个窗口，提供单个和批量启停、端口可用性、访问地址、PID、运行时长与实时日志。
+<h1 align="center">LAL · Local App Launcher</h1>
 
-## 第一版产品边界
+<p align="center"><strong>AI 帮你写出更多项目，LAL 帮你把它们跑起来。</strong></p>
+<p align="center">A local project manager for macOS — launch dev servers and games, inspect logs, ports and Git, and get back to building.</p>
+<p align="center">
+  <a href="#开始使用">开始使用</a> · <a href="#一个窗口管理开发现场">功能预览</a> · <a href="#参与项目">参与项目</a> · <a href="LICENSE">MIT License</a>
+</p>
 
-核心场景是日常同时开发多个非 monorepo 项目：每个服务可以配置名称、项目目录、启动命令和访问地址。LAL 在项目目录中使用非交互 zsh 执行命令，并显式加载 `~/.zshrc`，因此能够读取 Volta 等常见的 Node 环境配置，同时避免交互 shell 的作业控制挂起服务。
+![从分散的本地项目到统一的启动与观察入口](assets/readme/overview.png)
 
-当前版本包含：
+## 为什么做 LAL
 
-- 服务的添加、编辑、删除和搜索
-- 顶栏切换“服务 / 游戏”模块；游戏库单独展示启动状态、引擎、启动命令和预览地址
-- 添加游戏时自动识别 Godot `project.godot`、Unity `ProjectSettings/ProjectVersion.txt` 和 Web 游戏脚本，Godot 默认使用本机应用或 `godot --path .` 启动
-- 游戏卡片可直接启动/停止，并提供 VS Code、Finder 和 Web 预览快捷入口
-- 深色紧凑分栏布局，支持 `⌘F` 搜索；左下常驻局域网 IPv4 和网关，可分别复制，点击“详情”在右侧查看接口、IPv6、MAC、MTU、系统 DNS、主机名及完整 `ifconfig -a` 输出
-- 添加服务时先选择项目目录，自动读取 `package.json`，填充名称、包管理器对应的启动命令和可确定的访问地址；可切换脚本或手动修改配置
-- Workspace 从已有分组下拉选择；管理界面按分组展示项目，支持新增、重命名、删除分组和项目批量移动
-- 自动探测项目 Git 仓库，显示分支、工作区是否干净和变更数量；详情可查看变更文件及本地 Git 配置
-- 单个服务一键启动、停止
-- 服务状态手动刷新、重启，以及执行可自定义的缓存清理脚本后自动重启
-- 按服务读取 Codex 启动提示词，支持一键复制或在对应项目中新建 Codex 对话并粘贴
-- 根据项目内容自动识别并显示 Next.js、Vite、React、Vue、Go 等项目图标
-- 多选服务后批量启动、停止
-- 全部启动、全部停止
-- stdout / stderr 实时日志、启动和脚本执行前自动清空、手动清空、下载与自动跟随
-- PID、运行时长、异常退出码和路径失效提示
-- 按服务进程组汇总 CPU、RSS 内存和进程数，并展示实时趋势
-- HTTP/HTTPS 访问地址展示与一键打开
-- 基于访问地址端口的可用性探测，区分进程运行和服务真正可访问
-- 启动前检查已配置访问地址的本机 TCP 端口，占用时展示进程和处理建议
-- 服务按名称稳定排序，运行状态变化不会改变列表位置或日志焦点
-- 配置原子持久化
-- 使用独立进程组启动；停止时先发送 `SIGTERM`，超时后发送 `SIGKILL`
-- 退出应用时提示并停止由本次 LAL 会话启动的所有服务
+用 AI 编程，做出一个 Web 应用、一个 API 或一个小游戏越来越容易。项目一多，目录、终端、端口、启动命令和上下文就散落在各处：昨天的 Demo 放在哪？哪个服务占着端口？这次改完为什么启动失败？
 
-当前版本刻意不包含系统登录自启、Docker 编排、远程同步和外部进程接管。LAL 不会扫描或终止用户在终端中自行启动的同名进程。
+LAL 是一个 **macOS 本地项目启动器与开发工作台**。把已经在电脑上的项目加入 Workspace，集中启动、停止、打开页面、查看日志和 Git 状态。适合同时维护多个仓库的独立开发者，也适合刚开始用 AI 做产品的人。
 
-## 默认服务
+LAL 使用 Go、Wails 和 React 构建。你继续使用熟悉的编辑器、终端和 AI 编程工具，LAL 负责把项目的运行现场放到一起。
 
-首次启动且以下目录存在时，LAL 会创建两个初始配置：
+## 一个窗口，管理开发现场
 
-| 服务 | 项目目录 | 启动命令 | 访问地址 |
-| --- | --- | --- | --- |
-| myStock | `/Users/yango/github/stock/mystock` | `npm run dev` | `http://localhost:35790` |
-| ViewAI | `/Users/yango/Documents/huyaprojects/ai/viewai` | `npm run dev` | `http://localhost:3900` |
+### 服务：从“进程已启动”看到“端口可连接”
 
-之后的配置保存在 `~/Library/Application Support/LAL/config.json`，不会写入各项目目录。旧版 v1/v2/v3/v4/v5 配置会自动迁移到当前 v6：原有项目归入“服务”模块，已有的目录自动分组会保留为明确的项目归属。v1/v2/v3 中上述两个已知服务还会补充默认访问地址；早期的单 Prompt 路径字段也会兼容转换。
+![LAL 服务工作台，使用演示项目与演示数据](assets/readme/services.jpg)
 
-Games 模块与 Services 共用同一套进程组启停、端口占用检查、资源采样、日志与 Git 面板，但列表和配置入口相互独立。游戏配置由名称、目录、启动命令、可选预览地址与资源缓存清理命令组成；Godot 项目会自动读取 `project.godot` 的应用名称。点击卡片上的 VS Code 或 Finder 按钮可直接打开项目目录；VS Code 入口要求系统已安装 Visual Studio Code。
+- **项目识别**：选择目录后读取 `package.json`、常见启动脚本与端口配置，建议名称、命令和访问地址；可手动修改。
+- **集中启停**：单个、多选或全部启动与停止；按名称稳定排序。绿色启动、红色停止，运行状态变化不会打乱列表。
+- **Workspace**：按产品或工作场景分组，支持折叠、搜索、重命名和项目批量移动。
+- **诊断现场**：实时 stdout / stderr 日志、日志下载、CPU / 内存趋势、PID、运行时长、异常退出与端口占用信息。
 
-访问地址按项目内容自动解析，优先级依次为：项目根目录 `.lal.json` 的 `url`、`package.json` 启动脚本中的端口参数、Vite 配置、Node 入口源码，以及 Next.js/Vite 等框架的默认端口。LAL 也会识别 `serve -l` 和 `python -m http.server` 等常见静态服务器写法。Godot 的原生启动命令不包含 HTTP 端口时，可在项目根目录添加仅含地址的约定文件：
+状态中的“可访问”表示配置地址对应的 **TCP 端口可连接**，不代表 HTTP 接口或业务健康检查已通过。外部进程与 LAL 启动的进程会区分展示；停止外部进程需要在界面中明确确认。
 
-```json
-{
-  "url": "http://127.0.0.1:18040/index.html"
-}
-```
+### 游戏：让原生与 Web 项目都有自己的入口
 
-`.lal.json` 只作为元数据读取，不会被执行；文件中的 URL 会覆盖自动推导结果，并随项目一起提交。
+![LAL 游戏库，使用演示项目与演示数据](assets/readme/games.jpg)
 
-Workspace 独立保存，空分组也会保留。管理弹窗左侧选择分组，右侧勾选项目添加、移出或批量移动；创建分组会提供默认名称，也可以重命名。删除分组只会把其中的项目移到“未分组”，不会删除项目或改变启动设置。所有修改在点击“保存”后一次性写入；取消会放弃本次修改。添加项目时可以根据已归属的父项目建议 Workspace，留空则保持未分组。
+识别 Godot、Unity 和 Phaser / Web 游戏项目，集中配置启动命令、预览地址与资源缓存清理命令。卡片提供启动、停止、VS Code 和 Finder 快捷入口。游戏与服务分别展示，“全部启动服务”不会启动游戏。
 
-每个服务都有独立的缓存清理脚本，默认是 `rm -rf .next`。可以在编辑服务时改成项目实际需要的命令，例如 `rm -rf .next dist/.cache .turbo` 或项目内的清理脚本路径；命令会在该服务的项目目录中执行。
+原生游戏的启动状态与 Web 预览服务独立判断。Godot 或 Unity 需要自行安装；LAL 不包含游戏引擎。
 
-添加服务会优先选择 `dev`、`start`、`serve` 等常用脚本，按 `packageManager` 或锁文件识别 npm、pnpm、yarn、bun。访问地址从启动命令的端口参数、内联 `PORT`、Vite 的静态 `server.port` 或 Node 启动文件的静态端口识别；直接使用已知框架启动命令时可采用框架默认端口。无法确定的地址会留空。解析只读取本地文件，不执行项目脚本或配置，也不调用外部模型；自动填写后可以手动调整。
+### 接回开发上下文
 
-项目头像优先读取项目目录下的 `public/logo.png`，也支持 JPG、JPEG、WebP、SVG、GIF、AVIF 和 ICO，文件不能超过 2 MB。服务状态更新时会检查图片路径、修改时间和大小；替换图片后，点击“刷新状态”可以强制重新读取头像。删除图片后会恢复默认项目图标。
+| 想做什么 | LAL 提供的入口 |
+| --- | --- |
+| 继续修改项目 | 从项目菜单打开 VS Code 或 Finder |
+| 确认仓库状态 | 查看分支、变更文件、冲突与仓库本地 Git 配置 |
+| 继续用 Codex 开发 | 读取项目 `prompts/` 中的 Markdown，复制或打开 Codex 并粘贴；不会自动发送 |
+| 在手机上打开本地页面 | 查看和复制局域网 IPv4、网关，展开网络接口详情 |
+| 执行项目已有任务 | 选择 `package.json` 脚本并查看执行日志 |
 
-项目行的 Git 状态和日志区的“Git 详情”可打开仓库详情，展示分支、已暂存/未暂存/未跟踪文件、冲突，以及上游分支的本地领先/落后记录。探测支持普通 `.git` 目录和 worktree/submodule 的 `.git` 指针文件；项目目录在仓库内部时，状态覆盖整个所属仓库，详情会展示仓库根目录和实际 Git 目录。无仓库、路径失效和探测失败会分别提示。变更文件最多展示前 300 项，数量统计包含全部变更。
+界面截图均来自实际前端，使用演示项目与演示数据。功能示意图的[可编辑 Excalidraw 源文件](assets/readme/overview.excalidraw)随仓库保留。
 
-“本地配置”读取等同于 `git config --list --local` 的内容，支持搜索，保留重复键、多行值和空值。可快速编辑用户名、邮箱和 Origin 地址，也可新增、编辑或删除其他配置。编辑重复键时会展示该键的全部值，可逐项调整。保存只写入该仓库的 local 配置（worktree 使用共同仓库的 local 配置），不修改 global/system 配置。写入采用 Git 配置锁和原子替换；如果该配置键在编辑期间被外部修改，会提示重新读取。删除配置需要在编辑区确认。
+## 开始使用
 
-Git 状态独立于服务运行状态，每 15 秒刷新，回到窗口或点击“刷新状态”也会刷新；详情支持单独刷新，编辑期间暂停详情自动刷新并保留输入，保存后重新读取。探测只读取本地仓库，不 fetch，也不更新 Git 索引；只有点击保存或确认删除才修改 Git 配置，命令有超时和输出大小限制。
+目前通过源码构建；仓库尚未提供可下载的 Release。当前界面主要为中文，桌面集成面向 macOS。
 
-网络信息通过本机只读接口和系统命令读取，可见时每 15 秒刷新，窗口聚焦时刷新，也可在详情中手动刷新；不查询公网 IP。常用区优先显示当前物理局域网接口及其网关，VPN 接口可在“接口”中查看。复制 IPv6 时保留链路本地地址的接口作用域。读取失败时提示错误；若保留上次结果，会明确标记为旧数据。断网或字段不可用时不提供空值复制。
-
-服务的省略号菜单提供“Prompt 启动”入口。LAL 会递归扫描并自动读取项目 `prompts/` 目录中的所有 `.md` 文件，也可以在 Prompt 管理界面关联其他位置的文件；移除关联不会删除原文件。本地文件修改后，可以通过“同步 Prompt”刷新卡片内容。每张 Prompt 卡片支持复制内容，或在对应项目中新建 Codex 对话并粘贴内容，但不会自动发送；这两个操作都会在点击时重新读取文件。首次使用自动粘贴时，macOS 可能要求在“系统设置 > 隐私与安全性 > 辅助功能”中允许 LAL；未授权时内容仍会保留在剪贴板。
-
-## 状态说明
-
-- `可访问`：LAL 启动的进程仍在运行，且访问地址对应的 TCP 端口可以连接
-- `等待端口`：进程已启动，LAL 正在等待服务监听端口
-- `地址不可达`：进程仍在运行，但启动宽限期结束后端口仍不可连接，或已经可用的端口后来断开
-- `运行中`：进程正在运行，但没有配置访问地址，因此只判断进程状态
-
-## 本地开发
-
-环境要求：Go 1.25+、Node.js 20.19+（20.x）或 22.12+、npm 和 Xcode Command Line Tools。
+需要 macOS、Xcode Command Line Tools、Go 1.25+、Node.js 20.19+（20.x）或 22.12+、npm。项目使用的包管理器和运行环境也需要安装在本机。
 
 ```bash
-go install github.com/wailsapp/wails/v2/cmd/wails@latest
-cd frontend && npm install && cd ..
-wails dev
-```
+git clone https://github.com/yayapao/lal.git
+cd lal
 
-`wails dev` 只用于开发 LAL 本身。日常使用 LAL 管理其他项目时，推荐构建 macOS 应用包后直接运行：
-
-```bash
+go install github.com/wailsapp/wails/v2/cmd/wails@v2.15.0
+npm --prefix frontend ci
 scripts/build-macos.sh
 open "$HOME/Applications/LAL.app"
 ```
 
-构建脚本会执行干净的 macOS universal 构建，将应用安装到 `~/Applications/LAL.app`，刷新 LaunchServices 和 Spotlight，并校验应用是否能被系统索引。可以通过 `INSTALL_DIR=/Applications scripts/build-macos.sh` 安装到系统应用目录，或使用 `--install-dir PATH` 指定其他目录；使用 `--no-install` 只构建不安装。
+请确认 Go 的 bin 目录在 `PATH` 中，能直接运行 `wails`。构建脚本默认生成 Apple Silicon / Intel 通用应用并安装到 `~/Applications/LAL.app`；`scripts/build-macos.sh --no-install` 只构建，产物位于 `build/bin/LAL.app`。
 
-检查代码：
+首次打开是空项目列表：
 
-```bash
-go test -race ./...
-go vet ./...
-cd frontend && npm test && npm run build
+1. 点击“添加服务”，选择自己的项目目录，检查识别出的启动命令和访问地址。
+2. 选择或新建 Workspace，保存后点击绿色启动按钮。
+3. 打开访问地址，或在右侧观察日志与资源趋势。
+4. 添加游戏时切换到“游戏”模块，再选择项目目录。
+
+例如，已有 Vite 项目可配置为目录 `~/Projects/my-web`、命令 `npm run dev`、地址 `http://localhost:5173`。自动识别不明确时，可在项目根目录创建 `.lal.json` 指定访问地址：
+
+```json
+{
+  "url": "http://localhost:5173"
+}
 ```
 
-## 后续规划
+该文件仅作为元数据读取；它不包含启动命令，也不会被执行。
 
-第二阶段优先考虑“工作集”：把若干服务保存为一组，一键切换开发上下文，并允许配置启动顺序和依赖等待条件。只有在真实使用证明有必要后，再增加菜单栏快捷控制和登录自启，避免第一版演变成通用进程管理器。
+### 本地数据与执行边界
+
+- 项目列表与 Workspace 保存到 `~/Library/Application Support/LAL/config.json`。LAL 不要求账号或云同步；启动你自己的项目仍可能产生该项目的网络请求。
+- 启动命令在项目目录中通过 zsh 执行，并加载 `~/.zshrc`。只添加你信任的项目，运行前检查启动命令与缓存清理命令。
+- 清理命令由你配置；默认值 `rm -rf .next` 适用于部分 Next.js 项目，请按项目修改。
+- 常规停止与退出清理针对本次由 LAL 启动的进程。外部端口占用会先展示诊断，不会自动停止；目录匹配时可确认停止后交由 LAL 启动。
+- Git 配置编辑只写当前仓库的 local 配置；不修改 global / system 配置。
+- Codex 自动粘贴可能需要 macOS 辅助功能权限；未授权时仍可手动复制提示词。VS Code 快捷入口需要安装 VS Code。
+
+## 开发与贡献
+
+```bash
+# 开发 LAL 桌面端
+wails dev
+
+# 验证 Go 后端
+go test -race ./...
+go vet ./...
+
+# 验证前端
+cd frontend
+npm test
+npm run build
+```
+
+目录按职责组织：
+
+```text
+lal/
+├── main.go, app.go, menubar*.go  # Wails 入口、桥接与 macOS 状态栏
+├── internal/launcher/           # 后端实现与同包测试
+├── frontend/                    # React 界面、测试与生成的 Wails 绑定
+├── assets/readme/               # 介绍图、截图与 Excalidraw 源文件
+├── build/                       # 应用图标与平台打包配置
+└── scripts/                     # 构建与本地开发工具
+```
+
+手写源文件保持在 300 行以内；`frontend/wailsjs/` 由 Wails 自动生成，后端类型变化时应重新生成绑定。
+
+## 参与项目
+
+欢迎通过 [Issues](https://github.com/yayapao/lal/issues) 分享多项目开发中的具体问题，或提交 Pull Request。报错时请附 macOS 版本、项目类型、复现步骤，以及已去除敏感信息的命令与日志。
+
+LAL 聚焦单机本地项目管理。目前不提供远程部署、团队权限或启动依赖编排。
+
+<details>
+<summary>English overview</summary>
+
+**LAL (Local App Launcher)** is a macOS desktop workbench for people building several projects with AI coding tools. Keep local development servers, scripts and games in one place: group projects into workspaces, start and stop processes, inspect logs and resource usage, diagnose occupied ports, review Git changes, and open your editor or project folder.
+
+LAL supports Godot, Unity and Web game projects alongside regular services. Codex prompt handoff helps resume project context without sending prompts automatically. It runs locally with Go, Wails and React; the current UI is primarily Chinese. Build from source using the commands above; downloadable releases are not available yet.
+
+</details>
+
+## 许可证
+
+[MIT](LICENSE) © 2026 Yango。第三方依赖及随附字体遵循各自许可证。

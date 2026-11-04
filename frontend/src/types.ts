@@ -1,4 +1,4 @@
-import {main} from '../wailsjs/go/models';
+import {launcher as main} from '../wailsjs/go/models';
 
 export type ServiceView = main.ServiceView;
 export type LogEntry = main.LogEntry;
@@ -15,7 +15,7 @@ export type DialogState = {mode: 'create'; module: AppModule} | {mode: 'edit'; s
 export type ServiceForm = {name: string; workspace: string; directory: string; command: string; url: string; cleanCommand: string};
 export type ToastState = {kind: 'success' | 'error'; message: string};
 export type MenuState = {service: ServiceView; left: number; top: number};
-export type OperationIssue = {title: string; message: string};
+export type OperationIssue = {title: string; message: string; actionLabel?: string; onAction?: () => Promise<void>};
 export type WorkspaceGroup = {name: string; services: ServiceView[]};
 export type WorkspaceDraft = {workspaces: string[]; assignments: Record<string, string>};
 

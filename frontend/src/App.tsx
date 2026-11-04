@@ -173,7 +173,7 @@ function App() {
                     onOpenVSCode={game => void projectOpeners.openInVSCode(game)} onReveal={game => void serviceActions.revealService(game)}
                     onOpenURL={game => void serviceActions.openServiceURL(game)} onMenu={(event, game) => serviceActions.openMenu(event, game)}/>
                 : <ServicesPane loading={loading} query={query} total={activeServices.length} selectedId={selectedId}
-                    toolbar={<ServiceToolbar total={activeServices.length} running={runningCount} refreshing={refreshing} batchBusy={batchBusy}
+                    toolbar={<ServiceToolbar total={activeServices.length} running={runningCount} external={activeServices.filter(service => service.port?.matchesProject && !service.port.previewOnly).length} refreshing={refreshing} batchBusy={batchBusy}
                         onRefresh={() => void serviceActions.refreshAppState()} onBatch={action => void serviceActions.runBatch(action)}/>}
                     footer={<NetworkSummary network={network} active={rightView === 'network'} onDetails={() => setRightView('network')} onError={networkError}/>}
                     filteredServices={filteredServices} workspaceGroups={workspaceGroups} showWorkspaceGroups={showWorkspaceGroups}

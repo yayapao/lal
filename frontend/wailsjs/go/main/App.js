@@ -130,6 +130,10 @@ export function StopAll() {
   return window['go']['main']['App']['StopAll']();
 }
 
+export function StopExternalAndStart(arg1, arg2, arg3) {
+  return window['go']['main']['App']['StopExternalAndStart'](arg1, arg2, arg3);
+}
+
 export function StopPackageScript(arg1) {
   return window['go']['main']['App']['StopPackageScript'](arg1);
 }

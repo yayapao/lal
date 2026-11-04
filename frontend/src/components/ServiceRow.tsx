@@ -1,3 +1,5 @@
+import PortNotice from './PortNotice';
+import {portActionLabel} from '../hooks/usePortActions';
 import {CircleAlert, Ellipsis, ExternalLink, LoaderCircle, Play, Square} from 'lucide-react';
 import type {KeyboardEvent} from 'react';
 import GitBadge from './GitBadge';
@@ -13,6 +15,7 @@ export default function ServiceRow({service, usage, selected, checked, busy, sel
     onOpenURL: () => void;
     onMenu: (event: React.MouseEvent<HTMLButtonElement>) => void;
 }) {
+    const portLabel = portActionLabel(service);
     const transition = service.status === 'starting' || service.status === 'stopping';
     const handleKeyDown = (event: KeyboardEvent<HTMLElement>) => {
         if ((event.target as HTMLElement).closest('button, input')) return;
@@ -28,29 +31,36 @@ export default function ServiceRow({service, usage, selected, checked, busy, sel
             </div>
             <div className="service-copy">
                 <div className="service-name-line"><h3 title={[service.name, service.pid > 0 ? `PID ${service.pid}` : '', service.startedAt && isActive(service) ? formatUptime(service.startedAt) : ''].filter(Boolean).join(' · ')}>{service.name}</h3>{service.pid > 0 && <span className="pid">PID {service.pid}</span>}{service.startedAt && isActive(service) && <span className="uptime">{formatUptime(service.startedAt)}</span>}
-                    {isActive(service) && <span className="service-resources"><span>CPU {formatCPU(usage?.cpuPercent ?? 0)}</span><span>MEM {formatMemory(usage?.memoryBytes ?? 0)}</span></span>}
                 </div>
                 <div className={service.pathExists ? 'service-path' : 'service-path path-invalid'} title={service.directory}>{!service.pathExists && <CircleAlert size={12}/>}<span>{service.directory}</span></div>
                 <div className="service-meta">
                     <code className="service-command" title={service.command}>{service.command}</code>
+                </div>
+                <div className="service-links">
+                    <GitBadge status={gitStatus} name={service.name} onOpen={onOpenGit}/>
                     {service.url && <button className="service-url" type="button" onClick={event => { event.stopPropagation(); onOpenURL(); }} title={`打开 ${service.url}`}>
                         <ExternalLink size={11}/><span>{displayURL(service.url)}</span>
                     </button>}
                 </div>
-                <div className="service-git-line"><GitBadge status={gitStatus} name={service.name} onOpen={onOpenGit}/></div>
-                {service.lastError && <div className="service-error" title={service.lastError}>{service.lastError}</div>}
+                <PortNotice service={service}/>
+                {service.lastError && !(service.port && service.lastError.startsWith('启动失败：端口')) && <div className="service-error" title={service.lastError}>{service.lastError}</div>}
             </div>
-            <StatusLabel service={service}/>
-            <div className="row-actions">
-                <button className={isActive(service) ? 'icon-button stop-button' : 'icon-button start-button'} type="button"
-                    onClick={event => { event.stopPropagation(); onToggle(); }} aria-label={isActive(service) ? `停止 ${service.name}` : `启动 ${service.name}`}
-                    title={isActive(service) ? '停止' : '启动'} disabled={busy || transition || !service.pathExists}>
-                    {busy || transition
-                        ? <LoaderCircle className="spin" size={17}/>
-                        : isActive(service) ? <Square size={14}/> : <Play size={17}/>
-                    }
-                </button>
-                <button className="icon-button row-menu-button" type="button" onClick={onMenu} aria-label={`${service.name} 更多操作`} title="更多操作"><Ellipsis size={18}/></button>
+            <div className="service-side">
+                <StatusLabel service={service}/>
+                <div className="row-actions">
+                    <button className={`icon-button ${portLabel ? 'port-action-button' : isActive(service) ? 'stop-button' : 'start-button'}`} type="button"
+                        onClick={event => { event.stopPropagation(); onToggle(); }} aria-label={portLabel ? `${portLabel} ${service.name}` : isActive(service) ? `停止 ${service.name}` : `启动 ${service.name}`}
+                        title={portLabel || (isActive(service) ? '停止' : '启动')} disabled={busy || transition || !service.pathExists}>
+                        {busy || transition
+                            ? <LoaderCircle className="spin" size={17}/>
+                            : portLabel ? <CircleAlert size={16}/> : isActive(service) ? <Square size={12} fill="currentColor"/> : <Play size={15} fill="currentColor"/>
+                        }
+                    </button>
+                    <button className="icon-button row-menu-button" type="button" onClick={onMenu} aria-label={`${service.name} 更多操作`} title="更多操作"><Ellipsis size={18}/></button>
+                </div>
+                {isActive(service) && <span className="service-resources" title={`CPU ${formatCPU(usage?.cpuPercent ?? 0)} · 内存 ${formatMemory(usage?.memoryBytes ?? 0)}`}>
+                    <span>CPU {formatCPU(usage?.cpuPercent ?? 0)}</span><span>{formatMemory(usage?.memoryBytes ?? 0)}</span>
+                </span>}
             </div>
         </article>
     );

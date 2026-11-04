@@ -1,6 +1,6 @@
 import {useCallback, useEffect, useState} from 'react';
 import {GetGitStatuses} from '../../wailsjs/go/main/App';
-import {main} from '../../wailsjs/go/models';
+import {launcher as main} from '../../wailsjs/go/models';
 import type {GitStatus, ServiceView} from '../types';
 import {errorMessage} from '../utils';
 

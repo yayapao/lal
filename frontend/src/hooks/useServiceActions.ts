@@ -1,3 +1,4 @@
+import {requestPortAction} from './usePortActions';
 import type {Dispatch, SetStateAction} from 'react';
 import {
     ClearLogs,
@@ -50,7 +51,11 @@ export function useServiceActions(context: ServiceActionContext) {
         refreshState, showToast, setBusyIds, setBatchBusy, setOperationIssue, setMenu, setDialog, setDeleteTarget,
         setCacheTarget, setCacheBusyId, setScriptBusyId, setCheckedIds, setLogs, setRefreshing, setDownloadingLogs} = context;
 
+    const handlePort = (service: ServiceView) => requestPortAction(service, setOperationIssue,
+        () => setDialog({mode: 'edit', service}), refreshState, showToast);
+
     const toggleService = async (service: ServiceView) => {
+        if (handlePort(service)) return;
         if (service.status === 'starting' || service.status === 'stopping') return;
         const starting = !isActive(service);
         setBusyIds(current => new Set(current).add(service.id));
@@ -191,6 +196,7 @@ export function useServiceActions(context: ServiceActionContext) {
 
     const restartService = async (service: ServiceView) => {
         setMenu(null);
+        if (handlePort(service)) return;
         setBusyIds(current => new Set(current).add(service.id));
         try {
             await RestartService(service.id);

@@ -2,20 +2,20 @@ import {cleanup, fireEvent, render, screen, within} from '@testing-library/react
 import userEvent from '@testing-library/user-event';
 import {useState} from 'react';
 import {afterEach, beforeEach, expect, it, vi} from 'vitest';
-import {main} from '../wailsjs/go/models';
+import {launcher as main} from '../wailsjs/go/models';
 import {alphaService} from './testApi';
 import type {WorkspaceDraft} from './types';
 import WorkspaceManagerDialog from './components/WorkspaceManagerDialog';
 
 const projects = [
-    main.ServiceView.createFrom({...alphaService, workspace: 'ViewAI'}),
+    main.ServiceView.createFrom({...alphaService, workspace: 'Studio'}),
     main.ServiceView.createFrom({...alphaService, id: 'beta', name: 'Beta', workspace: '', directory: '/tmp/beta'}),
     main.ServiceView.createFrom({...alphaService, id: 'gamma', name: 'Gamma', workspace: 'Star', directory: '/tmp/gamma'}),
 ];
 const onSave = vi.fn();
 const onClose = vi.fn();
 function Harness({saving = false, error = ''}: {saving?: boolean; error?: string}) {
-    const [draft, setDraft] = useState<WorkspaceDraft>({workspaces: ['ViewAI', 'Star'], assignments: {alpha: 'ViewAI', beta: '', gamma: 'Star'}});
+    const [draft, setDraft] = useState<WorkspaceDraft>({workspaces: ['Studio', 'Star'], assignments: {alpha: 'Studio', beta: '', gamma: 'Star'}});
     return <WorkspaceManagerDialog services={projects} draft={draft} saving={saving} error={error} onChange={setDraft} onClose={onClose} onSave={() => onSave(draft)}/>;
 }
 beforeEach(() => { vi.clearAllMocks(); });
@@ -23,7 +23,7 @@ afterEach(cleanup);
 
 it('shows only the selected workspace members without icons or per-project text fields', () => {
     const {container} = render(<Harness/>);
-    expect(screen.getByRole('heading', {name: 'ViewAI'})).toBeDefined();
+    expect(screen.getByRole('heading', {name: 'Studio'})).toBeDefined();
     expect(screen.getByRole('checkbox', {name: '选择项目 Alpha'})).toBeDefined();
     expect(screen.queryByRole('checkbox', {name: '选择项目 Beta'})).toBeNull();
     expect(container.querySelector('svg, label')).toBeNull();
@@ -34,13 +34,13 @@ it('adds selected projects with their current ownership shown', async () => {
     const user = userEvent.setup();
     render(<Harness/>);
     await user.click(screen.getByRole('button', {name: '添加项目'}));
-    expect(screen.getByRole('heading', {name: '添加到 ViewAI'})).toBeDefined();
+    expect(screen.getByRole('heading', {name: '添加到 Studio'})).toBeDefined();
     expect(within(screen.getByRole('region', {name: '项目归属'})).getByText('未分组')).toBeDefined();
     await user.click(screen.getByRole('checkbox', {name: '选择项目 Beta'}));
     await user.click(screen.getByRole('button', {name: '添加选中项目'}));
     expect(screen.getByRole('checkbox', {name: '选择项目 Beta'})).toBeDefined();
     await user.click(screen.getByRole('button', {name: '保存'}));
-    expect(onSave).toHaveBeenCalledWith({workspaces: ['ViewAI', 'Star'], assignments: {alpha: 'ViewAI', beta: 'ViewAI', gamma: 'Star'}});
+    expect(onSave).toHaveBeenCalledWith({workspaces: ['Studio', 'Star'], assignments: {alpha: 'Studio', beta: 'Studio', gamma: 'Star'}});
 });
 
 it('moves selected projects in a batch without changing other memberships', async () => {
@@ -65,7 +65,7 @@ it('creates an empty workspace with a usable default name and saves it', async (
     expect(screen.getByRole('heading', {name: 'Workspace 1'})).toBeDefined();
     expect(screen.getByText('此 Workspace 还没有项目')).toBeDefined();
     await user.click(screen.getByRole('button', {name: '保存'}));
-    expect(onSave).toHaveBeenCalledWith(expect.objectContaining({workspaces: ['ViewAI', 'Star', 'Workspace 1']}));
+    expect(onSave).toHaveBeenCalledWith(expect.objectContaining({workspaces: ['Studio', 'Star', 'Workspace 1']}));
 });
 
 it('requires a delete choice and returns all members to unassigned', async () => {
@@ -75,7 +75,7 @@ it('requires a delete choice and returns all members to unassigned', async () =>
     expect(screen.getByRole('alert').textContent).toContain('1 个项目将移到未分组');
     expect(screen.getByRole('checkbox', {name: '选择项目 Alpha'})).toBeDefined();
     await user.click(screen.getByRole('button', {name: '确认删除'}));
-    expect(screen.queryByRole('button', {name: '查看 ViewAI'})).toBeNull();
+    expect(screen.queryByRole('button', {name: '查看 Studio'})).toBeNull();
     expect(screen.getByRole('heading', {name: '未分组'})).toBeDefined();
     await user.click(screen.getByRole('button', {name: '保存'}));
     expect(onSave).toHaveBeenCalledWith({workspaces: ['Star'], assignments: {alpha: '', beta: '', gamma: 'Star'}});

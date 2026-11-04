@@ -1,6 +1,6 @@
 import {act, cleanup, renderHook, waitFor} from '@testing-library/react';
 import {afterEach, beforeEach, expect, it, vi} from 'vitest';
-import {main} from '../../wailsjs/go/models';
+import {launcher as main} from '../../wailsjs/go/models';
 import {alphaService, api} from '../testApi';
 import {useGitStatuses} from './useGitStatuses';
 import {useGitDetails} from './useGitDetails';

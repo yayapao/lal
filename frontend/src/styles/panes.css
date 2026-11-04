@@ -16,7 +16,7 @@
 .services-pane {
     grid-template-rows: 46px 32px minmax(0, 1fr) 58px;
     border-right: 1px solid var(--line);
-    background: var(--panel);
+    background: linear-gradient(160deg, #202a34, #191f26 65%);
 }
 
 .pane-heading,

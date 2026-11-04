@@ -10,7 +10,7 @@ vi.mock('../wailsjs/runtime/runtime', () => ({EventsOn: vi.fn(() => () => undefi
 const game = {
     ...alphaService,
     id: 'amg', name: 'Anti-Magic Gem', module: 'game', projectType: 'godot',
-    directory: '/Users/yango/github/apps/amg', command: 'godot --path .',
+    directory: '/Users/demo/Projects/match-game', command: 'godot --path .',
     url: 'http://127.0.0.1:18040/index.html', cleanCommand: 'rm -rf .godot',
 };
 

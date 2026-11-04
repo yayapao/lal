@@ -1,3 +1,5 @@
+import PortNotice from './PortNotice';
+import {portActionLabel} from '../hooks/usePortActions';
 import {CircleAlert, Code2, ExternalLink, FolderOpen, LoaderCircle, MoreHorizontal, Play, Square} from 'lucide-react';
 import type {KeyboardEvent} from 'react';
 import ProjectIcon from './ProjectIcon';
@@ -18,6 +20,7 @@ export default function GameCard({service, index, selected, busy, usage, iconURL
     onSelect: () => void; onToggle: () => void; onOpenVSCode: () => void; onReveal: () => void; onOpenURL: () => void;
     onMenu: (event: React.MouseEvent<HTMLButtonElement>) => void;
 }) {
+    const portLabel = portActionLabel(service);
     const transition = service.status === 'starting' || service.status === 'stopping';
     const engine = service.projectType in engineLabels ? service.projectType : 'generic';
     const handleKeyDown = (event: KeyboardEvent<HTMLElement>) => {
@@ -41,12 +44,13 @@ export default function GameCard({service, index, selected, busy, usage, iconURL
             {service.url ? <button className="game-url" type="button" onClick={event => { event.stopPropagation(); onOpenURL(); }}><ExternalLink size={11}/><span>{displayURL(service.url)}</span></button> : <span className="game-native">NATIVE RUNTIME</span>}
             {isActive(service) && <span className="game-usage">CPU {formatCPU(usage?.cpuPercent ?? 0)} · MEM {formatMemory(usage?.memoryBytes ?? 0)}</span>}
         </div>
-        {service.lastError && <div className="game-error" title={service.lastError}>{service.lastError}</div>}
+        {service.lastError && !(service.port && service.lastError.startsWith('启动失败：端口')) && <div className="game-error" title={service.lastError}>{service.lastError}</div>}
+        <PortNotice service={service}/>
         <div className="game-actions">
             <button type="button" className={isActive(service) ? 'game-action stop' : 'game-action start'} onClick={event => { event.stopPropagation(); onToggle(); }}
-                disabled={busy || transition || !service.pathExists} aria-label={isActive(service) ? `停止 ${service.name}` : `启动 ${service.name}`}>
+                disabled={busy || transition || !service.pathExists} aria-label={portLabel ? `${portLabel} ${service.name}` : isActive(service) ? `停止 ${service.name}` : `启动 ${service.name}`}>
                 {busy || transition ? <LoaderCircle className="spin" size={14}/> : isActive(service) ? <Square size={11}/> : <Play size={13}/>}
-                <span>{isActive(service) ? '停止' : '启动'}</span>
+                <span>{portLabel || (isActive(service) ? '停止' : '启动')}</span>
             </button>
             <button type="button" className="game-action" onClick={event => { event.stopPropagation(); onOpenVSCode(); }} disabled={!service.pathExists}
                 aria-label={`在 VS Code 中打开 ${service.name}`} title="在 VS Code 中打开"><Code2 size={14}/><span>VS Code</span></button>

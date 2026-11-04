@@ -16,6 +16,7 @@ export function isStoppable(service: ServiceView) {
 export function serviceVisualState(service: ServiceView) {
     if (!service.pathExists) return 'invalid';
     if (service.status === 'running' && service.url && ['ready', 'checking', 'unreachable'].includes(service.health)) return service.health;
+    if (!isActive(service) && service.port && !service.port.previewOnly) return service.port.matchesProject ? 'external' : 'conflict';
     return service.status;
 }
 

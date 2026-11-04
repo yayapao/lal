@@ -2,13 +2,13 @@ import {cleanup, fireEvent, render, screen, waitFor} from '@testing-library/reac
 import userEvent from '@testing-library/user-event';
 import {afterEach, beforeEach, expect, it, vi} from 'vitest';
 import {alphaService, api} from './testApi';
-import {main} from '../wailsjs/go/models';
+import {launcher as main} from '../wailsjs/go/models';
 import ServiceDialog from './components/ServiceDialog';
 
 vi.mock('../wailsjs/go/main/App', () => api);
 
 const project = {
-    directory: '/tmp/niu', name: 'niu', workspace: 'ViewAI', projectType: 'nextjs',
+    directory: '/tmp/niu', name: 'niu', workspace: 'Studio', projectType: 'nextjs',
     command: 'pnpm run dev', url: 'http://localhost:35790', cleanCommand: 'pnpm run clean',
     scripts: [
         {name: 'dev', command: 'pnpm run dev', preview: 'next dev --port 35790', url: 'http://localhost:35790'},
@@ -20,8 +20,8 @@ const onClose = vi.fn();
 
 function createDialog() {
     return render(<ServiceDialog state={{mode: 'create', module: 'service'}} services={[
-        main.ServiceView.createFrom({...alphaService, workspace: 'ViewAI'}),
-        main.ServiceView.createFrom({...alphaService, id: 'beta', workspace: 'ViewAI'}),
+        main.ServiceView.createFrom({...alphaService, workspace: 'Studio'}),
+        main.ServiceView.createFrom({...alphaService, id: 'beta', workspace: 'Studio'}),
     ]} onClose={onClose} onSaved={onSaved}/>);
 }
 
@@ -52,12 +52,12 @@ it('starts with the directory and fills project settings before saving a selecte
     expect(api.DetectProject).toHaveBeenCalledWith('/tmp/niu');
     expect((screen.getByRole('textbox', {name: '启动命令'}) as HTMLInputElement).value).toBe('pnpm run dev');
     expect((screen.getByLabelText(/访问地址/) as HTMLInputElement).value).toBe('http://localhost:35790');
-    expect((screen.getByRole('combobox', {name: 'Workspace'}) as HTMLSelectElement).value).toBe('ViewAI');
-    expect(screen.getAllByRole('option', {name: 'ViewAI'})).toHaveLength(1);
-    await user.selectOptions(screen.getByRole('combobox', {name: 'Workspace'}), 'ViewAI');
+    expect((screen.getByRole('combobox', {name: 'Workspace'}) as HTMLSelectElement).value).toBe('Studio');
+    expect(screen.getAllByRole('option', {name: 'Studio'})).toHaveLength(1);
+    await user.selectOptions(screen.getByRole('combobox', {name: 'Workspace'}), 'Studio');
     await user.click(screen.getByRole('button', {name: '添加服务'}));
     expect(api.CreateService).toHaveBeenCalledWith({
-        name: 'niu', module: 'service', workspace: 'ViewAI', directory: '/tmp/niu', command: 'pnpm run dev',
+        name: 'niu', module: 'service', workspace: 'Studio', directory: '/tmp/niu', command: 'pnpm run dev',
         url: 'http://localhost:35790', cleanCommand: 'pnpm run clean',
     });
     expect(onSaved).toHaveBeenCalled();
@@ -104,8 +104,8 @@ it('ignores a stale result after the project directory changes', async () => {
 });
 
 it('keeps configured fields and unassigned membership when editing an existing service', async () => {
-    render(<ServiceDialog state={{mode: 'edit', service: main.ServiceView.createFrom({...alphaService, workspace: 'ViewAI', configuredWorkspace: ''})}}
-        services={[main.ServiceView.createFrom({...alphaService, workspace: 'ViewAI'})]} onClose={onClose} onSaved={onSaved}/>);
+    render(<ServiceDialog state={{mode: 'edit', service: main.ServiceView.createFrom({...alphaService, workspace: 'Studio', configuredWorkspace: ''})}}
+        services={[main.ServiceView.createFrom({...alphaService, workspace: 'Studio'})]} onClose={onClose} onSaved={onSaved}/>);
     expect((screen.getByRole('combobox', {name: 'Workspace'}) as HTMLSelectElement).value).toBe('');
     fireEvent.change(screen.getByRole('textbox', {name: '服务名称'}), {target: {value: 'Updated'}});
     await userEvent.setup().click(screen.getByRole('button', {name: '保存'}));

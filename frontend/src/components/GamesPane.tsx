@@ -12,7 +12,7 @@ export default function GamesPane({loading, query, total, games, selectedId, bus
     onOpenVSCode: (game: ServiceView) => void; onReveal: (game: ServiceView) => void; onOpenURL: (game: ServiceView) => void;
     onMenu: (event: React.MouseEvent<HTMLButtonElement>, game: ServiceView) => void;
 }) {
-    const running = games.filter(isActive).length;
+    const running = games.filter(game => isActive(game) || (!game.port?.previewOnly && game.port?.matchesProject)).length;
     return <section className="games-pane" aria-label="游戏列表">
         <header className="game-library-head">
             <div className="game-library-title"><span><Gamepad2 size={14}/>PLAY LIBRARY</span><div className="game-title-line"><strong>游戏库</strong><small>启动、预览、继续玩</small></div></div>

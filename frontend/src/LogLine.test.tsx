@@ -97,14 +97,14 @@ describe('LogLine', () => {
         expect(grouped[0].text).toBe("FROM stock_holding_events\\n' + failed\nGROUP BY stock_id\\n' + failed");
         expect(parseLogText(grouped[0].text, grouped[0].stream).severity).toBe('error');
 
-        render(<LogLine entry={grouped[0]} fallbackService="myStock"/>);
+        render(<LogLine entry={grouped[0]} fallbackService="Web Demo"/>);
 
         expect(screen.getAllByText('ERROR')).toHaveLength(1);
         expect(document.querySelector('.log-message')?.textContent).toBe("FROM stock_holding_events\\n' + failed\nGROUP BY stock_id\\n' + failed");
     });
 
     it('does not mark benign stderr progress as an error', () => {
-        const text = '/Users/yango/github/apps/niu/desktop/build/bin/Niu.app: replacing existing signature';
+        const text = '/Users/demo/Projects/sample-app/desktop/build/bin/Niu.app: replacing existing signature';
         const parsed = parseLogText(text, 'stderr');
 
         expect(parsed.severity).toBe('neutral');

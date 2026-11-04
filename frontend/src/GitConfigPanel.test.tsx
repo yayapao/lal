@@ -1,7 +1,7 @@
 import {act, cleanup, render, screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {afterEach, beforeEach, expect, it, vi} from 'vitest';
-import {main} from '../wailsjs/go/models';
+import {launcher as main} from '../wailsjs/go/models';
 import {alphaService, api} from './testApi';
 import GitConfigPanel from './components/GitConfigPanel';
 

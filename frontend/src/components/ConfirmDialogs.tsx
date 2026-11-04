@@ -1,3 +1,5 @@
+import {useState} from 'react';
+import {errorMessage} from '../utils';
 import {CircleAlert, LoaderCircle, Trash2, X} from 'lucide-react';
 import {defaultCleanCommand} from '../types';
 import type {OperationIssue, ServiceView} from '../types';
@@ -25,12 +27,22 @@ export function CacheDialog({target, busy, onClose, onConfirm}: {target: Service
 }
 
 export function IssueDialog({issue, onClose}: {issue: OperationIssue; onClose: () => void}) {
-    return <div className="modal-backdrop" role="presentation" onMouseDown={event => { if (event.target === event.currentTarget) onClose(); }}>
+    const [busy, setBusy] = useState(false);
+    const [error, setError] = useState('');
+    const act = async () => {
+        setBusy(true); setError('');
+        try { await issue.onAction?.(); }
+        catch (failure) { setError(errorMessage(failure)); }
+        finally { setBusy(false); }
+    };
+    return <div className="modal-backdrop" role="presentation" onMouseDown={event => { if (event.target === event.currentTarget && !busy) onClose(); }}>
         <div className="issue-dialog" role="alertdialog" aria-modal="true" aria-labelledby="issue-title">
             <div className="issue-heading"><span className="issue-icon"><CircleAlert size={18}/></span><h2 id="issue-title">{issue.title}</h2>
-                <button className="icon-button subtle" type="button" onClick={onClose} aria-label="关闭" title="关闭"><X size={18}/></button></div>
+                <button className="icon-button subtle" type="button" onClick={onClose} disabled={busy} aria-label="关闭" title="关闭"><X size={18}/></button></div>
             <pre>{issue.message}</pre>
-            <div className="dialog-actions"><button className="button primary" type="button" onClick={onClose}>知道了</button></div>
+            {error && <div className="form-error">{error}</div>}
+            <div className="dialog-actions"><button className="button secondary" type="button" onClick={onClose} disabled={busy}>{issue.onAction ? '取消' : '知道了'}</button>
+                {issue.onAction && <button className="button primary" type="button" onClick={() => void act()} disabled={busy}>{busy && <LoaderCircle className="spin" size={15}/>} {issue.actionLabel}</button>}</div>
         </div>
     </div>;
 }

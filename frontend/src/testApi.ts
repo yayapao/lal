@@ -32,6 +32,7 @@ export const api = {
     StopAll: vi.fn(),
     StopServices: vi.fn(),
     StopService: vi.fn(),
+    StopExternalAndStart: vi.fn(),
     UpdateService: vi.fn(),
     SetServiceWorkspace: vi.fn(),
     SaveWorkspaceLayout: vi.fn().mockResolvedValue(undefined),

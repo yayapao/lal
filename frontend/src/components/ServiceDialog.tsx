@@ -59,7 +59,7 @@ export default function ServiceDialog({state, services, workspaces: catalog = []
                 </div>
                 {detection?.warnings.filter(warning => warning.startsWith('package.json') || warning.startsWith('.lal.json')).map(warning => <p className="field-hint" key={warning}>{warning}</p>)}
                 <div className="service-identity-fields">
-                    <label><span>{noun}名称</span><input value={form.name} onChange={event => change('name', event.target.value)} maxLength={80} required placeholder={isGame ? '例如 Anti-Magic Gem' : '例如 myStock'} disabled={saving}/></label>
+                    <label><span>{noun}名称</span><input value={form.name} onChange={event => change('name', event.target.value)} maxLength={80} required placeholder={isGame ? '例如 Tiny Quest' : '例如 Web Demo'} disabled={saving}/></label>
                     <label><span>Workspace <small>可选</small></span><select value={form.workspace} onChange={event => change('workspace', event.target.value)} aria-label="Workspace" disabled={saving}>
                         <option value="">未分组</option>
                         {workspaces.map(workspace => <option key={workspace} value={workspace}>{workspace}</option>)}
