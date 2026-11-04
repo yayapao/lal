@@ -184,11 +184,11 @@
 .context-menu button:active:not(:disabled) { transform: translateY(1px); }
 
 .button.primary {
-    color: #08121e;
-    background: #0a84ff;
+    color: #fff;
+    background: #006bd6;
 }
 
-.button.primary:hover:not(:disabled) { background: var(--accent-strong); }
+.button.primary:hover:not(:disabled) { background: #0874dc; }
 
 .button.secondary {
     border: 1px solid var(--line-strong);

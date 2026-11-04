@@ -3,14 +3,24 @@ package main
 import (
 	"context"
 	"lal/internal/launcher"
+
+	"github.com/wailsapp/wails/v3/pkg/application"
 )
 
-// App keeps the desktop bridge at window.go.main.App while the backend lives
-// in an internal package. Its public methods are promoted from launcher.App.
-type App struct{ *launcher.App }
+// App is the desktop service. Process and project logic lives in launcher.
+type App struct {
+	*launcher.App
+	desktop launcher.Desktop
+}
 
 func NewApp() *App { return &App{App: launcher.NewApp()} }
 
-func (a *App) startup(ctx context.Context)          { launcher.Startup(a.App, ctx) }
-func (a *App) beforeClose(ctx context.Context) bool { return launcher.BeforeClose(a.App, ctx) }
-func (a *App) shutdown(ctx context.Context)         { launcher.Shutdown(a.App, ctx) }
+func (a *App) ServiceStartup(ctx context.Context, _ application.ServiceOptions) error {
+	launcher.Startup(a.App, ctx, a.desktop)
+	return nil
+}
+
+func (a *App) ServiceShutdown() error {
+	launcher.Shutdown(a.App)
+	return nil
+}

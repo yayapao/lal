@@ -4,8 +4,8 @@ import {afterEach, beforeEach, expect, it, vi} from 'vitest';
 import {alphaService, api} from './testApi';
 import App from './App';
 
-vi.mock('../wailsjs/go/main/App', () => api);
-vi.mock('../wailsjs/runtime/runtime', () => ({EventsOn: vi.fn(() => () => undefined)}));
+vi.mock('../wailsjs/lal/app', () => api);
+vi.mock('@wailsio/runtime', async importOriginal => ({...await importOriginal<typeof import('@wailsio/runtime')>(), Events: {On: vi.fn(() => () => undefined)}}));
 
 const port = {pid: 123, command: 'python3 -m http.server 18040', directory: '/tmp/alpha', identity: 'start-time command', matchesProject: true, accessible: true, previewOnly: false};
 const external = {...alphaService, url: 'http://127.0.0.1:18040', port};

@@ -144,8 +144,6 @@
 .workspace-manager-dialog button.workspace-add-projects-button { border: 1px solid #7099b94d; color: #b9ddfc; background: #76b5ff10; }
 .workspace-project-row > button { opacity: .7; }
 .workspace-project-row:hover > button, .workspace-project-row > button:focus-visible { opacity: 1; }
-.workspace-manager-footer .button.primary { color: #142636; background: #9dccf1; }
-.workspace-manager-footer .button.primary:hover:not(:disabled) { background: #b9dfff; }
 @media (max-width: 520px) {
     .modal-backdrop:has(> .workspace-manager-dialog) { padding: 10px; }
     .workspace-manager-dialog { width: calc(100vw - 20px); max-height: calc(100dvh - 24px); }

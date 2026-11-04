@@ -1,5 +1,5 @@
 import {useEffect, useRef, useState} from 'react';
-import {GetServiceGitDetails} from '../../wailsjs/go/main/App';
+import {GetServiceGitDetails} from '../../wailsjs/lal/app';
 import type {GitDetails, GitStatus, ServiceView} from '../types';
 import {errorMessage} from '../utils';
 

@@ -59,19 +59,19 @@ LAL 使用 Go、Wails 和 React 构建。你继续使用熟悉的编辑器、终
 
 预览版采用 ad-hoc 签名，尚未做 Developer ID 签名与 Apple 公证，macOS 可能阻止打开；签名状态和验收范围见 Release 说明。当前界面主要为中文，桌面集成面向 macOS。
 
-需要 macOS、Xcode Command Line Tools、Go 1.25+、Node.js 20.19+（20.x）或 22.12+、npm。项目使用的包管理器和运行环境也需要安装在本机。
+需要 macOS 12+、Xcode Command Line Tools、Go 1.26+（工具链固定为 1.26.10）、Node.js 20.19+（20.x）或 22.12+、npm。项目使用的包管理器和运行环境也需要安装在本机。
 
 ```bash
 git clone https://github.com/yayapao/lal.git
 cd lal
 
-go install github.com/wailsapp/wails/v2/cmd/wails@v2.15.0
+go install github.com/wailsapp/wails/v3/cmd/wails3@v3.1.0
 npm --prefix frontend ci
 scripts/build-macos.sh
 open "$HOME/Applications/LAL.app"
 ```
 
-请确认 Go 的 bin 目录在 `PATH` 中，能直接运行 `wails`。构建脚本默认生成 Apple Silicon / Intel 通用应用并安装到 `~/Applications/LAL.app`；`scripts/build-macos.sh --no-install` 只构建，产物位于 `build/bin/LAL.app`。
+请确认 Go 的 bin 目录在 `PATH` 中，能直接运行 `wails3`。构建脚本默认生成 Apple Silicon / Intel 通用应用并安装到 `~/Applications/LAL.app`；`scripts/build-macos.sh --no-install` 只构建，产物位于 `build/bin/LAL.app`。
 
 首次打开是空项目列表：
 
@@ -92,7 +92,7 @@ open "$HOME/Applications/LAL.app"
 
 ### 本地数据与执行边界
 
-- 项目列表与 Workspace 保存到 `~/Library/Application Support/LAL/config.json`。LAL 不要求账号或云同步；启动你自己的项目仍可能产生该项目的网络请求。
+- 可用绝对路径 `LAL_CONFIG_PATH` 指定独立配置，用于开发或测试；默认项目列表与 Workspace 保存到 `~/Library/Application Support/LAL/config.json`。LAL 不要求账号或云同步；启动你自己的项目仍可能产生该项目的网络请求。
 - 启动命令在项目目录中通过 zsh 执行，并加载 `~/.zshrc`。只添加你信任的项目，运行前检查启动命令与缓存清理命令。
 - 清理命令由你配置；默认值 `rm -rf .next` 适用于部分 Next.js 项目，请按项目修改。
 - 常规停止与退出清理针对本次由 LAL 启动的进程。外部端口占用会先展示诊断，不会自动停止；目录匹配时可确认停止后交由 LAL 启动。
@@ -103,7 +103,7 @@ open "$HOME/Applications/LAL.app"
 
 ```bash
 # 开发 LAL 桌面端
-wails dev
+wails3 dev
 
 # 验证 Go 后端
 go test -race ./...
@@ -119,7 +119,7 @@ npm run build
 
 ```text
 lal/
-├── main.go, app.go, menubar*.go  # Wails 入口、桥接与 macOS 状态栏
+├── main.go, app.go, desktop.go  # Wails v3 入口、服务与原生适配
 ├── internal/launcher/           # 后端实现与同包测试
 ├── frontend/                    # React 界面、测试与生成的 Wails 绑定
 ├── assets/readme/               # 介绍图、截图与 Excalidraw 源文件
@@ -127,7 +127,7 @@ lal/
 └── scripts/                     # 构建与本地开发工具
 ```
 
-手写源文件保持在 300 行以内；`frontend/wailsjs/` 由 Wails 自动生成，后端类型变化时应重新生成绑定。
+手写源文件保持在 300 行以内；`frontend/wailsjs/` 由 Wails 自动生成，后端类型变化时运行 `wails3 task bindings` 重新生成绑定。Go 模块、CLI 与 `@wailsio/runtime` 固定使用 Wails 3.1.0。
 
 ## 参与项目
 

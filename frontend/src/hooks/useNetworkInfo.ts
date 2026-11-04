@@ -1,5 +1,5 @@
 import {useCallback, useEffect, useRef, useState} from 'react';
-import {GetNetworkInfo} from '../../wailsjs/go/main/App';
+import {GetNetworkInfo} from '../../wailsjs/lal/app';
 import type {NetworkSnapshot} from '../types';
 import {errorMessage} from '../utils';
 

@@ -1,7 +1,7 @@
 import {useCallback, useEffect, useRef, useState} from 'react';
-import {GetAppState, GetLogs} from '../../wailsjs/go/main/App';
-import {launcher as main} from '../../wailsjs/go/models';
-import {EventsOn} from '../../wailsjs/runtime/runtime';
+import {GetAppState, GetLogs} from '../../wailsjs/lal/app';
+import * as main from '../../wailsjs/lal/internal/launcher/models';
+import {Events} from '@wailsio/runtime';
 import type {LogEntry, ServiceView} from '../types';
 import {errorMessage} from '../utils';
 
@@ -43,15 +43,15 @@ export function useServiceState(showToast: (message: string, kind?: 'success' | 
 
     useEffect(() => {
         void refreshState();
-        const offState = EventsOn('service:state', () => void refreshState());
-        const offServices = EventsOn('services:changed', () => void refreshState());
-        const offLog = EventsOn('service:log', (raw: LogEntry) => {
-            const entry = main.LogEntry.createFrom(raw);
+        const offState = Events.On('service:state', () => void refreshState());
+        const offServices = Events.On('services:changed', () => void refreshState());
+        const offLog = Events.On('service:log', event => {
+            const entry = main.LogEntry.createFrom(event.data);
             if (entry.serviceId !== selectedIdRef.current) return;
             setLogs(current => [...current, entry].slice(-1200));
         });
-        const offClear = EventsOn('service:logs-cleared', (payload: {serviceId: string}) => {
-            if (payload.serviceId === selectedIdRef.current) setLogs([]);
+        const offClear = Events.On('service:logs-cleared', event => {
+            if (event.data.serviceId === selectedIdRef.current) setLogs([]);
         });
         let polling = false;
         const poll = async () => {

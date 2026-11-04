@@ -1,5 +1,5 @@
 import {useEffect, useState} from 'react';
-import {GetResourceUsage} from '../../wailsjs/go/main/App';
+import {GetResourceUsage} from '../../wailsjs/lal/app';
 import {resourceHistoryLength} from '../types';
 import type {ResourceUsage} from '../types';
 

@@ -65,7 +65,7 @@ while (($# > 0)); do
 done
 
 [[ "$(uname -s)" == "Darwin" ]] || fail "this script only supports macOS"
-require_command wails
+require_command wails3
 require_command mdimport
 require_command mdfind
 require_command mdls
@@ -75,7 +75,8 @@ require_command osascript
 
 cd "$REPO_ROOT"
 log "building $APP_NAME for $BUILD_PLATFORM"
-wails build -clean -platform "$BUILD_PLATFORM"
+export BUILD_PLATFORM
+wails3 task package
 [[ -d "$BUILD_APP" ]] || fail "build output not found: $BUILD_APP"
 [[ -x "$BUILD_APP/Contents/MacOS/$APP_NAME" ]] || fail "built executable not found"
 

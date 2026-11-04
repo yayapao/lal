@@ -8,8 +8,6 @@ import (
 	"os/exec"
 	"strings"
 	"time"
-
-	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
 type NetworkInterface struct {
@@ -48,7 +46,7 @@ func (a *App) CopyNetworkValue(value string) error {
 	if strings.TrimSpace(value) == "" || len(value) > 1024*1024 {
 		return fmt.Errorf("没有可复制的网络信息")
 	}
-	return runtime.ClipboardSetText(a.ctx, value)
+	return a.desktop.CopyText(value)
 }
 
 func readNetworkInfo(parent context.Context) (NetworkSnapshot, error) {

@@ -3,7 +3,7 @@ import {afterEach, expect, it, vi} from 'vitest';
 import {useNetworkInfo} from './useNetworkInfo';
 
 const probe = vi.hoisted(() => vi.fn());
-vi.mock('../../wailsjs/go/main/App', () => ({GetNetworkInfo: probe}));
+vi.mock('../../wailsjs/lal/app', () => ({GetNetworkInfo: probe}));
 afterEach(() => { cleanup(); vi.useRealTimers(); vi.restoreAllMocks(); });
 
 it('refreshes visible network information every 15 seconds and resumes on visibility changes', async () => {

@@ -1,5 +1,5 @@
 import {useState} from 'react';
-import {SaveWorkspaceLayout} from '../../wailsjs/go/main/App';
+import {SaveWorkspaceLayout} from '../../wailsjs/lal/app';
 import type {ServiceView, WorkspaceDraft} from '../types';
 import {errorMessage} from '../utils';
 

@@ -17,7 +17,7 @@ import {
     StopPackageScript,
     StopService,
     StopServices,
-} from '../../wailsjs/go/main/App';
+} from '../../wailsjs/lal/app';
 import type {BatchBusyState, DialogState, LogEntry, MenuState, OperationIssue, ServiceView} from '../types';
 import {errorMessage, isActive} from '../utils';
 

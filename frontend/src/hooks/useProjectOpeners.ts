@@ -1,4 +1,4 @@
-import {OpenServiceInVSCode} from '../../wailsjs/go/main/App';
+import {OpenServiceInVSCode} from '../../wailsjs/lal/app';
 import type {ServiceView} from '../types';
 import {errorMessage} from '../utils';
 

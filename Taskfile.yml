@@ -1,0 +1,30 @@
+version: '3'
+
+tasks:
+  bindings:
+    desc: Regenerate Wails v3 TypeScript bindings
+    cmds:
+      - wails3 generate bindings -ts -d frontend/wailsjs
+
+  build:
+    desc: Build the macOS desktop app (DEV=true for development)
+    env:
+      DEV: '{{.DEV | default "false"}}'
+    cmds:
+      - task: bindings
+      - cmd: npm --prefix frontend run build
+      - cmd: scripts/compile-macos.sh
+
+  package:
+    desc: Build the macOS universal app bundle
+    cmds:
+      - task: build
+
+  common:dev:frontend:
+    dir: frontend
+    cmds:
+      - npm run dev
+
+  run:
+    cmds:
+      - build/bin/LAL.dev.app/Contents/MacOS/LAL

@@ -10,6 +10,9 @@ import (
 )
 
 func defaultConfigPath() string {
+	if path := os.Getenv("LAL_CONFIG_PATH"); filepath.IsAbs(path) {
+		return filepath.Clean(path)
+	}
 	dir, err := os.UserConfigDir()
 	if err != nil {
 		return filepath.Join(os.TempDir(), "LAL", "config.json")

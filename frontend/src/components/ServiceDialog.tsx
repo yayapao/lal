@@ -1,7 +1,7 @@
 import {Check, CircleAlert, FolderOpen, LoaderCircle, X} from 'lucide-react';
 import type {FormEvent} from 'react';
 import {useEffect, useRef, useState} from 'react';
-import {ChooseDirectory, CreateService, UpdateService} from '../../wailsjs/go/main/App';
+import {ChooseDirectory, CreateService, UpdateService} from '../../wailsjs/lal/app';
 import {defaultCleanCommand, emptyForm, moduleOf} from '../types';
 import type {DialogState, ServiceForm, ServiceView} from '../types';
 import {errorMessage} from '../utils';

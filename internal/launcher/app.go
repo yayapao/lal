@@ -8,13 +8,12 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
-
-	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
 // App connects the service manager to the Wails runtime.
 type App struct {
-	ctx context.Context
+	ctx     context.Context
+	desktop Desktop
 	*serviceManager
 }
 
@@ -26,44 +25,8 @@ func newAppWithConfigPath(path string) *App {
 	return &App{serviceManager: newServiceManager(path)}
 }
 
-func (a *App) startup(ctx context.Context) {
-	a.ctx = ctx
-	a.serviceManager.emit = func(name string, payload any) {
-		runtime.EventsEmit(ctx, name, payload)
-	}
-}
-
-func (a *App) shutdown(context.Context) {
-	a.stopAllProcesses()
-}
-
-func (a *App) beforeClose(ctx context.Context) bool {
-	if a.runningCount() == 0 {
-		return false
-	}
-
-	choice, err := runtime.MessageDialog(ctx, runtime.MessageDialogOptions{
-		Type:          runtime.QuestionDialog,
-		Title:         "仍有服务在运行",
-		Message:       "退出 LAL 会同时停止本次会话启动的所有服务。",
-		Buttons:       []string{"取消", "停止并退出"},
-		DefaultButton: "停止并退出",
-		CancelButton:  "取消",
-	})
-	if err != nil || choice != "停止并退出" {
-		return true
-	}
-
-	a.stopAllProcesses()
-	return false
-}
-
 func (a *App) ChooseDirectory(current string) (string, error) {
-	options := runtime.OpenDialogOptions{Title: "选择项目目录"}
-	if strings.TrimSpace(current) != "" {
-		options.DefaultDirectory = current
-	}
-	return runtime.OpenDirectoryDialog(a.ctx, options)
+	return a.desktop.ChooseDirectory(current)
 }
 
 func (a *App) DownloadLogs(id string) (string, error) {
@@ -76,15 +39,7 @@ func (a *App) DownloadLogs(id string) (string, error) {
 		return "", fmt.Errorf("当前没有可下载的日志")
 	}
 	filename := strings.NewReplacer("/", "-", "\\", "-", ":", "-").Replace(service.Name)
-	path, err := runtime.SaveFileDialog(a.ctx, runtime.SaveDialogOptions{
-		Title:                "下载服务日志",
-		DefaultFilename:      fmt.Sprintf("%s-%s.log", filename, time.Now().Format("20060102-150405")),
-		CanCreateDirectories: true,
-		Filters: []runtime.FileFilter{{
-			DisplayName: "日志文件 (*.log)",
-			Pattern:     "*.log",
-		}},
-	})
+	path, err := a.desktop.SaveLogFile(fmt.Sprintf("%s-%s.log", filename, time.Now().Format("20060102-150405")))
 	if err != nil || path == "" {
 		return path, err
 	}
@@ -124,8 +79,7 @@ func (a *App) OpenServiceURL(id string) error {
 	if service.URL == "" {
 		return fmt.Errorf("该服务尚未配置访问地址")
 	}
-	runtime.BrowserOpenURL(a.ctx, service.URL)
-	return nil
+	return a.desktop.OpenURL(service.URL)
 }
 
 func (a *App) ChooseAndAddPrompt(id string) (bool, error) {
@@ -137,11 +91,7 @@ func (a *App) ChooseAndAddPrompt(id string) (bool, error) {
 	if !isDirectory(defaultDirectory) {
 		defaultDirectory = service.Directory
 	}
-	path, err := runtime.OpenFileDialog(a.ctx, runtime.OpenDialogOptions{
-		Title:            "添加 Prompt 文件",
-		DefaultDirectory: defaultDirectory,
-		Filters:          []runtime.FileFilter{{DisplayName: "文本文件", Pattern: "*.md;*.markdown;*.txt;*.prompt"}},
-	})
+	path, err := a.desktop.ChoosePrompt(defaultDirectory)
 	if err != nil || path == "" {
 		return false, err
 	}
@@ -156,7 +106,7 @@ func (a *App) CopyCodexPrompt(id, path string) error {
 	if err != nil {
 		return err
 	}
-	if err := runtime.ClipboardSetText(a.ctx, prompt); err != nil {
+	if err := a.desktop.CopyText(prompt); err != nil {
 		return fmt.Errorf("复制 Codex 启动提示词失败：%w", err)
 	}
 	return nil
@@ -174,7 +124,7 @@ func (a *App) OpenCodexWithPrompt(id, path string) error {
 	if err != nil {
 		return err
 	}
-	if err := runtime.ClipboardSetText(a.ctx, prompt); err != nil {
+	if err := a.desktop.CopyText(prompt); err != nil {
 		return fmt.Errorf("复制 Codex 启动提示词失败：%w", err)
 	}
 

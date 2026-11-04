@@ -1,4 +1,4 @@
-import {StopExternalAndStart} from '../../wailsjs/go/main/App';
+import {StopExternalAndStart} from '../../wailsjs/lal/app';
 import type {OperationIssue, ServiceView} from '../types';
 
 export function portActionLabel(service: ServiceView) {

@@ -1,4 +1,4 @@
-import {launcher as main} from '../wailsjs/go/models';
+import * as main from '../wailsjs/lal/internal/launcher/models';
 
 export type ServiceView = main.ServiceView;
 export type LogEntry = main.LogEntry;

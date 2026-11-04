@@ -4,8 +4,8 @@ import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {alphaService, api} from './testApi';
 import App from './App';
 
-vi.mock('../wailsjs/go/main/App', () => api);
-vi.mock('../wailsjs/runtime/runtime', () => ({EventsOn: vi.fn(() => () => undefined)}));
+vi.mock('../wailsjs/lal/app', () => api);
+vi.mock('@wailsio/runtime', async importOriginal => ({...await importOriginal<typeof import('@wailsio/runtime')>(), Events: {On: vi.fn(() => () => undefined)}}));
 
 const wifi = {name: 'en0', label: 'Wi-Fi', up: true, hardware: true, loopback: false,
     ipv4: ['192.168.31.108'], ipv6: ['fe80::1234%en0'], subnetMask: '255.255.255.0', gateway: '192.168.31.1', mac: '12:34:56:78:90:ab', mtu: 1500};

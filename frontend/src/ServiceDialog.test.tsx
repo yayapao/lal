@@ -2,10 +2,10 @@ import {cleanup, fireEvent, render, screen, waitFor} from '@testing-library/reac
 import userEvent from '@testing-library/user-event';
 import {afterEach, beforeEach, expect, it, vi} from 'vitest';
 import {alphaService, api} from './testApi';
-import {launcher as main} from '../wailsjs/go/models';
+import * as main from '../wailsjs/lal/internal/launcher/models';
 import ServiceDialog from './components/ServiceDialog';
 
-vi.mock('../wailsjs/go/main/App', () => api);
+vi.mock('../wailsjs/lal/app', () => api);
 
 const project = {
     directory: '/tmp/niu', name: 'niu', workspace: 'Studio', projectType: 'nextjs',

@@ -1,5 +1,5 @@
 import {useEffect, useRef, useState} from 'react';
-import {GetServiceIcon} from '../../wailsjs/go/main/App';
+import {GetServiceIcon} from '../../wailsjs/lal/app';
 import type {ServiceView} from '../types';
 
 type CachedIcon = {key: string; url: string};

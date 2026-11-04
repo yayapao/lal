@@ -6,7 +6,7 @@ import {
     GetPrompts,
     OpenCodexWithPrompt,
     RemovePromptFile,
-} from '../../wailsjs/go/main/App';
+} from '../../wailsjs/lal/app';
 import type {PromptFileView, RightView, ServiceView} from '../types';
 import {errorMessage} from '../utils';
 

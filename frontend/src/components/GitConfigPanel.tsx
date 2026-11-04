@@ -1,6 +1,6 @@
 import {LoaderCircle, Pencil, Plus, Trash2, X} from 'lucide-react';
 import {useEffect, useState} from 'react';
-import {UpdateGitConfig} from '../../wailsjs/go/main/App';
+import {UpdateGitConfig} from '../../wailsjs/lal/app';
 import type {GitDetails, ServiceView} from '../types';
 import {errorMessage} from '../utils';
 import {canonicalGitConfigKey} from '../gitUtils';

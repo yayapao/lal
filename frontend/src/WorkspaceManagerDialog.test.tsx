@@ -2,7 +2,7 @@ import {cleanup, fireEvent, render, screen, within} from '@testing-library/react
 import userEvent from '@testing-library/user-event';
 import {useState} from 'react';
 import {afterEach, beforeEach, expect, it, vi} from 'vitest';
-import {launcher as main} from '../wailsjs/go/models';
+import * as main from '../wailsjs/lal/internal/launcher/models';
 import {alphaService} from './testApi';
 import type {WorkspaceDraft} from './types';
 import WorkspaceManagerDialog from './components/WorkspaceManagerDialog';

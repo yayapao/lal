@@ -1,11 +1,11 @@
 import {act, cleanup, render, screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {afterEach, beforeEach, expect, it, vi} from 'vitest';
-import {launcher as main} from '../wailsjs/go/models';
+import * as main from '../wailsjs/lal/internal/launcher/models';
 import {alphaService, api} from './testApi';
 import GitConfigPanel from './components/GitConfigPanel';
 
-vi.mock('../wailsjs/go/main/App', () => api);
+vi.mock('../wailsjs/lal/app', () => api);
 const service = main.ServiceView.createFrom(alphaService);
 const details = main.GitDetails.createFrom({
     status: {serviceId: 'alpha', directory: '/tmp/alpha', root: '/tmp/alpha', state: 'clean'}, configError: '', files: [],

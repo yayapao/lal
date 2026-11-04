@@ -1,6 +1,6 @@
 import {Check, Copy} from 'lucide-react';
 import {useEffect, useRef, useState} from 'react';
-import {CopyNetworkValue} from '../../wailsjs/go/main/App';
+import {CopyNetworkValue} from '../../wailsjs/lal/app';
 import {errorMessage} from '../utils';
 
 export default function NetworkCopyButton({value, label, onError}: {

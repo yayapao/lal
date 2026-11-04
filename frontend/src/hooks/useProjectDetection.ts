@@ -1,6 +1,6 @@
 import {useEffect, useRef, useState} from 'react';
-import {DetectProject} from '../../wailsjs/go/main/App';
-import type {launcher as main} from '../../wailsjs/go/models';
+import {DetectProject} from '../../wailsjs/lal/app';
+import type * as main from '../../wailsjs/lal/internal/launcher/models';
 import {defaultCleanCommand} from '../types';
 import type {ServiceForm} from '../types';
 import {errorMessage} from '../utils';
