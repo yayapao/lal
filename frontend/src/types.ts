@@ -12,7 +12,7 @@ export type AppModule = 'service' | 'game';
 export type RightView = 'logs' | 'prompts' | 'git' | 'network';
 export type BatchBusyState = 'all-start' | 'all-stop' | 'selected-start' | 'selected-stop' | null;
 export type DialogState = {mode: 'create'; module: AppModule} | {mode: 'edit'; service: ServiceView};
-export type ServiceForm = {name: string; workspace: string; directory: string; command: string; url: string; cleanCommand: string};
+export type ServiceForm = {name: string; workspace: string; directory: string; command: string; releaseCommand?: string; launchMode?: string; url: string; cleanCommand: string};
 export type ToastState = {kind: 'success' | 'error'; message: string};
 export type MenuState = {service: ServiceView; left: number; top: number};
 export type OperationIssue = {title: string; message: string; actionLabel?: string; onAction?: () => Promise<void>};
@@ -21,7 +21,7 @@ export type WorkspaceDraft = {workspaces: string[]; assignments: Record<string, 
 
 export const defaultCleanCommand = 'rm -rf .next';
 export const ungroupedWorkspace = '未分组';
-export const emptyForm: ServiceForm = {name: '', workspace: '', directory: '', command: 'npm run dev', url: '', cleanCommand: defaultCleanCommand};
+export const emptyForm: ServiceForm = {name: '', workspace: '', directory: '', command: 'npm run dev', releaseCommand: '', launchMode: 'debug', url: '', cleanCommand: defaultCleanCommand};
 export const resourceHistoryLength = 60;
 
 export function moduleOf(service: ServiceView): AppModule {

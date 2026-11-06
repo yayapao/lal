@@ -10,7 +10,8 @@ import (
 const lalManifestFilename = ".lal.json"
 
 type lalProjectManifest struct {
-	URL string `json:"url"`
+	URL            string `json:"url"`
+	ReleaseCommand string `json:"releaseCommand"`
 }
 
 // detectManifestURL reads an optional project-owned URL declaration. This file

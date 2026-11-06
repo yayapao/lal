@@ -15,16 +15,17 @@ type ProjectScript struct {
 }
 
 type ProjectDetection struct {
-	Directory    string          `json:"directory"`
-	Name         string          `json:"name"`
-	Workspace    string          `json:"workspace"`
-	ProjectType  string          `json:"projectType"`
-	Command      string          `json:"command"`
-	URL          string          `json:"url"`
-	CleanCommand string          `json:"cleanCommand"`
-	Scripts      []ProjectScript `json:"scripts"`
-	Sources      []string        `json:"sources"`
-	Warnings     []string        `json:"warnings"`
+	Directory      string          `json:"directory"`
+	Name           string          `json:"name"`
+	Workspace      string          `json:"workspace"`
+	ProjectType    string          `json:"projectType"`
+	Command        string          `json:"command"`
+	ReleaseCommand string          `json:"releaseCommand"`
+	URL            string          `json:"url"`
+	CleanCommand   string          `json:"cleanCommand"`
+	Scripts        []ProjectScript `json:"scripts"`
+	Sources        []string        `json:"sources"`
+	Warnings       []string        `json:"warnings"`
 }
 
 // DetectProject reads project metadata without running scripts or config files.
@@ -53,6 +54,7 @@ func (m *serviceManager) DetectProject(directory string) (ProjectDetection, erro
 	}
 	manifestURL, manifestFound, manifestWarning := detectManifestURL(directory)
 	if gameResult, ok := detectStandaloneGameProject(directory); ok {
+		gameResult.ReleaseCommand = detectedReleaseCommand(directory)
 		if manifestURL != "" {
 			gameResult.URL = manifestURL
 		}

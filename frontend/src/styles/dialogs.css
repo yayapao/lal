@@ -58,7 +58,7 @@
     box-shadow: 0 24px 70px rgba(2, 4, 5, 0.55);
 }
 
-.service-dialog { padding: 21px; }
+.service-dialog { padding: 21px; max-height: calc(100vh - 48px); overflow-y: auto; }
 
 .dialog-heading {
     display: flex;

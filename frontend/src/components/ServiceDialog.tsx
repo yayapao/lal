@@ -12,7 +12,7 @@ export default function ServiceDialog({state, services, workspaces: catalog = []
     const module = state.mode === 'edit' ? moduleOf(state.service) : state.module;
     const isGame = module === 'game';
     const noun = isGame ? '游戏' : '服务';
-    const [initial] = useState<ServiceForm>(() => state.mode === 'edit' ? {name: state.service.name, workspace: state.service.configuredWorkspace ?? '', directory: state.service.directory, command: state.service.command, url: state.service.url ?? '', cleanCommand: state.service.cleanCommand ?? defaultCleanCommand} : {...emptyForm, command: ''});
+    const [initial] = useState<ServiceForm>(() => state.mode === 'edit' ? {name: state.service.name, workspace: state.service.configuredWorkspace ?? '', directory: state.service.directory, command: state.service.command, releaseCommand: state.service.releaseCommand ?? '', launchMode: state.service.launchMode ?? 'debug', url: state.service.url ?? '', cleanCommand: state.service.cleanCommand ?? defaultCleanCommand} : {...emptyForm, command: ''});
     const {form, detection, analyzing, detectionError, change, chooseScript} = useProjectDetection(initial, state.mode === 'edit');
     const [saving, setSaving] = useState(false);
     const [browsing, setBrowsing] = useState(false);
@@ -37,8 +37,8 @@ export default function ServiceDialog({state, services, workspaces: catalog = []
     const submit = async (event: FormEvent) => {
         event.preventDefault();
         if (saving || browsing || analyzing) return;
-        const normalized = {name: form.name.trim(), module, workspace: form.workspace.trim(), directory: detection?.directory ?? form.directory.trim(), command: form.command.trim(), url: form.url.trim(), cleanCommand: form.cleanCommand.trim()};
-        if (state.mode === 'edit' && normalized.name === initial.name && normalized.workspace === initial.workspace && normalized.directory === initial.directory && normalized.command === initial.command && normalized.url === initial.url && normalized.cleanCommand === initial.cleanCommand) { onClose(); return; }
+        const normalized = {name: form.name.trim(), module, workspace: form.workspace.trim(), directory: detection?.directory ?? form.directory.trim(), command: form.command.trim(), ...(isGame ? {releaseCommand: (form.releaseCommand ?? '').trim(), launchMode: form.launchMode ?? 'debug'} : {}), url: form.url.trim(), cleanCommand: form.cleanCommand.trim()};
+        if (state.mode === 'edit' && normalized.name === initial.name && normalized.workspace === initial.workspace && normalized.directory === initial.directory && (normalized.releaseCommand ?? '') === (initial.releaseCommand ?? '') && (normalized.launchMode ?? '') === (isGame ? initial.launchMode ?? 'debug' : '') && normalized.command === initial.command && normalized.url === initial.url && normalized.cleanCommand === initial.cleanCommand) { onClose(); return; }
         setSaving(true); setError('');
         try {
             const service = state.mode === 'create' ? await CreateService(normalized) : await UpdateService(state.service.id, normalized);
@@ -65,9 +65,11 @@ export default function ServiceDialog({state, services, workspaces: catalog = []
                         {workspaces.map(workspace => <option key={workspace} value={workspace}>{workspace}</option>)}
                     </select></label>
                 </div>
-                <label><span>启动命令</span>{Boolean(detection?.scripts.length) && <select aria-label="项目启动脚本" value={selectedScript?.command ?? ''} onChange={event => chooseScript(event.target.value)} disabled={saving}>
+                <label><span>{isGame ? 'Debug 启动命令' : '启动命令'}</span>{Boolean(detection?.scripts.length) && <select aria-label="项目启动脚本" value={selectedScript?.command ?? ''} onChange={event => chooseScript(event.target.value)} disabled={saving}>
                     <option value="">自定义命令</option>{detection?.scripts.map(script => <option key={script.name} value={script.command}>{script.name} · {script.preview}</option>)}
                 </select>}<input aria-label="启动命令" className="command-input" value={form.command} onChange={event => change('command', event.target.value)} required maxLength={1000} placeholder="npm run dev" spellCheck={false} disabled={saving}/></label>
+                {isGame && <label><span>正式版启动命令 <small>可选</small></span><input aria-label="正式版启动命令" className="command-input" value={form.releaseCommand ?? ''} onChange={event => change('releaseCommand', event.target.value)} maxLength={1000} placeholder="'dist/macos/Game.app/Contents/MacOS/Game'" spellCheck={false} disabled={saving}/><span className="field-hint">运行已导出的 Release 产物；修改源码后，重新导出才会更新正式版。</span></label>}
+                {isGame && <label><span>默认启动模式</span><select aria-label="默认启动模式" value={form.launchMode ?? 'debug'} onChange={event => change('launchMode', event.target.value)} disabled={saving}><option value="release" disabled={!form.releaseCommand?.trim()}>正式版</option><option value="debug">Debug</option></select></label>}
                 <label><span>{isGame ? '游戏预览地址' : '访问地址'} <small>可选</small></span><input className="command-input" value={form.url} onChange={event => change('url', event.target.value)} maxLength={500} inputMode="url" placeholder={isGame ? 'http://localhost:18040/index.html' : 'http://localhost:3900'} spellCheck={false} disabled={saving}/>
                     {detection && !form.url && <span className="field-hint">未解析到地址；可用项目根目录 .lal.json 的 url 字段声明，或手动填写。</span>}</label>
                 {detection && !form.command && <p className="field-hint">未识别到常用启动脚本，请选择脚本或填写命令。</p>}

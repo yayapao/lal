@@ -33,6 +33,8 @@ export function useProjectDetection(initial: ServiceForm, editing: boolean) {
                     if (edited.current.has('command') && !edited.current.has('url')) {
                         next.url = result.scripts.find(script => script.command === next.command)?.url ?? '';
                     }
+                    if (!edited.current.has('releaseCommand')) next.releaseCommand = result.releaseCommand ?? '';
+                    if (!edited.current.has('launchMode')) next.launchMode = next.releaseCommand ? 'release' : 'debug';
                     return next;
                 });
             }).catch(error => {
@@ -61,6 +63,8 @@ export function useProjectDetection(initial: ServiceForm, editing: boolean) {
                 for (const generated of ['name', 'workspace', 'command', 'url'] as const) {
                     if (!edited.current.has(generated)) next[generated] = '';
                 }
+                if (!edited.current.has('releaseCommand')) next.releaseCommand = '';
+                if (!edited.current.has('launchMode')) next.launchMode = 'debug';
                 if (!edited.current.has('cleanCommand')) next.cleanCommand = defaultCleanCommand;
             }
             if (field === 'command' && !edited.current.has('url')) {

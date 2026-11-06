@@ -176,6 +176,15 @@ export function SaveWorkspaceLayout(input: launcher$0.WorkspaceLayout): $Cancell
 }
 
 /**
+ * SetGameLaunchMode persists the next launch choice without changing a running game.
+ */
+export function SetGameLaunchMode(id: string, mode: string): $CancellablePromise<launcher$0.ServiceView> {
+    return $Call.ByID(2387929561, id, mode).then(($result: any) => {
+        return $$createType0($result);
+    });
+}
+
+/**
  * SetServiceWorkspace updates only membership. Empty means unassigned.
  */
 export function SetServiceWorkspace(id: string, workspace: string): $CancellablePromise<launcher$0.ServiceView> {

@@ -29,6 +29,7 @@ export const api = {
     StartAll: vi.fn(),
     StartServices: vi.fn(),
     StartService: vi.fn(),
+    SetGameLaunchMode: vi.fn().mockResolvedValue(undefined),
     StopAll: vi.fn(),
     StopServices: vi.fn(),
     StopService: vi.fn(),

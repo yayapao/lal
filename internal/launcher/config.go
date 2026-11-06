@@ -68,6 +68,12 @@ func (m *serviceManager) loadConfig() error {
 	for index, service := range config.Services {
 		original := service
 		service.Module = normalizeModule(service.Module)
+		if config.Version < 7 && service.Module == moduleGame {
+			service.ReleaseCommand = detectedReleaseCommand(service.Directory)
+			if service.ReleaseCommand != "" {
+				service.LaunchMode = "release"
+			}
+		}
 		service.Workspace = strings.TrimSpace(service.Workspace)
 		service.URL = normalizeAccessURL(service.URL)
 		if strings.TrimSpace(service.CleanCommand) == "" {
@@ -124,14 +130,16 @@ func (m *serviceManager) GetAppState() AppState {
 
 func (m *serviceManager) CreateService(input ServiceInput) (ServiceView, error) {
 	service := Service{
-		ID:           newID(),
-		Name:         strings.TrimSpace(input.Name),
-		Module:       normalizeModule(input.Module),
-		Workspace:    strings.TrimSpace(input.Workspace),
-		Directory:    cleanDirectory(input.Directory),
-		Command:      strings.TrimSpace(input.Command),
-		URL:          normalizeAccessURL(input.URL),
-		CleanCommand: normalizeCleanCommand(input.CleanCommand),
+		ID:             newID(),
+		Name:           strings.TrimSpace(input.Name),
+		Module:         normalizeModule(input.Module),
+		Workspace:      strings.TrimSpace(input.Workspace),
+		Directory:      cleanDirectory(input.Directory),
+		Command:        strings.TrimSpace(input.Command),
+		ReleaseCommand: strings.TrimSpace(input.ReleaseCommand),
+		LaunchMode:     strings.TrimSpace(input.LaunchMode),
+		URL:            normalizeAccessURL(input.URL),
+		CleanCommand:   normalizeCleanCommand(input.CleanCommand),
 	}
 	if err := validateService(service); err != nil {
 		return ServiceView{}, err
@@ -156,14 +164,16 @@ func (m *serviceManager) CreateService(input ServiceInput) (ServiceView, error) 
 
 func (m *serviceManager) UpdateService(id string, input ServiceInput) (ServiceView, error) {
 	updated := Service{
-		ID:           id,
-		Name:         strings.TrimSpace(input.Name),
-		Module:       normalizeModule(input.Module),
-		Workspace:    strings.TrimSpace(input.Workspace),
-		Directory:    cleanDirectory(input.Directory),
-		Command:      strings.TrimSpace(input.Command),
-		URL:          normalizeAccessURL(input.URL),
-		CleanCommand: normalizeCleanCommand(input.CleanCommand),
+		ID:             id,
+		Name:           strings.TrimSpace(input.Name),
+		Module:         normalizeModule(input.Module),
+		Workspace:      strings.TrimSpace(input.Workspace),
+		Directory:      cleanDirectory(input.Directory),
+		Command:        strings.TrimSpace(input.Command),
+		ReleaseCommand: strings.TrimSpace(input.ReleaseCommand),
+		LaunchMode:     strings.TrimSpace(input.LaunchMode),
+		URL:            normalizeAccessURL(input.URL),
+		CleanCommand:   normalizeCleanCommand(input.CleanCommand),
 	}
 	if err := validateService(updated); err != nil {
 		return ServiceView{}, err

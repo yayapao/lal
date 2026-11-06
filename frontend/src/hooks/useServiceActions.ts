@@ -13,6 +13,7 @@ import {
     StartAll,
     StartServices,
     StartService,
+    SetGameLaunchMode,
     StopAll,
     StopPackageScript,
     StopService,
@@ -72,6 +73,17 @@ export function useServiceActions(context: ServiceActionContext) {
             if (starting) setOperationIssue({title: `${service.name} 无法启动`, message});
             else showToast(message, 'error');
         } finally {
+            setBusyIds(current => { const next = new Set(current); next.delete(service.id); return next; });
+            await refreshState();
+        }
+    };
+
+    const changeGameMode = async (service: ServiceView, mode: 'release' | 'debug') => {
+        if (mode === 'release' && !service.releaseCommand?.trim()) { setDialog({mode: 'edit', service}); return; }
+        setBusyIds(current => new Set(current).add(service.id));
+        try { await SetGameLaunchMode(service.id, mode); }
+        catch (error) { showToast(errorMessage(error), 'error'); }
+        finally {
             setBusyIds(current => { const next = new Set(current); next.delete(service.id); return next; });
             await refreshState();
         }
@@ -256,7 +268,7 @@ export function useServiceActions(context: ServiceActionContext) {
     };
 
     return {
-        toggleService, runBatch, runSelectedBatch, toggleChecked, toggleVisibleSelection, openMenu,
+        toggleService, changeGameMode, runBatch, runSelectedBatch, toggleChecked, toggleVisibleSelection, openMenu,
         revealService, openServiceURL, runPackageScript, stopPackageScript, refreshAppState,
         restartService, confirmClearNextCache, clearSelectedLogs, downloadSelectedLogs, confirmDelete,
     };

@@ -24,6 +24,11 @@ func (m *serviceManager) StartService(id string) error {
 		m.mu.Unlock()
 		return nil
 	}
+	command, err := launchCommand(service)
+	if err != nil {
+		m.mu.Unlock()
+		return err
+	}
 	if !isDirectory(service.Directory) {
 		m.lastStatus[id] = "failed"
 		m.lastError[id] = "项目目录不存在"
@@ -41,7 +46,7 @@ func (m *serviceManager) StartService(id string) error {
 	}
 	m.ClearLogs(id)
 
-	args := append(append([]string(nil), m.commandArgs...), service.Command)
+	args := append(append([]string(nil), m.commandArgs...), command)
 	cmd := exec.Command(m.commandShell, args...)
 	cmd.Dir = service.Directory
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
@@ -73,7 +78,7 @@ func (m *serviceManager) StartService(id string) error {
 		m.healthInfo[id] = "等待访问地址响应"
 	}
 	m.mu.Unlock()
-	m.appendLog(id, "system", fmt.Sprintf("已启动：%s", service.Command))
+	m.appendLog(id, "system", fmt.Sprintf("已启动%s：%s", launchModeLabel(service), command))
 	m.emitState(id)
 
 	go m.captureOutput(id, "stdout", stdout)

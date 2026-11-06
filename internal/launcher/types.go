@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	configVersion         = 6
+	configVersion         = 7
 	maxLogEntries         = 1200
 	maxCommandLength      = 1000
 	maxCleanCommandLength = 2000
@@ -34,26 +34,30 @@ var ansiPattern = regexp.MustCompile(`\x1b(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])`)
 const shellCommandWrapper = `if [[ -r "$HOME/.zshrc" ]]; then source "$HOME/.zshrc"; fi; eval "$1"`
 
 type Service struct {
-	ID           string   `json:"id"`
-	Name         string   `json:"name"`
-	Module       string   `json:"module,omitempty"`
-	Workspace    string   `json:"workspace,omitempty"`
-	Directory    string   `json:"directory"`
-	Command      string   `json:"command"`
-	URL          string   `json:"url,omitempty"`
-	CleanCommand string   `json:"cleanCommand"`
-	PromptFiles  []string `json:"promptFiles,omitempty"`
-	PromptFile   string   `json:"promptFile,omitempty"` // v4 migration only
+	ID             string   `json:"id"`
+	Name           string   `json:"name"`
+	Module         string   `json:"module,omitempty"`
+	Workspace      string   `json:"workspace,omitempty"`
+	Directory      string   `json:"directory"`
+	Command        string   `json:"command"`
+	ReleaseCommand string   `json:"releaseCommand,omitempty"`
+	LaunchMode     string   `json:"launchMode,omitempty"`
+	URL            string   `json:"url,omitempty"`
+	CleanCommand   string   `json:"cleanCommand"`
+	PromptFiles    []string `json:"promptFiles,omitempty"`
+	PromptFile     string   `json:"promptFile,omitempty"` // v4 migration only
 }
 
 type ServiceInput struct {
-	Name         string `json:"name"`
-	Module       string `json:"module"`
-	Workspace    string `json:"workspace"`
-	Directory    string `json:"directory"`
-	Command      string `json:"command"`
-	URL          string `json:"url"`
-	CleanCommand string `json:"cleanCommand"`
+	Name           string `json:"name"`
+	Module         string `json:"module"`
+	Workspace      string `json:"workspace"`
+	Directory      string `json:"directory"`
+	Command        string `json:"command"`
+	ReleaseCommand string `json:"releaseCommand,omitempty"`
+	LaunchMode     string `json:"launchMode,omitempty"`
+	URL            string `json:"url"`
+	CleanCommand   string `json:"cleanCommand"`
 }
 
 type ServiceView struct {

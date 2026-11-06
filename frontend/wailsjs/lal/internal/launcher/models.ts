@@ -596,6 +596,7 @@ export class ProjectDetection {
     "workspace": string;
     "projectType": string;
     "command": string;
+    "releaseCommand": string;
     "url": string;
     "cleanCommand": string;
     "scripts": ProjectScript[];
@@ -618,6 +619,9 @@ export class ProjectDetection {
         }
         if (!("command" in $$source)) {
             this["command"] = "";
+        }
+        if (!("releaseCommand" in $$source)) {
+            this["releaseCommand"] = "";
         }
         if (!("url" in $$source)) {
             this["url"] = "";
@@ -642,18 +646,18 @@ export class ProjectDetection {
      * Creates a new ProjectDetection instance from a string or object.
      */
     static createFrom($$source: any = {}): ProjectDetection {
-        const $$createField7_0 = $$createType13;
-        const $$createField8_0 = $$createType2;
+        const $$createField8_0 = $$createType13;
         const $$createField9_0 = $$createType2;
+        const $$createField10_0 = $$createType2;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("scripts" in $$parsedSource) {
-            $$parsedSource["scripts"] = $$createField7_0($$parsedSource["scripts"]);
+            $$parsedSource["scripts"] = $$createField8_0($$parsedSource["scripts"]);
         }
         if ("sources" in $$parsedSource) {
-            $$parsedSource["sources"] = $$createField8_0($$parsedSource["sources"]);
+            $$parsedSource["sources"] = $$createField9_0($$parsedSource["sources"]);
         }
         if ("warnings" in $$parsedSource) {
-            $$parsedSource["warnings"] = $$createField9_0($$parsedSource["warnings"]);
+            $$parsedSource["warnings"] = $$createField10_0($$parsedSource["warnings"]);
         }
         return new ProjectDetection($$parsedSource as Partial<ProjectDetection>);
     }
@@ -772,6 +776,8 @@ export class ServiceInput {
     "workspace": string;
     "directory": string;
     "command": string;
+    "releaseCommand"?: string;
+    "launchMode"?: string;
     "url": string;
     "cleanCommand": string;
 
@@ -818,6 +824,8 @@ export class ServiceView {
     "workspace"?: string;
     "directory": string;
     "command": string;
+    "releaseCommand"?: string;
+    "launchMode"?: string;
     "url"?: string;
     "cleanCommand": string;
     "promptFiles"?: string[];
@@ -892,18 +900,18 @@ export class ServiceView {
      * Creates a new ServiceView instance from a string or object.
      */
     static createFrom($$source: any = {}): ServiceView {
-        const $$createField8_0 = $$createType2;
-        const $$createField10_0 = $$createType15;
-        const $$createField25_0 = $$createType17;
+        const $$createField10_0 = $$createType2;
+        const $$createField12_0 = $$createType15;
+        const $$createField27_0 = $$createType17;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("promptFiles" in $$parsedSource) {
-            $$parsedSource["promptFiles"] = $$createField8_0($$parsedSource["promptFiles"]);
+            $$parsedSource["promptFiles"] = $$createField10_0($$parsedSource["promptFiles"]);
         }
         if ("packageInfo" in $$parsedSource) {
-            $$parsedSource["packageInfo"] = $$createField10_0($$parsedSource["packageInfo"]);
+            $$parsedSource["packageInfo"] = $$createField12_0($$parsedSource["packageInfo"]);
         }
         if ("port" in $$parsedSource) {
-            $$parsedSource["port"] = $$createField25_0($$parsedSource["port"]);
+            $$parsedSource["port"] = $$createField27_0($$parsedSource["port"]);
         }
         return new ServiceView($$parsedSource as Partial<ServiceView>);
     }

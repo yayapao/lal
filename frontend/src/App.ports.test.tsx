@@ -57,7 +57,7 @@ it('starts a native game while its independent web preview is running', async ()
     render(<App/>);
     await user.click(await screen.findByRole('tab', {name: '游戏'}));
     expect(await screen.findByText(/与原生游戏独立/)).toBeDefined();
-    await user.click(screen.getByRole('button', {name: '启动 Alpha'}));
+    await user.click(screen.getByRole('button', {name: '启动 Debug Alpha'}));
     await waitFor(() => expect(api.StartService).toHaveBeenCalledWith('alpha'));
     expect(api.StopExternalAndStart).not.toHaveBeenCalled();
 });

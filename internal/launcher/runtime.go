@@ -145,6 +145,9 @@ func validateService(service Service) error {
 	} else if len(command) > maxCommandLength {
 		return fmt.Errorf("启动命令不能超过 %d 个字符", maxCommandLength)
 	}
+	if err := validateGameLaunch(service); err != nil {
+		return err
+	}
 	if cleanCommand := strings.TrimSpace(service.CleanCommand); len(cleanCommand) > maxCleanCommandLength {
 		return fmt.Errorf("缓存清理脚本不能超过 %d 个字符", maxCleanCommandLength)
 	}
@@ -177,7 +180,7 @@ func uniqueIDs(ids []string) []string {
 
 func serviceEqual(left, right Service) bool {
 	return left.ID == right.ID && left.Name == right.Name && left.Module == right.Module && left.Workspace == right.Workspace && left.Directory == right.Directory && left.Command == right.Command &&
-		left.URL == right.URL && left.CleanCommand == right.CleanCommand && left.PromptFile == right.PromptFile && slices.Equal(left.PromptFiles, right.PromptFiles)
+		left.ReleaseCommand == right.ReleaseCommand && left.LaunchMode == right.LaunchMode && left.URL == right.URL && left.CleanCommand == right.CleanCommand && left.PromptFile == right.PromptFile && slices.Equal(left.PromptFiles, right.PromptFiles)
 }
 
 func normalizeModule(value string) string {

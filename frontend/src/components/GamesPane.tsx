@@ -5,10 +5,11 @@ import type {ResourceUsage, ServiceView} from '../types';
 import {isActive} from '../utils';
 
 export default function GamesPane({loading, query, total, games, selectedId, busyIds, refreshing, iconURLs, resourceUsage, footer,
-    onAdd, onRefresh, onSelect, onToggle, onOpenVSCode, onReveal, onOpenURL, onMenu}: {
+    onAdd, onRefresh, onSelect, onToggle, onModeChange, onOpenVSCode, onReveal, onOpenURL, onMenu}: {
     loading: boolean; query: string; total: number; games: ServiceView[]; selectedId: string; busyIds: Set<string>; refreshing: boolean;
     iconURLs: Record<string, string>; resourceUsage: Record<string, ResourceUsage>; footer: ReactNode;
     onAdd: () => void; onRefresh: () => void; onSelect: (id: string) => void; onToggle: (game: ServiceView) => void;
+    onModeChange: (game: ServiceView, mode: 'release' | 'debug') => void;
     onOpenVSCode: (game: ServiceView) => void; onReveal: (game: ServiceView) => void; onOpenURL: (game: ServiceView) => void;
     onMenu: (event: React.MouseEvent<HTMLButtonElement>, game: ServiceView) => void;
 }) {
@@ -25,6 +26,7 @@ export default function GamesPane({loading, query, total, games, selectedId, bus
                     {!query && <button className="button primary" type="button" onClick={onAdd}><Plus size={15}/>添加游戏</button>}</div>
                 : <div className="game-grid">{games.map((game, index) => <GameCard key={game.id} service={game} index={index}
                     selected={game.id === selectedId} busy={busyIds.has(game.id)} usage={resourceUsage[game.id]} iconURL={iconURLs[game.id]}
+                    onModeChange={mode => onModeChange(game, mode)}
                     onSelect={() => onSelect(game.id)} onToggle={() => onToggle(game)} onOpenVSCode={() => onOpenVSCode(game)}
                     onReveal={() => onReveal(game)} onOpenURL={() => onOpenURL(game)} onMenu={event => onMenu(event, game)}/>)}</div>}
         </div>
