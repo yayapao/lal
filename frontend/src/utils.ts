@@ -2,7 +2,7 @@ import type {ServiceView} from './types';
 import {moduleOf} from './types';
 
 export function isActive(service: ServiceView) {
-    return service.status === 'running' || service.status === 'starting' || service.status === 'stopping';
+    return service.status === 'building' || service.status === 'running' || service.status === 'starting' || service.status === 'stopping';
 }
 
 export function projectNoun(service?: ServiceView | null) {
@@ -10,7 +10,7 @@ export function projectNoun(service?: ServiceView | null) {
 }
 
 export function isStoppable(service: ServiceView) {
-    return service.status === 'running' || service.status === 'starting';
+    return service.status === 'building' || service.status === 'running' || service.status === 'starting';
 }
 
 export function serviceVisualState(service: ServiceView) {

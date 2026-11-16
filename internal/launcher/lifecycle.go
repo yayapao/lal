@@ -6,7 +6,6 @@ import "context"
 type Desktop interface {
 	Emit(string, any)
 	ChooseDirectory(string) (string, error)
-	ChoosePrompt(string) (string, error)
 	SaveLogFile(string) (string, error)
 	CopyText(string) error
 	OpenURL(string) error

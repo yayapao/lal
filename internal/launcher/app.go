@@ -3,7 +3,6 @@ package launcher
 import (
 	"context"
 	"fmt"
-	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
@@ -81,102 +80,6 @@ func (a *App) OpenServiceURL(id string) error {
 	}
 	return a.desktop.OpenURL(service.URL)
 }
-
-func (a *App) ChooseAndAddPrompt(id string) (bool, error) {
-	service, err := a.serviceByID(id)
-	if err != nil {
-		return false, err
-	}
-	defaultDirectory := filepath.Join(service.Directory, defaultPromptsDir)
-	if !isDirectory(defaultDirectory) {
-		defaultDirectory = service.Directory
-	}
-	path, err := a.desktop.ChoosePrompt(defaultDirectory)
-	if err != nil || path == "" {
-		return false, err
-	}
-	if err := a.AddPromptFile(id, path); err != nil {
-		return false, err
-	}
-	return true, nil
-}
-
-func (a *App) CopyCodexPrompt(id, path string) error {
-	prompt, err := a.readCodexPrompt(id, path)
-	if err != nil {
-		return err
-	}
-	if err := a.desktop.CopyText(prompt); err != nil {
-		return fmt.Errorf("复制 Codex 启动提示词失败：%w", err)
-	}
-	return nil
-}
-
-func (a *App) OpenCodexWithPrompt(id, path string) error {
-	service, err := a.serviceByID(id)
-	if err != nil {
-		return err
-	}
-	if !isDirectory(service.Directory) {
-		return fmt.Errorf("项目目录不存在：%s", service.Directory)
-	}
-	prompt, err := a.readCodexPrompt(id, path)
-	if err != nil {
-		return err
-	}
-	if err := a.desktop.CopyText(prompt); err != nil {
-		return fmt.Errorf("复制 Codex 启动提示词失败：%w", err)
-	}
-
-	codexPath, err := codexExecutablePath()
-	if err != nil {
-		return err
-	}
-	if output, err := exec.Command(codexPath, codexAppArguments(service.Directory)...).CombinedOutput(); err != nil {
-		return fmt.Errorf("打开 Codex 失败：%s", commandError(output, err))
-	}
-
-	if output, err := exec.Command("/usr/bin/osascript", "-e", codexNewConversationAndPasteScript).CombinedOutput(); err != nil {
-		return fmt.Errorf("Codex 已打开，提示词原文已复制；自动新建并粘贴需要在“系统设置 > 隐私与安全性 > 辅助功能”中允许 LAL：%s", commandError(output, err))
-	}
-	return nil
-}
-
-func codexExecutablePath() (string, error) {
-	for _, candidate := range []string{
-		"/Applications/ChatGPT.app/Contents/Resources/codex",
-		"/Applications/Codex.app/Contents/Resources/codex",
-	} {
-		if info, err := os.Stat(candidate); err == nil && !info.IsDir() {
-			return candidate, nil
-		}
-	}
-	if path, err := exec.LookPath("codex"); err == nil {
-		return path, nil
-	}
-	return "", fmt.Errorf("未找到 Codex 桌面端，请先安装或更新 Codex")
-}
-
-func codexAppArguments(directory string) []string {
-	return []string{"app", directory}
-}
-
-const codexNewConversationAndPasteScript = `
-tell application id "com.openai.codex" to activate
-tell application "System Events"
-	repeat 80 times
-		if exists (first application process whose bundle identifier is "com.openai.codex") then
-			tell first application process whose bundle identifier is "com.openai.codex"
-				if frontmost and (count of windows) > 0 then exit repeat
-			end tell
-		end if
-		delay 0.1
-	end repeat
-	delay 1
-	keystroke "a" using command down
-	delay 0.1
-	keystroke "v" using command down
-end tell`
 
 func commandError(output []byte, err error) string {
 	message := strings.TrimSpace(string(output))

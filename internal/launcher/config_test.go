@@ -12,12 +12,6 @@ import (
 func TestServiceConfigLifecycle(t *testing.T) {
 	configPath := emptyConfig(t)
 	projectDir := t.TempDir()
-	if err := os.MkdirAll(filepath.Join(projectDir, defaultPromptsDir), 0o755); err != nil {
-		t.Fatalf("create prompt directory: %v", err)
-	}
-	if err := os.WriteFile(filepath.Join(projectDir, defaultPromptsDir, "codex-startup.md"), []byte("Start this session"), 0o600); err != nil {
-		t.Fatalf("write prompt: %v", err)
-	}
 	app := newAppWithConfigPath(configPath)
 	if _, err := app.CreateService(ServiceInput{Name: "Invalid", Directory: " ", Command: "npm run dev"}); err == nil {
 		t.Fatal("expected an empty directory to fail")
@@ -35,7 +29,7 @@ func TestServiceConfigLifecycle(t *testing.T) {
 	if err != nil {
 		t.Fatalf("create service: %v", err)
 	}
-	if created.ID == "" || created.Name != "API" || !created.PathExists || created.URL != "http://localhost:4321" || created.CleanCommand != defaultCleanCommand || len(created.PromptFiles) != 0 {
+	if created.ID == "" || created.Name != "API" || !created.PathExists || created.URL != "http://localhost:4321" || created.CleanCommand != defaultCleanCommand {
 		t.Fatalf("unexpected created service: %#v", created)
 	}
 	if created.Module != moduleService {
@@ -239,5 +233,41 @@ func TestFormatLogEntriesPrefixesEveryLine(t *testing.T) {
 	}})
 	if strings.Count(formatted, "[SYSTEM]") != 2 || !strings.Contains(formatted, "端口被占用") || !strings.Contains(formatted, "检查命令：lsof") {
 		t.Fatalf("unexpected formatted log:\n%s", formatted)
+	}
+}
+
+func TestServiceConfigIgnoresRemovedPromptSettings(t *testing.T) {
+	for _, version := range []int{4, configVersion} {
+		configPath, directory := emptyConfig(t), t.TempDir()
+		data, err := json.Marshal(map[string]any{
+			"version": version,
+			"services": []map[string]any{{
+				"id": "legacy", "name": "Legacy", "directory": directory, "command": "npm run dev",
+				"url": "http://localhost:4321", "workspace": "Tools",
+				"promptFile": "docs/session.md", "promptFiles": []string{"docs/another.md"},
+			}},
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(configPath, data, 0o600); err != nil {
+			t.Fatal(err)
+		}
+		app := newAppWithConfigPath(configPath)
+		state := app.GetAppState()
+		if state.Warning != "" || len(state.Services) != 1 {
+			t.Fatalf("version %d failed to load: %#v", version, state)
+		}
+		service := state.Services[0]
+		if service.ID != "legacy" || service.Directory != directory || service.Command != "npm run dev" || service.URL != "http://localhost:4321" || service.Workspace != "Tools" {
+			t.Fatalf("version %d changed the service: %#v", version, service)
+		}
+		if _, err := app.UpdateService(service.ID, ServiceInput{Name: "Updated", Directory: directory, Command: service.Command, URL: service.URL, Workspace: service.Workspace}); err != nil {
+			t.Fatal(err)
+		}
+		reloaded := newAppWithConfigPath(configPath).GetAppState()
+		if reloaded.Warning != "" || len(reloaded.Services) != 1 || reloaded.Services[0].Name != "Updated" {
+			t.Fatalf("version %d failed to save: %#v", version, reloaded)
+		}
 	}
 }

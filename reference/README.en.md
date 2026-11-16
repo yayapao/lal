@@ -12,7 +12,20 @@ For example, an existing Vite project might use the folder `~/Projects/my-web`, 
 }
 ```
 
-This file is read only as metadata. It contains no startup command and is never executed.
+Games can also declare Release launch and build/export commands:
+
+```json
+{
+  "url": "http://localhost:18040/index.html",
+  "releaseCommand": "'dist/macos/Game.app/Contents/MacOS/Game'",
+  "buildCommand": "python3 -u tools/build_release.py",
+  "buildBeforeLaunch": true
+}
+```
+
+The Build button builds and exports without launching. With build-before-launch enabled, Release startup runs the build first and launches only after exit code 0. Failure or cancellation never launches the previous artifact. Debug runs source directly. Builds stream logs and can be cancelled; stop a running game before building separately. Project scripts decide whether unchanged artifacts can be reused.
+
+When adding a project, LAL reads `.lal.json` into the form; saved LAL settings take precedence afterward. Edit the game to change commands or build-before-launch. Declaring a build command without `buildBeforeLaunch` defaults to enabled. Detection only parses data; commands run only after the user clicks Build or Start.
 
 To open a local page on your phone, view and copy your LAN IPv4 address and gateway in LAL, or expand the network interface details.
 
@@ -21,10 +34,9 @@ To open a local page on your phone, view and copy your LAN IPv4 address and gate
 - Set `LAL_CONFIG_PATH` to an absolute path for an isolated development or test configuration. By default, projects and Workspaces are saved in `~/Library/Application Support/LAL/config.json`. LAL requires no account or cloud sync; projects you launch may make their own network requests.
 - Startup commands run through zsh in the project folder and load `~/.zshrc`. Add projects you trust, and review startup and cache cleanup commands before running them.
 - You configure cleanup commands. The default `rm -rf .next` suits some Next.js projects; change it to match your project.
-- Logs receive best-effort masking of common credential fields, authorization headers, URL credentials and private keys before display or export. Custom application secrets may remain; review logs before sharing. Automatically discovered Prompts are read within the project directory; external files require an explicit association.
+- Logs receive best-effort masking of common credential fields, authorization headers, URL credentials and private keys before display or export. Custom application secrets may remain; review logs before sharing.
 - Normal stop actions and shutdown cleanup target processes started by LAL in the current session. External port owners are shown for diagnosis and are not stopped automatically. When the project folder matches, you can confirm stopping the external process before starting the project through LAL.
 - Git configuration edits affect only the current repository's local configuration, leaving global and system settings unchanged.
-- Automatic pasting into Codex may require macOS Accessibility permission. You can still copy prompts manually without it. The VS Code shortcut requires VS Code to be installed.
 
 ## Status and engines
 

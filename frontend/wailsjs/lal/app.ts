@@ -14,12 +14,11 @@ import { Call as $Call, CancellablePromise as $CancellablePromise, Create as $Cr
 // @ts-ignore: Unused imports
 import * as launcher$0 from "./internal/launcher/models.js";
 
-export function AddPromptFile(id: string, path: string): $CancellablePromise<void> {
-    return $Call.ByID(31989308, id, path);
-}
-
-export function ChooseAndAddPrompt(id: string): $CancellablePromise<boolean> {
-    return $Call.ByID(1328004318, id);
+/**
+ * BuildGame exports a fresh Release without launching it.
+ */
+export function BuildGame(id: string): $CancellablePromise<void> {
+    return $Call.ByID(3751846905, id);
 }
 
 export function ChooseDirectory(current: string): $CancellablePromise<string> {
@@ -37,10 +36,6 @@ export function ClearLogs(id: string): $CancellablePromise<void> {
  */
 export function ClearNextCache(id: string): $CancellablePromise<void> {
     return $Call.ByID(4170818395, id);
-}
-
-export function CopyCodexPrompt(id: string, path: string): $CancellablePromise<void> {
-    return $Call.ByID(562689985, id, path);
 }
 
 export function CopyNetworkValue(value: string): $CancellablePromise<void> {
@@ -97,21 +92,15 @@ export function GetNetworkInfo(): $CancellablePromise<launcher$0.NetworkSnapshot
     });
 }
 
-export function GetPrompts(id: string): $CancellablePromise<launcher$0.PromptFileView[]> {
-    return $Call.ByID(4029112866, id).then(($result: any) => {
-        return $$createType9($result);
-    });
-}
-
 export function GetResourceUsage(): $CancellablePromise<launcher$0.ResourceUsage[]> {
     return $Call.ByID(2243838234).then(($result: any) => {
-        return $$createType11($result);
+        return $$createType9($result);
     });
 }
 
 export function GetServiceGitDetails(id: string): $CancellablePromise<launcher$0.GitDetails> {
     return $Call.ByID(1789093584, id).then(($result: any) => {
-        return $$createType12($result);
+        return $$createType10($result);
     });
 }
 
@@ -124,25 +113,8 @@ export function GetServiceIcon(id: string): $CancellablePromise<string> {
     return $Call.ByID(2200818847, id);
 }
 
-export function OpenCodexWithPrompt(id: string, path: string): $CancellablePromise<void> {
-    return $Call.ByID(1424135278, id, path);
-}
-
-/**
- * OpenServiceInVSCode opens the configured project directly in Visual Studio
- * Code. Using LaunchServices keeps the action independent from the caller's
- * interactive shell and reports missing installations back to the UI.
- */
-export function OpenServiceInVSCode(id: string): $CancellablePromise<void> {
-    return $Call.ByID(3224248077, id);
-}
-
 export function OpenServiceURL(id: string): $CancellablePromise<void> {
     return $Call.ByID(2973453681, id);
-}
-
-export function RemovePromptFile(id: string, path: string): $CancellablePromise<void> {
-    return $Call.ByID(3543214165, id, path);
 }
 
 /**
@@ -195,7 +167,7 @@ export function SetServiceWorkspace(id: string, workspace: string): $Cancellable
 
 export function StartAll(): $CancellablePromise<launcher$0.BatchResult> {
     return $Call.ByID(1593724210).then(($result: any) => {
-        return $$createType13($result);
+        return $$createType11($result);
     });
 }
 
@@ -205,13 +177,13 @@ export function StartService(id: string): $CancellablePromise<void> {
 
 export function StartServices(ids: string[]): $CancellablePromise<launcher$0.BatchResult> {
     return $Call.ByID(3622819563, ids).then(($result: any) => {
-        return $$createType13($result);
+        return $$createType11($result);
     });
 }
 
 export function StopAll(): $CancellablePromise<launcher$0.BatchResult> {
     return $Call.ByID(1829082188).then(($result: any) => {
-        return $$createType13($result);
+        return $$createType11($result);
     });
 }
 
@@ -232,7 +204,7 @@ export function StopService(id: string): $CancellablePromise<void> {
 
 export function StopServices(ids: string[]): $CancellablePromise<launcher$0.BatchResult> {
     return $Call.ByID(117000605, ids).then(($result: any) => {
-        return $$createType13($result);
+        return $$createType11($result);
     });
 }
 
@@ -259,9 +231,7 @@ const $$createType4 = $Create.Array($$createType3);
 const $$createType5 = launcher$0.LogEntry.createFrom;
 const $$createType6 = $Create.Array($$createType5);
 const $$createType7 = launcher$0.NetworkSnapshot.createFrom;
-const $$createType8 = launcher$0.PromptFileView.createFrom;
+const $$createType8 = launcher$0.ResourceUsage.createFrom;
 const $$createType9 = $Create.Array($$createType8);
-const $$createType10 = launcher$0.ResourceUsage.createFrom;
-const $$createType11 = $Create.Array($$createType10);
-const $$createType12 = launcher$0.GitDetails.createFrom;
-const $$createType13 = launcher$0.BatchResult.createFrom;
+const $$createType10 = launcher$0.GitDetails.createFrom;
+const $$createType11 = launcher$0.BatchResult.createFrom;

@@ -1,6 +1,6 @@
 import PortNotice from './PortNotice';
 import {portActionLabel} from '../hooks/usePortActions';
-import {CircleAlert, Code2, ExternalLink, FolderOpen, LoaderCircle, MoreHorizontal, Play, Square} from 'lucide-react';
+import {CircleAlert, Hammer, ExternalLink, FolderOpen, LoaderCircle, MoreHorizontal, Play, Square} from 'lucide-react';
 import type {KeyboardEvent} from 'react';
 import ProjectIcon from './ProjectIcon';
 import StatusLabel from './StatusLabel';
@@ -15,15 +15,19 @@ const engineLabels: Record<string, string> = {
     generic: 'GAME',
 };
 
-export default function GameCard({service, index, selected, busy, usage, iconURL, onSelect, onToggle, onModeChange, onOpenVSCode, onReveal, onOpenURL, onMenu}: {
+export default function GameCard({service, index, selected, busy, usage, iconURL, onSelect, onToggle, onBuild, onModeChange, onReveal, onOpenURL, onMenu}: {
     service: ServiceView; index: number; selected: boolean; busy: boolean; usage?: ResourceUsage; iconURL?: string;
-    onSelect: () => void; onToggle: () => void; onOpenVSCode: () => void; onReveal: () => void; onOpenURL: () => void;
+    onSelect: () => void; onToggle: () => void; onReveal: () => void; onOpenURL: () => void;
+    onBuild: () => void;
     onModeChange: (mode: 'release' | 'debug') => void;
     onMenu: (event: React.MouseEvent<HTMLButtonElement>) => void;
 }) {
     const release = service.launchMode === 'release';
     const modeLabel = release ? '正式版' : 'Debug';
-    const command = release ? service.releaseCommand ?? '' : service.command;
+    const building = service.status === 'building';
+    const buildFirst = release && Boolean(service.buildCommand && service.buildBeforeLaunch);
+    const startLabel = buildFirst ? '构建并启动' : `启动 ${modeLabel}`;
+    const command = building ? service.buildCommand ?? '' : release ? service.releaseCommand ?? '' : service.command;
     const portLabel = portActionLabel(service);
     const transition = service.status === 'starting' || service.status === 'stopping';
     const engine = service.projectType in engineLabels ? service.projectType : 'generic';
@@ -49,7 +53,7 @@ export default function GameCard({service, index, selected, busy, usage, iconURL
                     disabled={busy || transition || isActive(service)} title={mode === 'release' && !service.releaseCommand ? '配置正式版启动命令' : isActive(service) ? '停止游戏后可切换' : undefined}
                     onClick={event => { event.stopPropagation(); onModeChange(mode); }}>{mode === 'release' ? '正式' : 'Debug'}</button>)}
             </div>
-            <span className="game-mode-hint">{release ? '已导出的版本' : '当前源码'}</span>
+            <span className="game-mode-hint">{release ? buildFirst ? '启动前构建并导出' : '已导出的版本' : '当前源码'}</span>
         </div>
         <code className="game-command" title={command}>{command}</code>
         <div className="game-runtime-line">
@@ -60,12 +64,12 @@ export default function GameCard({service, index, selected, busy, usage, iconURL
         <PortNotice service={service}/>
         <div className="game-actions">
             <button type="button" className={isActive(service) ? 'game-action stop' : 'game-action start'} onClick={event => { event.stopPropagation(); onToggle(); }}
-                disabled={busy || transition || !service.pathExists} aria-label={portLabel ? `${portLabel} ${service.name}` : isActive(service) ? `停止 ${service.name}` : `启动 ${modeLabel} ${service.name}`}>
+                disabled={busy || transition || !service.pathExists} aria-label={portLabel ? `${portLabel} ${service.name}` : isActive(service) ? `${building ? '取消构建' : '停止'} ${service.name}` : `${startLabel} ${service.name}`}>
                 {busy || transition ? <LoaderCircle className="spin" size={14}/> : isActive(service) ? <Square size={11}/> : <Play size={13}/>}
-                <span>{portLabel || (isActive(service) ? `停止 ${modeLabel}` : `启动 ${modeLabel}`)}</span>
+                <span>{portLabel || (building ? '取消构建' : isActive(service) ? `停止 ${modeLabel}` : startLabel)}</span>
             </button>
-            <button type="button" className="game-action" onClick={event => { event.stopPropagation(); onOpenVSCode(); }} disabled={!service.pathExists}
-                aria-label={`在 VS Code 中打开 ${service.name}`} title="在 VS Code 中打开"><Code2 size={14}/><span>VS Code</span></button>
+            <button type="button" className="game-action build" onClick={event => { event.stopPropagation(); onBuild(); }} disabled={busy || isActive(service) || !service.pathExists}
+                aria-label={`构建 ${service.name}`} title={service.buildCommand || '配置构建并导出命令'}><Hammer size={14}/><span>构建</span></button>
             <button type="button" className="game-action" onClick={event => { event.stopPropagation(); onReveal(); }} disabled={!service.pathExists}
                 aria-label={`在 Finder 中显示 ${service.name}`} title="在 Finder 中显示"><FolderOpen size={14}/><span>Finder</span></button>
         </div>

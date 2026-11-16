@@ -17,7 +17,6 @@ export {
     PortView,
     ProjectDetection,
     ProjectScript,
-    PromptFileView,
     ResourceUsage,
     ServiceInput,
     ServiceView,

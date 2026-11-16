@@ -21,11 +21,11 @@
 | 能力 | 可以做什么 |
 | --- | --- |
 | 服务管理 | 识别项目的启动命令与访问地址，单个、多选或全部启停服务 |
-| 游戏管理 | 识别 Godot、Unity、Phaser / Web 项目，配置启动、预览与资源缓存清理 |
+| 游戏管理 | 识别 Godot、Unity、Phaser / Web 项目，配置正式／Debug、构建导出、启动与预览 |
 | Workspace | 按产品或场景分组，搜索项目、折叠分组、批量移动 |
 | 运行诊断 | 查看实时日志、CPU / 内存趋势、PID、运行时长和端口占用，导出日志 |
-| 开发上下文 | 查看 Git 分支、变更和冲突，编辑仓库本地 Git 配置；一键打开 VS Code / Finder |
-| Prompt 与任务 | 读取项目 Markdown Prompt，复制或粘贴到 Codex（不自动发送）；执行 `package.json` 脚本 |
+| 开发上下文 | 查看 Git 分支、变更和冲突，编辑仓库本地 Git 配置；在 Finder 中显示项目目录 |
+| 项目任务 | 查看并执行 `package.json` 脚本 |
 
 ![LAL 游戏库，使用演示项目与演示数据](assets/readme/games.jpg)
 

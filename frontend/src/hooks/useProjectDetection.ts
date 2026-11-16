@@ -34,6 +34,8 @@ export function useProjectDetection(initial: ServiceForm, editing: boolean) {
                         next.url = result.scripts.find(script => script.command === next.command)?.url ?? '';
                     }
                     if (!edited.current.has('releaseCommand')) next.releaseCommand = result.releaseCommand ?? '';
+                    if (!edited.current.has('buildCommand')) next.buildCommand = result.buildCommand ?? '';
+                    if (!edited.current.has('buildBeforeLaunch')) next.buildBeforeLaunch = result.buildBeforeLaunch ?? Boolean(next.buildCommand);
                     if (!edited.current.has('launchMode')) next.launchMode = next.releaseCommand ? 'release' : 'debug';
                     return next;
                 });
@@ -46,14 +48,14 @@ export function useProjectDetection(initial: ServiceForm, editing: boolean) {
         return () => { window.clearTimeout(timer); request.current++; };
     }, [form.directory, editing, initial.directory]);
 
-    const change = (field: keyof ServiceForm, value: string) => {
+    const change = (field: keyof ServiceForm, value: string | boolean) => {
         if (field === 'directory') {
             if (value === form.directory) return;
             projectChanged.current = true;
             request.current++;
             setDetection(null);
             setDetectionError('');
-            setAnalyzing(Boolean(value.trim()));
+            setAnalyzing(Boolean(String(value).trim()));
         } else {
             edited.current.add(field);
         }
@@ -64,8 +66,14 @@ export function useProjectDetection(initial: ServiceForm, editing: boolean) {
                     if (!edited.current.has(generated)) next[generated] = '';
                 }
                 if (!edited.current.has('releaseCommand')) next.releaseCommand = '';
+                if (!edited.current.has('buildCommand')) next.buildCommand = '';
+                if (!edited.current.has('buildBeforeLaunch')) next.buildBeforeLaunch = false;
                 if (!edited.current.has('launchMode')) next.launchMode = 'debug';
                 if (!edited.current.has('cleanCommand')) next.cleanCommand = defaultCleanCommand;
+            }
+            if (field === 'buildCommand') {
+                if (!String(value).trim()) next.buildBeforeLaunch = false;
+                else if (!edited.current.has('buildBeforeLaunch')) next.buildBeforeLaunch = true;
             }
             if (field === 'command' && !edited.current.has('url')) {
                 next.url = detection?.scripts.find(script => script.command === value)?.url ?? '';

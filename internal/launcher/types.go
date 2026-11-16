@@ -11,18 +11,15 @@ import (
 )
 
 const (
-	configVersion         = 7
+	configVersion         = 8
 	maxLogEntries         = 1200
 	maxCommandLength      = 1000
 	maxCleanCommandLength = 2000
-	maxPromptFileLength   = 1000
-	maxPromptFileBytes    = 2 * 1024 * 1024
 	stopTimeout           = 8 * time.Second
 	healthGrace           = 12 * time.Second
 	healthEvery           = 1 * time.Second
 	healthTimeout         = 500 * time.Millisecond
 	defaultCleanCommand   = "rm -rf .next"
-	defaultPromptsDir     = "prompts"
 	maxScriptNameLength   = 120
 	maxIconFileBytes      = 2 * 1024 * 1024
 	moduleService         = "service"
@@ -34,30 +31,32 @@ var ansiPattern = regexp.MustCompile(`\x1b(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])`)
 const shellCommandWrapper = `if [[ -r "$HOME/.zshrc" ]]; then source "$HOME/.zshrc"; fi; eval "$1"`
 
 type Service struct {
-	ID             string   `json:"id"`
-	Name           string   `json:"name"`
-	Module         string   `json:"module,omitempty"`
-	Workspace      string   `json:"workspace,omitempty"`
-	Directory      string   `json:"directory"`
-	Command        string   `json:"command"`
-	ReleaseCommand string   `json:"releaseCommand,omitempty"`
-	LaunchMode     string   `json:"launchMode,omitempty"`
-	URL            string   `json:"url,omitempty"`
-	CleanCommand   string   `json:"cleanCommand"`
-	PromptFiles    []string `json:"promptFiles,omitempty"`
-	PromptFile     string   `json:"promptFile,omitempty"` // v4 migration only
+	ID                string `json:"id"`
+	Name              string `json:"name"`
+	Module            string `json:"module,omitempty"`
+	Workspace         string `json:"workspace,omitempty"`
+	Directory         string `json:"directory"`
+	Command           string `json:"command"`
+	BuildCommand      string `json:"buildCommand,omitempty"`
+	BuildBeforeLaunch bool   `json:"buildBeforeLaunch,omitempty"`
+	ReleaseCommand    string `json:"releaseCommand,omitempty"`
+	LaunchMode        string `json:"launchMode,omitempty"`
+	URL               string `json:"url,omitempty"`
+	CleanCommand      string `json:"cleanCommand"`
 }
 
 type ServiceInput struct {
-	Name           string `json:"name"`
-	Module         string `json:"module"`
-	Workspace      string `json:"workspace"`
-	Directory      string `json:"directory"`
-	Command        string `json:"command"`
-	ReleaseCommand string `json:"releaseCommand,omitempty"`
-	LaunchMode     string `json:"launchMode,omitempty"`
-	URL            string `json:"url"`
-	CleanCommand   string `json:"cleanCommand"`
+	Name              string `json:"name"`
+	Module            string `json:"module"`
+	Workspace         string `json:"workspace"`
+	Directory         string `json:"directory"`
+	Command           string `json:"command"`
+	BuildCommand      string `json:"buildCommand,omitempty"`
+	BuildBeforeLaunch bool   `json:"buildBeforeLaunch,omitempty"`
+	ReleaseCommand    string `json:"releaseCommand,omitempty"`
+	LaunchMode        string `json:"launchMode,omitempty"`
+	URL               string `json:"url"`
+	CleanCommand      string `json:"cleanCommand"`
 }
 
 type ServiceView struct {
@@ -78,15 +77,6 @@ type ServiceView struct {
 	Health              string       `json:"health"`
 	HealthInfo          string       `json:"healthInfo"`
 	Port                *PortView    `json:"port,omitempty"`
-}
-
-type PromptFileView struct {
-	Name        string `json:"name"`
-	Path        string `json:"path"`
-	DisplayPath string `json:"displayPath"`
-	Content     string `json:"content"`
-	Source      string `json:"source"`
-	Error       string `json:"error"`
 }
 
 type PackageScript struct {
@@ -140,6 +130,7 @@ type processState struct {
 	startedAt time.Time
 	done      chan struct{}
 	stopping  bool
+	phase     string
 }
 
 type orderedScripts struct {

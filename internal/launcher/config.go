@@ -74,16 +74,14 @@ func (m *serviceManager) loadConfig() error {
 				service.LaunchMode = "release"
 			}
 		}
+		if config.Version < 8 && service.Module == moduleGame {
+			service.BuildCommand, service.BuildBeforeLaunch = detectedGameBuild(service.Directory)
+		}
 		service.Workspace = strings.TrimSpace(service.Workspace)
 		service.URL = normalizeAccessURL(service.URL)
 		if strings.TrimSpace(service.CleanCommand) == "" {
 			service.CleanCommand = defaultCleanCommand
 		}
-		if legacyPrompt := strings.TrimSpace(service.PromptFile); legacyPrompt != "" && filepath.Clean(legacyPrompt) != filepath.Join(defaultPromptsDir, "codex-startup.md") {
-			service.PromptFiles = append(service.PromptFiles, legacyPrompt)
-		}
-		service.PromptFile = ""
-		service.PromptFiles = normalizePromptFiles(service.PromptFiles)
 		if err := validateService(service); err != nil {
 			return fmt.Errorf("服务 %q 的配置无效：%w", service.Name, err)
 		}
@@ -130,16 +128,18 @@ func (m *serviceManager) GetAppState() AppState {
 
 func (m *serviceManager) CreateService(input ServiceInput) (ServiceView, error) {
 	service := Service{
-		ID:             newID(),
-		Name:           strings.TrimSpace(input.Name),
-		Module:         normalizeModule(input.Module),
-		Workspace:      strings.TrimSpace(input.Workspace),
-		Directory:      cleanDirectory(input.Directory),
-		Command:        strings.TrimSpace(input.Command),
-		ReleaseCommand: strings.TrimSpace(input.ReleaseCommand),
-		LaunchMode:     strings.TrimSpace(input.LaunchMode),
-		URL:            normalizeAccessURL(input.URL),
-		CleanCommand:   normalizeCleanCommand(input.CleanCommand),
+		ID:                newID(),
+		Name:              strings.TrimSpace(input.Name),
+		Module:            normalizeModule(input.Module),
+		Workspace:         strings.TrimSpace(input.Workspace),
+		Directory:         cleanDirectory(input.Directory),
+		Command:           strings.TrimSpace(input.Command),
+		ReleaseCommand:    strings.TrimSpace(input.ReleaseCommand),
+		BuildCommand:      strings.TrimSpace(input.BuildCommand),
+		BuildBeforeLaunch: input.BuildBeforeLaunch,
+		LaunchMode:        strings.TrimSpace(input.LaunchMode),
+		URL:               normalizeAccessURL(input.URL),
+		CleanCommand:      normalizeCleanCommand(input.CleanCommand),
 	}
 	if err := validateService(service); err != nil {
 		return ServiceView{}, err
@@ -164,16 +164,18 @@ func (m *serviceManager) CreateService(input ServiceInput) (ServiceView, error) 
 
 func (m *serviceManager) UpdateService(id string, input ServiceInput) (ServiceView, error) {
 	updated := Service{
-		ID:             id,
-		Name:           strings.TrimSpace(input.Name),
-		Module:         normalizeModule(input.Module),
-		Workspace:      strings.TrimSpace(input.Workspace),
-		Directory:      cleanDirectory(input.Directory),
-		Command:        strings.TrimSpace(input.Command),
-		ReleaseCommand: strings.TrimSpace(input.ReleaseCommand),
-		LaunchMode:     strings.TrimSpace(input.LaunchMode),
-		URL:            normalizeAccessURL(input.URL),
-		CleanCommand:   normalizeCleanCommand(input.CleanCommand),
+		ID:                id,
+		Name:              strings.TrimSpace(input.Name),
+		Module:            normalizeModule(input.Module),
+		Workspace:         strings.TrimSpace(input.Workspace),
+		Directory:         cleanDirectory(input.Directory),
+		Command:           strings.TrimSpace(input.Command),
+		ReleaseCommand:    strings.TrimSpace(input.ReleaseCommand),
+		BuildCommand:      strings.TrimSpace(input.BuildCommand),
+		BuildBeforeLaunch: input.BuildBeforeLaunch,
+		LaunchMode:        strings.TrimSpace(input.LaunchMode),
+		URL:               normalizeAccessURL(input.URL),
+		CleanCommand:      normalizeCleanCommand(input.CleanCommand),
 	}
 	if err := validateService(updated); err != nil {
 		return ServiceView{}, err
@@ -198,7 +200,6 @@ func (m *serviceManager) UpdateService(id string, input ServiceInput) (ServiceVi
 		return ServiceView{}, fmt.Errorf("服务名称 %q 已存在", updated.Name)
 	}
 	previous := m.services[index]
-	updated.PromptFiles = append([]string(nil), previous.PromptFiles...)
 	m.services[index] = updated
 	if err := m.saveConfigLocked(); err != nil {
 		m.services[index] = previous

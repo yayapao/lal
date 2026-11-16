@@ -38,6 +38,10 @@ func (m *serviceManager) RunPackageScript(id, name string) error {
 	}
 
 	m.mu.Lock()
+	if service.Module == moduleGame && m.processes[id] != nil {
+		m.mu.Unlock()
+		return fmt.Errorf("请先停止游戏或等待构建完成")
+	}
 	if _, running := m.scriptProcesses[id]; running {
 		current := m.activeScript[id]
 		m.mu.Unlock()

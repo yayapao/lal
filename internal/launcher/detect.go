@@ -2,8 +2,6 @@ package launcher
 
 import (
 	"encoding/json"
-	"errors"
-	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -182,89 +180,6 @@ func normalizeCleanCommand(value string) string {
 		return defaultCleanCommand
 	}
 	return value
-}
-
-func normalizePromptFiles(values []string) []string {
-	result := make([]string, 0, len(values))
-	seen := make(map[string]struct{}, len(values))
-	for _, value := range values {
-		value = strings.TrimSpace(value)
-		if value == "" {
-			continue
-		}
-		value = filepath.Clean(value)
-		if _, exists := seen[value]; exists {
-			continue
-		}
-		seen[value] = struct{}{}
-		result = append(result, value)
-	}
-	return result
-}
-
-func resolvePromptPath(directory, path string) string {
-	if filepath.IsAbs(path) {
-		return filepath.Clean(path)
-	}
-	return filepath.Join(directory, path)
-}
-
-type promptPath struct {
-	path   string
-	source string
-}
-
-func promptPaths(service Service) ([]promptPath, error) {
-	paths := make([]promptPath, 0)
-	seen := make(map[string]struct{})
-	promptsRoot := filepath.Join(service.Directory, defaultPromptsDir)
-	if err := filepath.WalkDir(promptsRoot, func(path string, entry os.DirEntry, walkErr error) error {
-		if walkErr != nil {
-			return walkErr
-		}
-		if strings.HasPrefix(entry.Name(), ".") {
-			if entry.IsDir() && path != promptsRoot {
-				return filepath.SkipDir
-			}
-			return nil
-		}
-		if entry.IsDir() || entry.Type()&os.ModeSymlink != 0 || !isPromptFilename(entry.Name()) {
-			return nil
-		}
-		info, err := os.Stat(path)
-		if err != nil {
-			return err
-		}
-		if !info.Mode().IsRegular() {
-			return nil
-		}
-		path = filepath.Clean(path)
-		seen[path] = struct{}{}
-		paths = append(paths, promptPath{path: path, source: "project"})
-		return nil
-	}); err != nil && !errors.Is(err, os.ErrNotExist) {
-		return nil, fmt.Errorf("扫描 prompts 目录失败：%w", err)
-	}
-	for _, configured := range service.PromptFiles {
-		path := resolvePromptPath(service.Directory, configured)
-		if _, exists := seen[path]; exists {
-			continue
-		}
-		seen[path] = struct{}{}
-		paths = append(paths, promptPath{path: path, source: "added"})
-	}
-	return paths, nil
-}
-
-func isPromptFilename(name string) bool {
-	return strings.EqualFold(filepath.Ext(name), ".md")
-}
-
-func displayPromptPath(directory, path string) string {
-	if relative, err := filepath.Rel(directory, path); err == nil && relative != ".." && !strings.HasPrefix(relative, ".."+string(filepath.Separator)) {
-		return relative
-	}
-	return path
 }
 
 func pathWithin(root, path string) bool {

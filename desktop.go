@@ -12,10 +12,6 @@ func (d nativeDesktop) ChooseDirectory(current string) (string, error) {
 	return d.app.Dialog.OpenFile().SetTitle("选择项目目录").SetDirectory(current).
 		CanChooseFiles(false).CanChooseDirectories(true).PromptForSingleSelection()
 }
-func (d nativeDesktop) ChoosePrompt(directory string) (string, error) {
-	return d.app.Dialog.OpenFile().SetTitle("添加 Prompt 文件").SetDirectory(directory).
-		AddFilter("文本文件", "*.md;*.markdown;*.txt;*.prompt").PromptForSingleSelection()
-}
 func (d nativeDesktop) SaveLogFile(filename string) (string, error) {
 	return d.app.Dialog.SaveFileWithOptions(&application.SaveFileDialogOptions{Title: "下载服务日志"}).SetFilename(filename).
 		CanCreateDirectories(true).AddFilter("日志文件 (*.log)", "*.log").PromptForSingleSelection()

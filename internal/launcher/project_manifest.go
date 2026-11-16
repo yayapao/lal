@@ -10,12 +10,14 @@ import (
 const lalManifestFilename = ".lal.json"
 
 type lalProjectManifest struct {
-	URL            string `json:"url"`
-	ReleaseCommand string `json:"releaseCommand"`
+	URL               string `json:"url"`
+	ReleaseCommand    string `json:"releaseCommand"`
+	BuildCommand      string `json:"buildCommand"`
+	BuildBeforeLaunch *bool  `json:"buildBeforeLaunch"`
 }
 
 // detectManifestURL reads an optional project-owned URL declaration. This file
-// is metadata only: LAL never imports or executes it.
+// is parsed as data; detection never executes the declared commands.
 func detectManifestURL(directory string) (string, bool, string) {
 	text := readDetectionText(filepath.Join(directory, lalManifestFilename))
 	if text == "" {

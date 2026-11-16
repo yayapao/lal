@@ -3,7 +3,6 @@ import './styles/base.css';
 import './styles/panes.css';
 import './styles/service-list.css';
 import './styles/service-row.css';
-import './styles/prompts.css';
 import './styles/logs.css';
 import './styles/console.css';
 import './styles/dialogs.css';
@@ -18,7 +17,6 @@ import {CacheDialog, DeleteDialog, IssueDialog} from './components/ConfirmDialog
 import LogsPane from './components/LogsPane';
 import GitPane from './components/GitPane';
 import GamesPane from './components/GamesPane';
-import PromptManager from './components/PromptManager';
 import ServiceDialog from './components/ServiceDialog';
 import ServicesPane from './components/ServicesPane';
 import Toast from './components/Toast';
@@ -27,7 +25,6 @@ import ServiceToolbar from './components/ServiceToolbar';
 import NetworkPane from './components/NetworkPane';
 import NetworkSummary from './components/NetworkSummary';
 import WorkspaceManagerDialog from './components/WorkspaceManagerDialog';
-import {usePromptActions} from './hooks/usePromptActions';
 import {useResourceUsage} from './hooks/useResourceUsage';
 import {useServiceActions} from './hooks/useServiceActions';
 import {useServiceIcons} from './hooks/useServiceIcons';
@@ -35,9 +32,8 @@ import {useServiceState} from './hooks/useServiceState';
 import {useGitStatuses} from './hooks/useGitStatuses';
 import {useWorkspaceManager} from './hooks/useWorkspaceManager';
 import {useNetworkInfo} from './hooks/useNetworkInfo';
-import {useProjectOpeners} from './hooks/useProjectOpeners';
 import {moduleOf, ungroupedWorkspace} from './types';
-import type {AppModule, BatchBusyState, DialogState, MenuState, OperationIssue, PromptFileView, RightView, ServiceView, ToastState, WorkspaceGroup} from './types';
+import type {AppModule, BatchBusyState, DialogState, MenuState, OperationIssue, RightView, ServiceView, ToastState, WorkspaceGroup} from './types';
 import {isActive, isStoppable} from './utils';
 
 function App() {
@@ -54,12 +50,6 @@ function App() {
     const [cacheTarget, setCacheTarget] = useState<ServiceView | null>(null);
     const [cacheBusyId, setCacheBusyId] = useState('');
     const [rightView, setRightView] = useState<RightView>('logs');
-    const [prompts, setPrompts] = useState<PromptFileView[]>([]);
-    const [promptLoading, setPromptLoading] = useState(false);
-    const [promptSyncing, setPromptSyncing] = useState(false);
-    const [promptError, setPromptError] = useState('');
-    const [addingPrompt, setAddingPrompt] = useState(false);
-    const [promptBusy, setPromptBusy] = useState<{path: string; action: 'copy' | 'open' | 'remove'} | null>(null);
     const [operationIssue, setOperationIssue] = useState<OperationIssue | null>(null);
     const [scriptBusyId, setScriptBusyId] = useState('');
     const [toast, setToast] = useState<ToastState | null>(null);
@@ -79,7 +69,6 @@ function App() {
     const iconURLs = useServiceIcons(services, iconRefreshKey);
     const git = useGitStatuses(services, iconRefreshKey);
     const network = useNetworkInfo();
-    const projectOpeners = useProjectOpeners(showToast);
     const networkError = (message: string) => showToast(message, 'error');
 
     const activeServices = useMemo(() => services.filter(service => moduleOf(service) === activeModule), [activeModule, services]);
@@ -118,11 +107,6 @@ function App() {
         refreshState, showToast, setBusyIds, setBatchBusy, setOperationIssue, setMenu, setDialog, setDeleteTarget,
         setCacheTarget, setCacheBusyId, setScriptBusyId, setCheckedIds, setLogs, setRefreshing, setDownloadingLogs,
     });
-    const promptActions = usePromptActions({
-        showToast, setPrompts, setPromptLoading, setPromptError,
-        setPromptSyncing, setPromptBusy, setAddingPrompt, setMenu, setSelectedId, setRightView,
-    });
-
     const changeModule = (next: AppModule) => {
         setActiveModule(next); setQuery(''); setCheckedIds(new Set()); setRightView('logs');
         setSelectedId(services.find(service => moduleOf(service) === next)?.id ?? '');
@@ -132,11 +116,6 @@ function App() {
         if (loading || selectedService) return;
         setSelectedId(activeServices[0]?.id ?? '');
     }, [activeServices, loading, selectedService, setSelectedId]);
-
-    useEffect(() => {
-        if (rightView !== 'prompts' || !selectedId) return;
-        void promptActions.loadPrompts(selectedId);
-    }, [promptActions.loadPrompts, rightView, selectedId]);
 
     useEffect(() => {
         const timer = window.setInterval(() => setClock(value => value + 1), 1000);
@@ -171,8 +150,8 @@ function App() {
                     footer={<NetworkSummary network={network} active={rightView === 'network'} onDetails={() => setRightView('network')} onError={networkError}/>}
                     onAdd={() => setDialog({mode: 'create', module: 'game'})} onRefresh={() => void serviceActions.refreshAppState()}
                     onSelect={id => { setSelectedId(id); setRightView('logs'); }} onToggle={game => void serviceActions.toggleService(game)}
-                    onModeChange={(game, mode) => void serviceActions.changeGameMode(game, mode)}
-                    onOpenVSCode={game => void projectOpeners.openInVSCode(game)} onReveal={game => void serviceActions.revealService(game)}
+                    onBuild={game => void serviceActions.buildGame(game)} onModeChange={(game, mode) => void serviceActions.changeGameMode(game, mode)}
+                    onReveal={game => void serviceActions.revealService(game)}
                     onOpenURL={game => void serviceActions.openServiceURL(game)} onMenu={(event, game) => serviceActions.openMenu(event, game)}/>
                 : <ServicesPane loading={loading} query={query} total={activeServices.length} selectedId={selectedId}
                     toolbar={<ServiceToolbar total={activeServices.length} running={runningCount} external={activeServices.filter(service => service.port?.matchesProject && !service.port.previewOnly).length} refreshing={refreshing} batchBusy={batchBusy}
@@ -196,16 +175,7 @@ function App() {
                     onMenu={(event, service) => serviceActions.openMenu(event, service)}/>}
 
                 {rightView === 'network' ? <NetworkPane network={network} onBack={() => setRightView('logs')} onError={networkError}/>
-                : rightView === 'prompts' && selectedService ? (
-                    <PromptManager service={selectedService} prompts={prompts} loading={promptLoading} error={promptError}
-                        adding={addingPrompt} syncing={promptSyncing} busy={promptBusy}
-                        onAdd={() => void promptActions.addPrompt(selectedService)} onRetry={() => void promptActions.loadPrompts(selectedService.id)}
-                        onSync={() => void promptActions.syncPrompts(selectedService)}
-                        onCopy={prompt => void promptActions.copyCodexPrompt(selectedService, prompt)}
-                        onOpen={prompt => void promptActions.openCodexWithPrompt(selectedService, prompt)}
-                        onRemove={prompt => void promptActions.removePrompt(selectedService, prompt)}
-                        onBack={() => setRightView('logs')}/>
-                ) : rightView === 'git' && selectedService ? <GitPane key={`${selectedService.id}:${selectedService.directory}`} service={selectedService}
+                : rightView === 'git' && selectedService ? <GitPane key={`${selectedService.id}:${selectedService.directory}`} service={selectedService}
                     refreshKey={iconRefreshKey} onStatus={git.update} onBack={() => setRightView('logs')}/>
                     : <LogsPane service={selectedService} logs={logs} logBlocks={logBlocks} autoScroll={autoScroll}
                     gitStatus={selectedService ? git.statuses[selectedService.id] : undefined} onOpenGit={() => setRightView('git')}
@@ -220,11 +190,9 @@ function App() {
             </main>
 
             {menu && <ContextMenu menu={menu} cacheBusy={cacheBusyId !== ''} onClose={() => setMenu(null)}
-                onPromptManager={promptActions.openPromptManager}
                 onEdit={service => { setDialog({mode: 'edit', service}); setMenu(null); }}
                 onRestart={service => void serviceActions.restartService(service)}
                 onCache={service => { setCacheTarget(service); setMenu(null); }}
-                onOpenVSCode={service => { setMenu(null); void projectOpeners.openInVSCode(service); }}
                 onReveal={service => void serviceActions.revealService(service)}
                 onRemove={service => { setDeleteTarget(service); setMenu(null); }}/>}
 

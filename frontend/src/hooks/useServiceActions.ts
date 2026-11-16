@@ -1,6 +1,7 @@
 import {requestPortAction} from './usePortActions';
 import type {Dispatch, SetStateAction} from 'react';
 import {
+    BuildGame,
     ClearLogs,
     ClearNextCache,
     DeleteService,
@@ -66,7 +67,7 @@ export function useServiceActions(context: ServiceActionContext) {
             if (!starting) {
                 await StopService(service.id); showToast(`${service.name} 已停止`);
             } else {
-                await StartService(service.id); showToast(`${service.name} 已启动`);
+                await StartService(service.id); showToast(service.launchMode === 'release' && service.buildCommand && service.buildBeforeLaunch ? `${service.name} 开始构建，完成后自动启动` : `${service.name} 已启动`);
             }
         } catch (error) {
             const message = errorMessage(error);
@@ -82,6 +83,18 @@ export function useServiceActions(context: ServiceActionContext) {
         if (mode === 'release' && !service.releaseCommand?.trim()) { setDialog({mode: 'edit', service}); return; }
         setBusyIds(current => new Set(current).add(service.id));
         try { await SetGameLaunchMode(service.id, mode); }
+        catch (error) { showToast(errorMessage(error), 'error'); }
+        finally {
+            setBusyIds(current => { const next = new Set(current); next.delete(service.id); return next; });
+            await refreshState();
+        }
+    };
+
+    const buildGame = async (service: ServiceView) => {
+        if (!service.buildCommand?.trim()) { setDialog({mode: 'edit', service}); return; }
+        context.onSelectService(service.id);
+        setBusyIds(current => new Set(current).add(service.id));
+        try { await BuildGame(service.id); showToast(`${service.name} 开始构建并导出`); }
         catch (error) { showToast(errorMessage(error), 'error'); }
         finally {
             setBusyIds(current => { const next = new Set(current); next.delete(service.id); return next; });
@@ -149,7 +162,7 @@ export function useServiceActions(context: ServiceActionContext) {
     const openMenu = (event: React.MouseEvent<HTMLButtonElement>, service: ServiceView) => {
         event.stopPropagation();
         const rect = event.currentTarget.getBoundingClientRect();
-        const width = 196, height = 280;
+        const width = 196, height = 190;
         setMenu({
             service,
             left: Math.min(rect.right - width, window.innerWidth - width - 12),
@@ -268,7 +281,7 @@ export function useServiceActions(context: ServiceActionContext) {
     };
 
     return {
-        toggleService, changeGameMode, runBatch, runSelectedBatch, toggleChecked, toggleVisibleSelection, openMenu,
+        toggleService, buildGame, changeGameMode, runBatch, runSelectedBatch, toggleChecked, toggleVisibleSelection, openMenu,
         revealService, openServiceURL, runPackageScript, stopPackageScript, refreshAppState,
         restartService, confirmClearNextCache, clearSelectedLogs, downloadSelectedLogs, confirmDelete,
     };

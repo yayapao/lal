@@ -10,7 +10,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"slices"
 	"strings"
 	"syscall"
 	"time"
@@ -151,11 +150,6 @@ func validateService(service Service) error {
 	if cleanCommand := strings.TrimSpace(service.CleanCommand); len(cleanCommand) > maxCleanCommandLength {
 		return fmt.Errorf("缓存清理脚本不能超过 %d 个字符", maxCleanCommandLength)
 	}
-	for _, promptFile := range service.PromptFiles {
-		if len(strings.TrimSpace(promptFile)) > maxPromptFileLength {
-			return fmt.Errorf("Prompt 文件路径不能超过 %d 个字符", maxPromptFileLength)
-		}
-	}
 	if service.URL != "" {
 		parsed, err := url.Parse(service.URL)
 		if err != nil || (parsed.Scheme != "http" && parsed.Scheme != "https") || parsed.Hostname() == "" {
@@ -180,7 +174,7 @@ func uniqueIDs(ids []string) []string {
 
 func serviceEqual(left, right Service) bool {
 	return left.ID == right.ID && left.Name == right.Name && left.Module == right.Module && left.Workspace == right.Workspace && left.Directory == right.Directory && left.Command == right.Command &&
-		left.ReleaseCommand == right.ReleaseCommand && left.LaunchMode == right.LaunchMode && left.URL == right.URL && left.CleanCommand == right.CleanCommand && left.PromptFile == right.PromptFile && slices.Equal(left.PromptFiles, right.PromptFiles)
+		left.BuildCommand == right.BuildCommand && left.BuildBeforeLaunch == right.BuildBeforeLaunch && left.ReleaseCommand == right.ReleaseCommand && left.LaunchMode == right.LaunchMode && left.URL == right.URL && left.CleanCommand == right.CleanCommand
 }
 
 func normalizeModule(value string) string {

@@ -147,7 +147,7 @@
 .game-usage { flex: 0 0 auto; color: #79e5ae; white-space: nowrap; }
 .game-error { overflow: hidden; font-size: 9px; line-height: 15px; text-overflow: ellipsis; white-space: nowrap; }
 
-.game-actions { display: grid; grid-template-columns: 1.08fr 1fr 1fr; gap: 4px; align-self: end; }
+.game-actions { display: grid; grid-template-columns: 1.4fr .8fr 1fr 1fr; gap: 4px; align-self: end; }
 .game-launch-row { display: flex; align-items: center; gap: 9px; margin: 3px 0; }
 .game-mode-switch { display: inline-flex; gap: 2px; padding: 2px; border: 1px solid #44515b; border-radius: 7px; background: #11191f; }
 .game-mode-switch button { min-width: 51px; height: 24px; padding: 0 10px; border: 0; border-radius: 4px; color: #9eabb5; background: transparent; font: inherit; font-size: 10px; cursor: pointer; }
@@ -160,6 +160,11 @@
 .game-action { display: flex; align-items: center; justify-content: center; gap: 4px; height: 28px; padding: 0 5px; border: 1px solid rgba(255, 255, 255, .16); border-radius: 8px; color: #d9e1e3; background: rgba(13, 19, 24, .58); font: inherit; font-size: 9px; font-weight: 650; cursor: pointer; transition: color 140ms ease, border-color 140ms ease, background-color 140ms ease, transform 140ms cubic-bezier(.2, .78, .26, 1); }
 .game-action:hover:not(:disabled) { border-color: #8c9ba2; color: #fff; background: rgba(55, 69, 77, .76); transform: translateY(-1px); }
 .game-action:active:not(:disabled) { transform: translateY(1px); }
+.game-action.build { color: #f2c66d; border-color: #76613e; }
+.status-label.state-building, .status-label.state-built { color: #f2c66d; }
+.state-building .status-dot { background: #f2c66d; }
+.form-fields .game-build-option { display: flex; flex-direction: row; align-items: center; gap: 9px; }
+.game-build-option input { width: 15px; height: 15px; accent-color: #86e4b4; }
 .game-action.start { border-color: var(--game-accent); color: var(--game-ink); background: var(--game-accent); box-shadow: 0 3px 10px var(--game-glow); }
 .game-action.start:hover:not(:disabled) { border-color: #fff; color: var(--game-ink); background: var(--game-accent); filter: brightness(1.08); }
 .game-action.stop { border-color: #ff6f7f; color: #fff; background: #d93d51; box-shadow: 0 3px 10px rgba(238, 53, 76, .2); }

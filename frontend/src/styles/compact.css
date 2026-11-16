@@ -19,10 +19,10 @@
 .pane-heading-actions { gap: 4px; }
 .workspace-manager-button { color: var(--muted); font-size: 10px; }
 .selection-checkbox { background: transparent; border-color: #71717b; border-radius: 3px; width: 13px; height: 13px; flex-basis: 13px; }
-.log-heading, .prompt-heading, .git-heading { background: var(--titlebar); min-height: 46px; }
+.log-heading, .git-heading { background: var(--titlebar); min-height: 46px; }
 .logs-pane .log-heading { flex-basis: 46px; }
-.prompt-pane, .git-pane { grid-template-rows: 46px minmax(0, 1fr) 28px; }
-.console-footer, .git-footer, .prompt-footer { background: var(--panel); color: var(--muted); font-size: 10px; }
+.git-pane { grid-template-rows: 46px minmax(0, 1fr) 28px; }
+.console-footer, .git-footer { background: var(--panel); color: var(--muted); font-size: 10px; }
 .git-overview, .resource-monitor, .package-panel, .script-preview { background: var(--panel-raised); }
 .log-git-summary { background: var(--panel); }
 .log-lines { background: var(--console); }
@@ -60,7 +60,7 @@
     .titlebar-search kbd { display: none; }
     .workspace { grid-template-columns: minmax(0, 1fr); }
     .services-pane { height: 480px; border-right: 0; border-bottom: 1px solid var(--line); }
-    .network-pane, .logs-pane, .prompt-pane, .git-pane { min-height: 640px; }
+    .network-pane, .logs-pane, .git-pane { min-height: 640px; }
     .network-pane { height: 700px; }
 }
 @media (prefers-reduced-motion: reduce) {

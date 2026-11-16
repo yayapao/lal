@@ -15,17 +15,19 @@ type ProjectScript struct {
 }
 
 type ProjectDetection struct {
-	Directory      string          `json:"directory"`
-	Name           string          `json:"name"`
-	Workspace      string          `json:"workspace"`
-	ProjectType    string          `json:"projectType"`
-	Command        string          `json:"command"`
-	ReleaseCommand string          `json:"releaseCommand"`
-	URL            string          `json:"url"`
-	CleanCommand   string          `json:"cleanCommand"`
-	Scripts        []ProjectScript `json:"scripts"`
-	Sources        []string        `json:"sources"`
-	Warnings       []string        `json:"warnings"`
+	Directory         string          `json:"directory"`
+	Name              string          `json:"name"`
+	Workspace         string          `json:"workspace"`
+	ProjectType       string          `json:"projectType"`
+	Command           string          `json:"command"`
+	BuildCommand      string          `json:"buildCommand"`
+	BuildBeforeLaunch bool            `json:"buildBeforeLaunch"`
+	ReleaseCommand    string          `json:"releaseCommand"`
+	URL               string          `json:"url"`
+	CleanCommand      string          `json:"cleanCommand"`
+	Scripts           []ProjectScript `json:"scripts"`
+	Sources           []string        `json:"sources"`
+	Warnings          []string        `json:"warnings"`
 }
 
 // DetectProject reads project metadata without running scripts or config files.
@@ -55,6 +57,7 @@ func (m *serviceManager) DetectProject(directory string) (ProjectDetection, erro
 	manifestURL, manifestFound, manifestWarning := detectManifestURL(directory)
 	if gameResult, ok := detectStandaloneGameProject(directory); ok {
 		gameResult.ReleaseCommand = detectedReleaseCommand(directory)
+		gameResult.BuildCommand, gameResult.BuildBeforeLaunch = detectedGameBuild(directory)
 		if manifestURL != "" {
 			gameResult.URL = manifestURL
 		}
@@ -93,6 +96,8 @@ func (m *serviceManager) DetectProject(directory string) (ProjectDetection, erro
 	} else if isFile(filepath.Join(directory, "package.json")) {
 		result.Warnings = append(result.Warnings, "package.json 无法解析，请手动填写启动命令。")
 	}
+	result.ReleaseCommand = detectedReleaseCommand(directory)
+	result.BuildCommand, result.BuildBeforeLaunch = detectedGameBuild(directory)
 	if manifestURL != "" {
 		result.URL = manifestURL
 	}

@@ -95,7 +95,19 @@ fi
 
 mkdir -p "$INSTALL_DIR"
 log "installing to $INSTALL_APP"
-/usr/bin/ditto --rsrc --extattr --acl "$BUILD_APP" "$INSTALL_APP"
+INSTALL_STAGE="$(mktemp -d "$INSTALL_DIR/.lal-install.XXXXXX")"
+trap 'rm -rf -- "$INSTALL_STAGE"' EXIT
+/usr/bin/ditto --rsrc --extattr --acl "$BUILD_APP" "$INSTALL_STAGE/$APP_NAME.app"
+codesign --verify --deep --strict "$INSTALL_STAGE/$APP_NAME.app"
+if [[ -e "$INSTALL_APP" ]]; then
+  mv -- "$INSTALL_APP" "$INSTALL_STAGE/previous.app"
+fi
+if ! mv -- "$INSTALL_STAGE/$APP_NAME.app" "$INSTALL_APP"; then
+  [[ ! -e "$INSTALL_STAGE/previous.app" ]] || mv -- "$INSTALL_STAGE/previous.app" "$INSTALL_APP"
+  fail "could not replace installed application"
+fi
+rm -rf -- "$INSTALL_STAGE"
+trap - EXIT
 # Refresh the bundle directory timestamp so NSWorkspace/Raycast notices a new
 # icon even when the installation path stays the same.
 touch "$INSTALL_APP"

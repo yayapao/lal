@@ -191,7 +191,10 @@ func (m *serviceManager) restoreRunningState(id string, process *processState, s
 	m.mu.Lock()
 	if current, ok := m.processes[id]; ok && current == process {
 		process.stopping = false
-		m.lastStatus[id] = "running"
+		m.lastStatus[id] = process.phase
+		if m.lastStatus[id] == "" {
+			m.lastStatus[id] = "running"
+		}
 		m.lastError[id] = fmt.Sprintf("停止失败：%v", stopErr)
 	}
 	m.mu.Unlock()
@@ -211,7 +214,11 @@ func (m *serviceManager) finalizeStoppedProcess(id string, process *processState
 	m.health[id] = "stopped"
 	m.healthInfo[id] = ""
 	m.mu.Unlock()
-	m.appendLog(id, "system", "服务已停止")
+	if process.phase == "building" {
+		m.appendLog(id, "system", "构建已取消")
+	} else {
+		m.appendLog(id, "system", "服务已停止")
+	}
 	m.emitState(id)
 }
 

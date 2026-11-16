@@ -19,7 +19,6 @@ beforeEach(() => {
     api.GetAppState.mockResolvedValue({services: [alphaService, game], workspaces: [], configPath: '/tmp/lal.json', warning: ''});
     api.GetLogs.mockResolvedValue([]);
     api.GetResourceUsage.mockResolvedValue([]);
-    api.OpenServiceInVSCode.mockResolvedValue(undefined);
     api.RevealService.mockResolvedValue(undefined);
     api.ChooseDirectory.mockResolvedValue('/tmp/amg');
     api.DetectProject.mockResolvedValue({
@@ -31,15 +30,18 @@ beforeEach(() => {
 
 afterEach(cleanup);
 
-it('shows games separately and opens the project in VS Code or Finder', async () => {
+it('shows games separately and reveals the project in Finder', async () => {
     const user = userEvent.setup();
     render(<App/>);
     await user.click(await screen.findByRole('tab', {name: '游戏'}));
 
     expect(await screen.findByRole('heading', {name: 'Anti-Magic Gem'})).toBeDefined();
     expect(screen.queryByText('Alpha')).toBeNull();
-    await user.click(screen.getByRole('button', {name: '在 VS Code 中打开 Anti-Magic Gem'}));
-    await waitFor(() => expect(api.OpenServiceInVSCode).toHaveBeenCalledWith('amg'));
+    await user.click(screen.getByRole('button', {name: 'Anti-Magic Gem 更多操作'}));
+    expect(screen.getAllByRole('menuitem').map(item => item.textContent)).toEqual([
+        '编辑配置', '重启游戏', '执行缓存清理', '在 Finder 中显示', '移除游戏',
+    ]);
+    await user.click(screen.getByRole('button', {name: '关闭菜单'}));
     await user.click(screen.getByRole('button', {name: '在 Finder 中显示 Anti-Magic Gem'}));
     await waitFor(() => expect(api.RevealService).toHaveBeenCalledWith('amg'));
 });
@@ -97,4 +99,46 @@ it('opens configuration when the Release command is missing', async () => {
     await user.click(within(dialog).getByRole('button', {name: '保存'}));
     expect(api.UpdateService).toHaveBeenCalledWith('amg', expect.objectContaining({releaseCommand: 'dist/Game', launchMode: 'release'}));
     expect(api.StartService).not.toHaveBeenCalled();
+});
+
+it('builds without launching and labels formal startup with its build step', async () => {
+    const user = userEvent.setup();
+    const configured = {...game, launchMode: 'release', releaseCommand: 'dist/Game', buildCommand: 'make export', buildBeforeLaunch: true};
+    api.GetAppState.mockResolvedValue({services: [configured], workspaces: [], warning: ''});
+    render(<App/>);
+    await user.click(await screen.findByRole('tab', {name: '游戏'}));
+    expect(await screen.findByRole('button', {name: '构建并启动 Anti-Magic Gem'})).toBeDefined();
+    await user.click(screen.getByRole('button', {name: '构建 Anti-Magic Gem'}));
+    expect(api.BuildGame).toHaveBeenCalledWith('amg');
+    expect(api.StartService).not.toHaveBeenCalled();
+});
+
+it('allows cancelling a build and blocks duplicate builds and mode switches', async () => {
+    const user = userEvent.setup();
+    api.GetAppState.mockResolvedValue({services: [{...game, status: 'building', buildCommand: 'make export'}], workspaces: [], warning: ''});
+    render(<App/>);
+    await user.click(await screen.findByRole('tab', {name: '游戏'}));
+    expect((await screen.findAllByText('构建中')).length).toBeGreaterThan(0);
+    expect((screen.getByRole('button', {name: '构建 Anti-Magic Gem'}) as HTMLButtonElement).disabled).toBe(true);
+    for (const button of within(screen.getByRole('group', {name: 'Anti-Magic Gem 启动模式'})).getAllByRole('button')) {
+        expect((button as HTMLButtonElement).disabled).toBe(true);
+    }
+    await user.click(screen.getByRole('button', {name: '取消构建 Anti-Magic Gem'}));
+    expect(api.StopService).toHaveBeenCalledWith('amg');
+    expect(api.StartService).not.toHaveBeenCalled();
+});
+
+it('opens build configuration and saves the build command and startup choice', async () => {
+    const user = userEvent.setup();
+    render(<App/>);
+    await user.click(await screen.findByRole('tab', {name: '游戏'}));
+    await user.click(screen.getByRole('button', {name: '构建 Anti-Magic Gem'}));
+    const dialog = screen.getByRole('dialog', {name: '编辑游戏'});
+    await user.type(within(dialog).getByRole('textbox', {name: '构建并导出命令'}), 'make export');
+    const checkbox = within(dialog).getByRole('checkbox', {name: '正式启动前构建并导出'}) as HTMLInputElement;
+    expect(checkbox.checked).toBe(true);
+    await user.click(checkbox);
+    await user.click(within(dialog).getByRole('button', {name: '保存'}));
+    expect(api.UpdateService).toHaveBeenCalledWith('amg', expect.objectContaining({buildCommand: 'make export', buildBeforeLaunch: false}));
+    expect(api.BuildGame).not.toHaveBeenCalled();
 });

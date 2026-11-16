@@ -24,8 +24,8 @@ As projects multiply, their folders, terminals, ports and startup commands becom
 | Games | Detect Godot, Unity and Phaser / Web projects; configure launch, preview and cache cleanup |
 | Workspaces | Group projects by product or workflow, search, collapse groups and move projects in bulk |
 | Diagnostics | Inspect live logs, CPU / memory trends, PID, uptime and port ownership; export logs |
-| Development context | Inspect Git branches, changes and conflicts; edit repository-local Git configuration; open VS Code / Finder |
-| Prompts and tasks | Read project Markdown prompts, copy or paste them into Codex without sending, and run `package.json` scripts |
+| Development context | Inspect Git branches, changes and conflicts; edit repository-local Git configuration; reveal project directories in Finder |
+| Project tasks | Inspect and run `package.json` scripts |
 
 ![LAL game library with demo projects and data](assets/readme/games.jpg)
 

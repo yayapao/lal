@@ -160,6 +160,9 @@ describe('selected service actions', () => {
         render(<App/>);
 
         await user.click(await screen.findByRole('button', {name: 'Alpha 更多操作'}));
+        expect(screen.getAllByRole('menuitem').map(item => item.textContent)).toEqual([
+            '编辑配置', '重启服务', '执行缓存清理', '在 Finder 中显示', '移除服务',
+        ]);
         await user.click(screen.getByRole('menuitem', {name: '重启服务'}));
 
         await waitFor(() => expect(api.RestartService).toHaveBeenCalledWith('alpha'));
