@@ -10,10 +10,11 @@ import (
 const lalManifestFilename = ".lal.json"
 
 type lalProjectManifest struct {
-	URL               string `json:"url"`
-	ReleaseCommand    string `json:"releaseCommand"`
-	BuildCommand      string `json:"buildCommand"`
-	BuildBeforeLaunch *bool  `json:"buildBeforeLaunch"`
+	URL               string         `json:"url"`
+	ReleaseCommand    string         `json:"releaseCommand"`
+	BuildCommand      string         `json:"buildCommand"`
+	BuildProfiles     []BuildProfile `json:"buildProfiles"`
+	BuildBeforeLaunch *bool          `json:"buildBeforeLaunch"`
 }
 
 // detectManifestURL reads an optional project-owned URL declaration. This file

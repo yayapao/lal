@@ -1,0 +1,13 @@
+.build-profiles-editor { display: grid; gap: 10px; min-width: 0; padding-top: 6px; }
+.build-profiles-heading, .build-profile-name { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.build-profiles-heading > span { font-size: 12px; font-weight: 600; }
+.build-profiles-heading small { margin-left: 5px; color: var(--muted); font-size: 10px; font-weight: 400; }
+.build-profiles-editor .button { width: fit-content; font-size: 11px; }
+.build-profile-fields { display: grid; gap: 8px; padding: 12px; border: 1px solid var(--line); border-radius: 8px; background: rgba(0, 0, 0, .12); }
+.build-profile-name label { flex: 1; min-width: 0; }
+.build-profile-name > button { flex: 0 0 auto; margin-top: 18px; }
+.build-profile-fields textarea { width: 100%; min-height: 54px; resize: vertical; }
+.game-build-menu { width: 260px; max-width: calc(100vw - 16px); max-height: min(320px, calc(100vh - 16px)); overflow-y: auto; }
+.game-build-menu button { min-height: 38px; }
+.game-build-menu button span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.game-build-menu button:focus-visible { outline: 1px solid #f2c66d; outline-offset: -2px; background: rgba(242, 198, 109, .1); }

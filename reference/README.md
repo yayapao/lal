@@ -19,11 +19,17 @@
   "url": "http://localhost:18040/index.html",
   "releaseCommand": "'dist/macos/Game.app/Contents/MacOS/Game'",
   "buildCommand": "python3 -u tools/build_release.py",
-  "buildBeforeLaunch": true
+  "buildBeforeLaunch": true,
+  "buildProfiles": [
+    {"id": "mac-zh", "name": "Mac · 中文", "command": "python3 -u tools/build.py --platform macos --lang zh --archive"},
+    {"id": "web-en", "name": "Web · English", "command": "python3 -u tools/build.py --platform web --lang en --archive"}
+  ]
 }
 ```
 
 “构建”按钮只执行构建并导出；勾选“正式启动前构建并导出”后，正式启动先执行构建，退出码为 0 才启动正式包。构建失败或取消时不启动旧包，Debug 直接运行源码。构建期间显示实时日志，可取消；需先停止游戏才能单独构建。构建是否复用未变化的产物由项目脚本决定。
+
+配置 `buildProfiles` 后，卡片的“构建”打开方案菜单，点击名称立即打包；这不会修改正式启动命令。编辑游戏可添加、改名、删除方案，或点击“从项目读取”只导入 `.lal.json` 中的方案。最多16项，每项 ID 与名称分别唯一，名称最多80字符、命令最多2000字节；同一游戏串行执行。卡片与日志显示当前方案及实际命令。不配置方案时保留单条构建按钮。配置版本8首次升级时会导入项目中的有效方案，并保留已保存的启动命令。
 
 首次添加项目时读取 `.lal.json` 并填入配置，确认保存后以 LAL 中的配置为准；编辑游戏可修改命令与启动前构建开关。声明构建命令而省略 `buildBeforeLaunch` 时默认开启。项目检测仅解析数据，不执行命令；命令只在用户点击构建或启动后执行。
 

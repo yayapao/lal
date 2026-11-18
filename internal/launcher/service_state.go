@@ -83,6 +83,9 @@ func (m *serviceManager) serviceViewLocked(service Service) ServiceView {
 		view.Status = "stopped"
 	}
 	if process, ok := m.processes[service.ID]; ok {
+		if process.phase == "building" {
+			view.ActiveBuildName, view.ActiveBuildCommand = process.buildName, process.command
+		}
 		view.PID = process.cmd.Process.Pid
 		view.StartedAt = process.startedAt.Format(time.RFC3339)
 		view.Health = m.health[service.ID]

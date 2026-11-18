@@ -21,6 +21,7 @@ type ProjectDetection struct {
 	ProjectType       string          `json:"projectType"`
 	Command           string          `json:"command"`
 	BuildCommand      string          `json:"buildCommand"`
+	BuildProfiles     []BuildProfile  `json:"buildProfiles"`
 	BuildBeforeLaunch bool            `json:"buildBeforeLaunch"`
 	ReleaseCommand    string          `json:"releaseCommand"`
 	URL               string          `json:"url"`
@@ -58,6 +59,7 @@ func (m *serviceManager) DetectProject(directory string) (ProjectDetection, erro
 	if gameResult, ok := detectStandaloneGameProject(directory); ok {
 		gameResult.ReleaseCommand = detectedReleaseCommand(directory)
 		gameResult.BuildCommand, gameResult.BuildBeforeLaunch = detectedGameBuild(directory)
+		applyDetectedBuildProfiles(&gameResult)
 		if manifestURL != "" {
 			gameResult.URL = manifestURL
 		}
@@ -98,6 +100,7 @@ func (m *serviceManager) DetectProject(directory string) (ProjectDetection, erro
 	}
 	result.ReleaseCommand = detectedReleaseCommand(directory)
 	result.BuildCommand, result.BuildBeforeLaunch = detectedGameBuild(directory)
+	applyDetectedBuildProfiles(&result)
 	if manifestURL != "" {
 		result.URL = manifestURL
 	}

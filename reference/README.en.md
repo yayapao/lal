@@ -19,11 +19,17 @@ Games can also declare Release launch and build/export commands:
   "url": "http://localhost:18040/index.html",
   "releaseCommand": "'dist/macos/Game.app/Contents/MacOS/Game'",
   "buildCommand": "python3 -u tools/build_release.py",
-  "buildBeforeLaunch": true
+  "buildBeforeLaunch": true,
+  "buildProfiles": [
+    {"id": "mac-zh", "name": "Mac · 中文", "command": "python3 -u tools/build.py --platform macos --lang zh --archive"},
+    {"id": "web-en", "name": "Web · English", "command": "python3 -u tools/build.py --platform web --lang en --archive"}
+  ]
 }
 ```
 
 The Build button builds and exports without launching. With build-before-launch enabled, Release startup runs the build first and launches only after exit code 0. Failure or cancellation never launches the previous artifact. Debug runs source directly. Builds stream logs and can be cancelled; stop a running game before building separately. Project scripts decide whether unchanged artifacts can be reused.
+
+With `buildProfiles` configured, Build opens a menu of named export commands; selecting one runs it immediately without changing Release startup. Edit a game to add, rename or remove profiles, or use “从项目读取” to read only the profiles from `.lal.json`. A game supports up to 16 profiles, each with a unique ID and name and a command of up to 2,000 bytes. Builds for one game run one at a time. The active profile and actual command appear on the card and in logs. Existing configurations without profiles keep the single Build action. On the first upgrade from configuration version 8, valid project profiles are imported while saved startup commands remain intact.
 
 When adding a project, LAL reads `.lal.json` into the form; saved LAL settings take precedence afterward. Edit the game to change commands or build-before-launch. Declaring a build command without `buildBeforeLaunch` defaults to enabled. Detection only parses data; commands run only after the user clicks Build or Start.
 

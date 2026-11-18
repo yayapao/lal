@@ -2,6 +2,7 @@ import {requestPortAction} from './usePortActions';
 import type {Dispatch, SetStateAction} from 'react';
 import {
     BuildGame,
+    BuildGameProfile,
     ClearLogs,
     ClearNextCache,
     DeleteService,
@@ -90,11 +91,16 @@ export function useServiceActions(context: ServiceActionContext) {
         }
     };
 
-    const buildGame = async (service: ServiceView) => {
-        if (!service.buildCommand?.trim()) { setDialog({mode: 'edit', service}); return; }
+    const buildGame = async (service: ServiceView, profileID?: string) => {
+        if (!profileID && !service.buildCommand?.trim()) { setDialog({mode: 'edit', service}); return; }
         context.onSelectService(service.id);
         setBusyIds(current => new Set(current).add(service.id));
-        try { await BuildGame(service.id); showToast(`${service.name} 开始构建并导出`); }
+        try {
+            if (profileID) await BuildGameProfile(service.id, profileID);
+            else await BuildGame(service.id);
+            const name = service.buildProfiles?.find(profile => profile.id === profileID)?.name;
+            showToast(`${service.name} 开始构建并导出${name ? ` · ${name}` : ''}`);
+        }
         catch (error) { showToast(errorMessage(error), 'error'); }
         finally {
             setBusyIds(current => { const next = new Set(current); next.delete(service.id); return next; });

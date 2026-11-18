@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"strings"
 	"syscall"
 	"time"
@@ -174,7 +175,7 @@ func uniqueIDs(ids []string) []string {
 
 func serviceEqual(left, right Service) bool {
 	return left.ID == right.ID && left.Name == right.Name && left.Module == right.Module && left.Workspace == right.Workspace && left.Directory == right.Directory && left.Command == right.Command &&
-		left.BuildCommand == right.BuildCommand && left.BuildBeforeLaunch == right.BuildBeforeLaunch && left.ReleaseCommand == right.ReleaseCommand && left.LaunchMode == right.LaunchMode && left.URL == right.URL && left.CleanCommand == right.CleanCommand
+		left.BuildCommand == right.BuildCommand && slices.Equal(left.BuildProfiles, right.BuildProfiles) && left.BuildBeforeLaunch == right.BuildBeforeLaunch && left.ReleaseCommand == right.ReleaseCommand && left.LaunchMode == right.LaunchMode && left.URL == right.URL && left.CleanCommand == right.CleanCommand
 }
 
 func normalizeModule(value string) string {

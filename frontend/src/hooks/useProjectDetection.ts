@@ -35,6 +35,7 @@ export function useProjectDetection(initial: ServiceForm, editing: boolean) {
                     }
                     if (!edited.current.has('releaseCommand')) next.releaseCommand = result.releaseCommand ?? '';
                     if (!edited.current.has('buildCommand')) next.buildCommand = result.buildCommand ?? '';
+                    if (!edited.current.has('buildProfiles')) next.buildProfiles = result.buildProfiles ?? [];
                     if (!edited.current.has('buildBeforeLaunch')) next.buildBeforeLaunch = result.buildBeforeLaunch ?? Boolean(next.buildCommand);
                     if (!edited.current.has('launchMode')) next.launchMode = next.releaseCommand ? 'release' : 'debug';
                     return next;
@@ -48,7 +49,7 @@ export function useProjectDetection(initial: ServiceForm, editing: boolean) {
         return () => { window.clearTimeout(timer); request.current++; };
     }, [form.directory, editing, initial.directory]);
 
-    const change = (field: keyof ServiceForm, value: string | boolean) => {
+    const change = <K extends keyof ServiceForm>(field: K, value: ServiceForm[K]) => {
         if (field === 'directory') {
             if (value === form.directory) return;
             projectChanged.current = true;
@@ -67,6 +68,7 @@ export function useProjectDetection(initial: ServiceForm, editing: boolean) {
                 }
                 if (!edited.current.has('releaseCommand')) next.releaseCommand = '';
                 if (!edited.current.has('buildCommand')) next.buildCommand = '';
+                if (!edited.current.has('buildProfiles')) next.buildProfiles = [];
                 if (!edited.current.has('buildBeforeLaunch')) next.buildBeforeLaunch = false;
                 if (!edited.current.has('launchMode')) next.launchMode = 'debug';
                 if (!edited.current.has('cleanCommand')) next.cleanCommand = defaultCleanCommand;

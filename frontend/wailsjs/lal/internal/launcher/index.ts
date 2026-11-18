@@ -4,6 +4,7 @@
 export {
     AppState,
     BatchResult,
+    BuildProfile,
     GitChange,
     GitConfigEdit,
     GitConfigEntry,

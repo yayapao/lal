@@ -21,6 +21,13 @@ export function BuildGame(id: string): $CancellablePromise<void> {
     return $Call.ByID(3751846905, id);
 }
 
+/**
+ * BuildGameProfile executes a saved profile without launching any artifact.
+ */
+export function BuildGameProfile(id: string, profileID: string): $CancellablePromise<void> {
+    return $Call.ByID(1682324458, id, profileID);
+}
+
 export function ChooseDirectory(current: string): $CancellablePromise<string> {
     return $Call.ByID(3924319963, current);
 }

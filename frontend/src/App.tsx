@@ -150,7 +150,7 @@ function App() {
                     footer={<NetworkSummary network={network} active={rightView === 'network'} onDetails={() => setRightView('network')} onError={networkError}/>}
                     onAdd={() => setDialog({mode: 'create', module: 'game'})} onRefresh={() => void serviceActions.refreshAppState()}
                     onSelect={id => { setSelectedId(id); setRightView('logs'); }} onToggle={game => void serviceActions.toggleService(game)}
-                    onBuild={game => void serviceActions.buildGame(game)} onModeChange={(game, mode) => void serviceActions.changeGameMode(game, mode)}
+                    onBuild={(game, profileID) => void serviceActions.buildGame(game, profileID)} onModeChange={(game, mode) => void serviceActions.changeGameMode(game, mode)}
                     onReveal={game => void serviceActions.revealService(game)}
                     onOpenURL={game => void serviceActions.openServiceURL(game)} onMenu={(event, game) => serviceActions.openMenu(event, game)}/>
                 : <ServicesPane loading={loading} query={query} total={activeServices.length} selectedId={selectedId}

@@ -2,6 +2,7 @@ import {vi} from 'vitest';
 
 export const api = {
     BuildGame: vi.fn().mockResolvedValue(undefined),
+    BuildGameProfile: vi.fn().mockResolvedValue(undefined),
     ChooseDirectory: vi.fn(),
     ClearNextCache: vi.fn(),
     ClearLogs: vi.fn(),

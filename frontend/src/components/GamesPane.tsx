@@ -9,7 +9,7 @@ export default function GamesPane({loading, query, total, games, selectedId, bus
     loading: boolean; query: string; total: number; games: ServiceView[]; selectedId: string; busyIds: Set<string>; refreshing: boolean;
     iconURLs: Record<string, string>; resourceUsage: Record<string, ResourceUsage>; footer: ReactNode;
     onAdd: () => void; onRefresh: () => void; onSelect: (id: string) => void; onToggle: (game: ServiceView) => void;
-    onBuild: (game: ServiceView) => void;
+    onBuild: (game: ServiceView, profileID?: string) => void;
     onModeChange: (game: ServiceView, mode: 'release' | 'debug') => void;
     onReveal: (game: ServiceView) => void; onOpenURL: (game: ServiceView) => void;
     onMenu: (event: React.MouseEvent<HTMLButtonElement>, game: ServiceView) => void;
@@ -27,7 +27,7 @@ export default function GamesPane({loading, query, total, games, selectedId, bus
                     {!query && <button className="button primary" type="button" onClick={onAdd}><Plus size={15}/>添加游戏</button>}</div>
                 : <div className="game-grid">{games.map((game, index) => <GameCard key={game.id} service={game} index={index}
                     selected={game.id === selectedId} busy={busyIds.has(game.id)} usage={resourceUsage[game.id]} iconURL={iconURLs[game.id]}
-                    onBuild={() => onBuild(game)} onModeChange={mode => onModeChange(game, mode)}
+                    onBuild={profileID => onBuild(game, profileID)} onModeChange={mode => onModeChange(game, mode)}
                     onSelect={() => onSelect(game.id)} onToggle={() => onToggle(game)}
                     onReveal={() => onReveal(game)} onOpenURL={() => onOpenURL(game)} onMenu={event => onMenu(event, game)}/>)}</div>}
         </div>

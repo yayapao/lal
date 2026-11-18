@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	configVersion         = 8
+	configVersion         = 9
 	maxLogEntries         = 1200
 	maxCommandLength      = 1000
 	maxCleanCommandLength = 2000
@@ -31,32 +31,34 @@ var ansiPattern = regexp.MustCompile(`\x1b(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])`)
 const shellCommandWrapper = `if [[ -r "$HOME/.zshrc" ]]; then source "$HOME/.zshrc"; fi; eval "$1"`
 
 type Service struct {
-	ID                string `json:"id"`
-	Name              string `json:"name"`
-	Module            string `json:"module,omitempty"`
-	Workspace         string `json:"workspace,omitempty"`
-	Directory         string `json:"directory"`
-	Command           string `json:"command"`
-	BuildCommand      string `json:"buildCommand,omitempty"`
-	BuildBeforeLaunch bool   `json:"buildBeforeLaunch,omitempty"`
-	ReleaseCommand    string `json:"releaseCommand,omitempty"`
-	LaunchMode        string `json:"launchMode,omitempty"`
-	URL               string `json:"url,omitempty"`
-	CleanCommand      string `json:"cleanCommand"`
+	ID                string         `json:"id"`
+	Name              string         `json:"name"`
+	Module            string         `json:"module,omitempty"`
+	Workspace         string         `json:"workspace,omitempty"`
+	Directory         string         `json:"directory"`
+	Command           string         `json:"command"`
+	BuildCommand      string         `json:"buildCommand,omitempty"`
+	BuildProfiles     []BuildProfile `json:"buildProfiles,omitempty"`
+	BuildBeforeLaunch bool           `json:"buildBeforeLaunch,omitempty"`
+	ReleaseCommand    string         `json:"releaseCommand,omitempty"`
+	LaunchMode        string         `json:"launchMode,omitempty"`
+	URL               string         `json:"url,omitempty"`
+	CleanCommand      string         `json:"cleanCommand"`
 }
 
 type ServiceInput struct {
-	Name              string `json:"name"`
-	Module            string `json:"module"`
-	Workspace         string `json:"workspace"`
-	Directory         string `json:"directory"`
-	Command           string `json:"command"`
-	BuildCommand      string `json:"buildCommand,omitempty"`
-	BuildBeforeLaunch bool   `json:"buildBeforeLaunch,omitempty"`
-	ReleaseCommand    string `json:"releaseCommand,omitempty"`
-	LaunchMode        string `json:"launchMode,omitempty"`
-	URL               string `json:"url"`
-	CleanCommand      string `json:"cleanCommand"`
+	Name              string         `json:"name"`
+	Module            string         `json:"module"`
+	Workspace         string         `json:"workspace"`
+	Directory         string         `json:"directory"`
+	Command           string         `json:"command"`
+	BuildCommand      string         `json:"buildCommand,omitempty"`
+	BuildProfiles     []BuildProfile `json:"buildProfiles,omitempty"`
+	BuildBeforeLaunch bool           `json:"buildBeforeLaunch,omitempty"`
+	ReleaseCommand    string         `json:"releaseCommand,omitempty"`
+	LaunchMode        string         `json:"launchMode,omitempty"`
+	URL               string         `json:"url"`
+	CleanCommand      string         `json:"cleanCommand"`
 }
 
 type ServiceView struct {
@@ -66,6 +68,8 @@ type ServiceView struct {
 	IconVersion         string       `json:"iconVersion,omitempty"`
 	ConfiguredWorkspace string       `json:"configuredWorkspace,omitempty"`
 	ActiveScript        string       `json:"activeScript,omitempty"`
+	ActiveBuildName     string       `json:"activeBuildName,omitempty"`
+	ActiveBuildCommand  string       `json:"activeBuildCommand,omitempty"`
 	ScriptStatus        string       `json:"scriptStatus,omitempty"`
 	ScriptStatusInfo    string       `json:"scriptStatusInfo,omitempty"`
 	ProjectType         string       `json:"projectType"`
@@ -131,6 +135,8 @@ type processState struct {
 	done      chan struct{}
 	stopping  bool
 	phase     string
+	buildName string
+	command   string
 }
 
 type orderedScripts struct {

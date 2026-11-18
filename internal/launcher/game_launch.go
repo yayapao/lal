@@ -21,7 +21,7 @@ func detectedReleaseCommand(directory string) string {
 
 func validateGameLaunch(service Service) error {
 	if service.Module != moduleGame {
-		if service.ReleaseCommand != "" || service.LaunchMode != "" || service.BuildCommand != "" || service.BuildBeforeLaunch {
+		if service.ReleaseCommand != "" || service.LaunchMode != "" || service.BuildCommand != "" || service.BuildBeforeLaunch || len(service.BuildProfiles) > 0 {
 			return fmt.Errorf("只有游戏支持正式 / Debug 启动配置")
 		}
 		return nil
@@ -37,6 +37,9 @@ func validateGameLaunch(service Service) error {
 	}
 	if service.BuildBeforeLaunch && strings.TrimSpace(service.BuildCommand) == "" {
 		return fmt.Errorf("正式启动前构建需要填写构建并导出命令")
+	}
+	if err := validateBuildProfiles(service.BuildProfiles); err != nil {
+		return err
 	}
 	_, err := launchCommand(service)
 	return err

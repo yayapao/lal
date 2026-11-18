@@ -7,14 +7,16 @@ import type {DialogState, ServiceForm, ServiceView} from '../types';
 import {errorMessage} from '../utils';
 import {useProjectDetection} from '../hooks/useProjectDetection';
 import '../styles/project-detection.css';
+import BuildProfilesEditor from './BuildProfilesEditor';
 
 export default function ServiceDialog({state, services, workspaces: catalog = [], onClose, onSaved}: {state: DialogState; services: ServiceView[]; workspaces?: string[]; onClose: () => void; onSaved: (service: ServiceView) => Promise<void>}) {
     const module = state.mode === 'edit' ? moduleOf(state.service) : state.module;
     const isGame = module === 'game';
     const noun = isGame ? '游戏' : '服务';
-    const [initial] = useState<ServiceForm>(() => state.mode === 'edit' ? {name: state.service.name, workspace: state.service.configuredWorkspace ?? '', directory: state.service.directory, command: state.service.command, releaseCommand: state.service.releaseCommand ?? '', buildCommand: state.service.buildCommand ?? '', buildBeforeLaunch: state.service.buildBeforeLaunch ?? false, launchMode: state.service.launchMode ?? 'debug', url: state.service.url ?? '', cleanCommand: state.service.cleanCommand ?? defaultCleanCommand} : {...emptyForm, command: ''});
+    const [initial] = useState<ServiceForm>(() => state.mode === 'edit' ? {name: state.service.name, workspace: state.service.configuredWorkspace ?? '', directory: state.service.directory, command: state.service.command, releaseCommand: state.service.releaseCommand ?? '', buildCommand: state.service.buildCommand ?? '', buildProfiles: state.service.buildProfiles ?? [], buildBeforeLaunch: state.service.buildBeforeLaunch ?? false, launchMode: state.service.launchMode ?? 'debug', url: state.service.url ?? '', cleanCommand: state.service.cleanCommand ?? defaultCleanCommand} : {...emptyForm, command: ''});
     const {form, detection, analyzing, detectionError, change, chooseScript} = useProjectDetection(initial, state.mode === 'edit');
     const [saving, setSaving] = useState(false);
+    const [readingProfiles, setReadingProfiles] = useState(false);
     const [browsing, setBrowsing] = useState(false);
     const [error, setError] = useState('');
     const firstInputRef = useRef<HTMLInputElement>(null);
@@ -36,9 +38,9 @@ export default function ServiceDialog({state, services, workspaces: catalog = []
 
     const submit = async (event: FormEvent) => {
         event.preventDefault();
-        if (saving || browsing || analyzing) return;
-        const normalized = {name: form.name.trim(), module, workspace: form.workspace.trim(), directory: detection?.directory ?? form.directory.trim(), command: form.command.trim(), ...(isGame ? {buildCommand: (form.buildCommand ?? '').trim(), buildBeforeLaunch: Boolean(form.buildCommand?.trim() && form.buildBeforeLaunch), releaseCommand: (form.releaseCommand ?? '').trim(), launchMode: form.launchMode ?? 'debug'} : {}), url: form.url.trim(), cleanCommand: form.cleanCommand.trim()};
-        if (state.mode === 'edit' && normalized.name === initial.name && normalized.workspace === initial.workspace && normalized.directory === initial.directory && normalized.buildCommand === (isGame ? initial.buildCommand : undefined) && normalized.buildBeforeLaunch === (isGame ? initial.buildBeforeLaunch : undefined) && (normalized.releaseCommand ?? '') === (initial.releaseCommand ?? '') && (normalized.launchMode ?? '') === (isGame ? initial.launchMode ?? 'debug' : '') && normalized.command === initial.command && normalized.url === initial.url && normalized.cleanCommand === initial.cleanCommand) { onClose(); return; }
+        if (saving || browsing || analyzing || readingProfiles) return;
+        const normalized = {name: form.name.trim(), module, workspace: form.workspace.trim(), directory: detection?.directory ?? form.directory.trim(), command: form.command.trim(), ...(isGame ? {buildCommand: (form.buildCommand ?? '').trim(), buildProfiles: (form.buildProfiles ?? []).map(profile => ({...profile, name: profile.name.trim(), command: profile.command.trim()})), buildBeforeLaunch: Boolean(form.buildCommand?.trim() && form.buildBeforeLaunch), releaseCommand: (form.releaseCommand ?? '').trim(), launchMode: form.launchMode ?? 'debug'} : {}), url: form.url.trim(), cleanCommand: form.cleanCommand.trim()};
+        if (state.mode === 'edit' && normalized.name === initial.name && normalized.workspace === initial.workspace && normalized.directory === initial.directory && JSON.stringify(normalized.buildProfiles ?? []) === JSON.stringify(initial.buildProfiles ?? []) && normalized.buildCommand === (isGame ? initial.buildCommand : undefined) && normalized.buildBeforeLaunch === (isGame ? initial.buildBeforeLaunch : undefined) && (normalized.releaseCommand ?? '') === (initial.releaseCommand ?? '') && (normalized.launchMode ?? '') === (isGame ? initial.launchMode ?? 'debug' : '') && normalized.command === initial.command && normalized.url === initial.url && normalized.cleanCommand === initial.cleanCommand) { onClose(); return; }
         setSaving(true); setError('');
         try {
             const service = state.mode === 'create' ? await CreateService(normalized) : await UpdateService(state.service.id, normalized);
@@ -69,8 +71,9 @@ export default function ServiceDialog({state, services, workspaces: catalog = []
                     <option value="">自定义命令</option>{detection?.scripts.map(script => <option key={script.name} value={script.command}>{script.name} · {script.preview}</option>)}
                 </select>}<input aria-label="启动命令" className="command-input" value={form.command} onChange={event => change('command', event.target.value)} required maxLength={1000} placeholder="npm run dev" spellCheck={false} disabled={saving}/></label>
                 {isGame && <label><span>正式版启动命令 <small>可选</small></span><input aria-label="正式版启动命令" className="command-input" value={form.releaseCommand ?? ''} onChange={event => change('releaseCommand', event.target.value)} maxLength={1000} placeholder="'dist/macos/Game.app/Contents/MacOS/Game'" spellCheck={false} disabled={saving}/><span className="field-hint">构建成功后运行此正式产物；未配置构建时直接启动已有版本。</span></label>}
-                {isGame && <label><span>构建并导出命令 <small>可选 · 在项目目录执行</small></span><textarea aria-label="构建并导出命令" className="command-input cache-command-input" value={form.buildCommand ?? ''} onChange={event => change('buildCommand', event.target.value)} maxLength={2000} rows={2} placeholder="例如 python3 tools/godot/build_macos.py" spellCheck={false} disabled={saving}/><span className="field-hint">填写完成检查、构建与正式包导出的完整命令；退出码 0 表示成功。</span></label>}
+                {isGame && <label><span>构建并导出命令 <small>可选 · 在项目目录执行</small></span><textarea aria-label="构建并导出命令" className="command-input cache-command-input" value={form.buildCommand ?? ''} onChange={event => change('buildCommand', event.target.value)} maxLength={2000} rows={2} placeholder="例如 python3 tools/godot/build_macos.py" spellCheck={false} disabled={saving}/><span className="field-hint">默认构建命令，也用于正式启动前构建；其他产物在下方添加打包方案。</span></label>}
                 {isGame && <label className="game-build-option"><input type="checkbox" checked={Boolean(form.buildBeforeLaunch)} onChange={event => change('buildBeforeLaunch', event.target.checked)} disabled={saving || !form.buildCommand?.trim()}/><span>正式启动前构建并导出</span></label>}
+                {isGame && <BuildProfilesEditor profiles={form.buildProfiles ?? []} directory={form.directory} disabled={saving} onChange={profiles => change('buildProfiles', profiles)} onReadingChange={setReadingProfiles}/>}
                 {isGame && <label><span>默认启动模式</span><select aria-label="默认启动模式" value={form.launchMode ?? 'debug'} onChange={event => change('launchMode', event.target.value)} disabled={saving}><option value="release" disabled={!form.releaseCommand?.trim()}>正式版</option><option value="debug">Debug</option></select></label>}
                 <label><span>{isGame ? '游戏预览地址' : '访问地址'} <small>可选</small></span><input className="command-input" value={form.url} onChange={event => change('url', event.target.value)} maxLength={500} inputMode="url" placeholder={isGame ? 'http://localhost:18040/index.html' : 'http://localhost:3900'} spellCheck={false} disabled={saving}/>
                     {detection && !form.url && <span className="field-hint">未解析到地址；可用项目根目录 .lal.json 的 url 字段声明，或手动填写。</span>}</label>
@@ -78,7 +81,7 @@ export default function ServiceDialog({state, services, workspaces: catalog = []
                 <label><span>{isGame ? '资源缓存清理' : '缓存清理脚本'} <small>在项目目录执行</small></span><textarea className="command-input cache-command-input" value={form.cleanCommand} onChange={event => change('cleanCommand', event.target.value)} required maxLength={2000} rows={2} placeholder={isGame ? 'rm -rf .godot' : 'rm -rf .next'} spellCheck={false} disabled={saving}/></label>
             </div>
             {error && <div className="form-error"><CircleAlert size={15}/><span>{error}</span></div>}
-            <div className="dialog-actions"><button className="button secondary" type="button" onClick={onClose} disabled={saving}>取消</button><button className="button primary" type="submit" disabled={saving || browsing || analyzing}>{saving && <LoaderCircle className="spin" size={16}/>} {state.mode === 'create' ? `添加${noun}` : '保存'}</button></div>
+            <div className="dialog-actions"><button className="button secondary" type="button" onClick={onClose} disabled={saving}>取消</button><button className="button primary" type="submit" disabled={saving || browsing || analyzing || readingProfiles}>{saving && <LoaderCircle className="spin" size={16}/>} {state.mode === 'create' ? `添加${noun}` : '保存'}</button></div>
         </form>
     </div>;
 }

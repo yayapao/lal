@@ -28,6 +28,10 @@ func (m *serviceManager) BuildGame(id string) error {
 }
 
 func (m *serviceManager) startManagedService(id string, buildOnly bool) error {
+	return m.startGameProcess(id, buildOnly, "")
+}
+
+func (m *serviceManager) startGameProcess(id string, buildOnly bool, profileID string) error {
 	m.mu.Lock()
 	service, ok := m.serviceByIDLocked(id)
 	if !ok {
@@ -48,13 +52,19 @@ func (m *serviceManager) startManagedService(id string, buildOnly bool) error {
 		}
 	}
 	building := buildOnly || (service.Module == moduleGame && service.LaunchMode == "release" && service.BuildBeforeLaunch)
-	command, err := launchCommand(service)
+	var command, buildName string
+	var err error
 	status := "running"
-	if buildOnly && (service.Module != moduleGame || strings.TrimSpace(service.BuildCommand) == "") {
-		err = fmt.Errorf("请先在游戏配置中填写构建并导出命令")
-	}
 	if building {
-		command, status = service.BuildCommand, "building"
+		command, buildName, err = gameBuildCommand(service, profileID)
+		status = "building"
+	}
+	if !buildOnly && err == nil {
+		launch, launchErr := launchCommand(service)
+		err = launchErr
+		if !building {
+			command = launch
+		}
 	}
 	if err == nil && !isDirectory(service.Directory) {
 		err = fmt.Errorf("项目目录不存在：%s", service.Directory)
@@ -69,6 +79,9 @@ func (m *serviceManager) startManagedService(id string, buildOnly bool) error {
 	}
 	m.logs[id] = nil
 	process, err := m.launchProcessLocked(service, command, status)
+	if err == nil {
+		process.buildName = buildName
+	}
 	m.mu.Unlock()
 	if err != nil {
 		m.failStart(id, err)
@@ -76,7 +89,7 @@ func (m *serviceManager) startManagedService(id string, buildOnly bool) error {
 	}
 	m.emitEvent("service:logs-cleared", map[string]string{"serviceId": id})
 	if building {
-		m.appendLog(id, "system", "开始构建并导出："+command)
+		m.appendLog(id, "system", "开始构建并导出 ["+buildName+"]："+command)
 		m.emitState(id)
 		go m.waitForGameBuild(service, process, !buildOnly)
 	} else {
@@ -106,7 +119,7 @@ func (m *serviceManager) launchProcessLocked(service Service, command, status st
 		stderr.Close()
 		return nil, fmt.Errorf("启动命令失败：%w", err)
 	}
-	process := &processState{cmd: cmd, startedAt: time.Now(), done: make(chan struct{}), phase: status}
+	process := &processState{cmd: cmd, startedAt: time.Now(), done: make(chan struct{}), phase: status, command: command}
 	m.processes[service.ID] = process
 	m.lastStatus[service.ID] = status
 	m.lastError[service.ID] = ""
@@ -136,6 +149,7 @@ func (m *serviceManager) waitForGameBuild(service Service, process *processState
 	if err != nil {
 		message = "构建并导出失败：" + exitMessage(err)
 	}
+	message = "[" + process.buildName + "] " + message
 	id := service.ID
 	m.mu.Lock()
 	if m.processes[id] != process || process.stopping {

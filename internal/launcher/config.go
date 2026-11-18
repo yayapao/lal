@@ -77,6 +77,11 @@ func (m *serviceManager) loadConfig() error {
 		if config.Version < 8 && service.Module == moduleGame {
 			service.BuildCommand, service.BuildBeforeLaunch = detectedGameBuild(service.Directory)
 		}
+		if config.Version < 9 && service.Module == moduleGame && len(service.BuildProfiles) == 0 {
+			if profiles, err := detectedBuildProfiles(service.Directory); err == nil {
+				service.BuildProfiles = profiles
+			}
+		}
 		service.Workspace = strings.TrimSpace(service.Workspace)
 		service.URL = normalizeAccessURL(service.URL)
 		if strings.TrimSpace(service.CleanCommand) == "" {
@@ -136,6 +141,7 @@ func (m *serviceManager) CreateService(input ServiceInput) (ServiceView, error) 
 		Command:           strings.TrimSpace(input.Command),
 		ReleaseCommand:    strings.TrimSpace(input.ReleaseCommand),
 		BuildCommand:      strings.TrimSpace(input.BuildCommand),
+		BuildProfiles:     normalizeBuildProfiles(input.BuildProfiles),
 		BuildBeforeLaunch: input.BuildBeforeLaunch,
 		LaunchMode:        strings.TrimSpace(input.LaunchMode),
 		URL:               normalizeAccessURL(input.URL),
@@ -172,6 +178,7 @@ func (m *serviceManager) UpdateService(id string, input ServiceInput) (ServiceVi
 		Command:           strings.TrimSpace(input.Command),
 		ReleaseCommand:    strings.TrimSpace(input.ReleaseCommand),
 		BuildCommand:      strings.TrimSpace(input.BuildCommand),
+		BuildProfiles:     normalizeBuildProfiles(input.BuildProfiles),
 		BuildBeforeLaunch: input.BuildBeforeLaunch,
 		LaunchMode:        strings.TrimSpace(input.LaunchMode),
 		URL:               normalizeAccessURL(input.URL),
