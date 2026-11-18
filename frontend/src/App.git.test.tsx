@@ -1,11 +1,8 @@
-import {cleanup, render, screen, waitFor, within} from '@testing-library/react';
+import {render, screen, waitFor, within} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import {afterEach, beforeEach, expect, it, vi} from 'vitest';
+import {beforeEach, expect, it} from 'vitest';
 import {alphaService, api} from './testApi';
 import App from './App';
-
-vi.mock('../wailsjs/lal/app', () => api);
-vi.mock('@wailsio/runtime', async importOriginal => ({...await importOriginal<typeof import('@wailsio/runtime')>(), Events: {On: vi.fn(() => () => undefined)}}));
 
 const status = {
     serviceId: 'alpha', directory: '/tmp/alpha', state: 'dirty', root: '/tmp/alpha', branch: 'feature/workspace', commit: 'abc1234',
@@ -23,14 +20,11 @@ const details = {
 };
 
 beforeEach(() => {
-    vi.clearAllMocks();
     api.GetAppState.mockResolvedValue({services: [alphaService], workspaces: [], configPath: '/tmp/lal.json', warning: ''});
-    api.GetLogs.mockResolvedValue([]);
-    api.GetResourceUsage.mockResolvedValue([]);
+
     api.GetGitStatuses.mockResolvedValue([status]);
     api.GetServiceGitDetails.mockResolvedValue(details);
 });
-afterEach(cleanup);
 
 it('opens repository changes from the list and shows searchable local configuration', async () => {
     const user = userEvent.setup();

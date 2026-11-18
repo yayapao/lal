@@ -108,17 +108,24 @@ export function useServiceActions(context: ServiceActionContext) {
         }
     };
 
-    const runBatch = async (action: 'start' | 'stop') => {
-        setBatchBusy(`all-${action}`);
+    const runBatchAction = async (action: 'start' | 'stop', selected: boolean) => {
+        const ids = checkedServices.map(service => service.id);
+        if (selected && ids.length === 0) return;
+        setBatchBusy(`${selected ? 'selected' : 'all'}-${action}`);
         try {
-            const result = action === 'start' ? await StartAll() : await StopAll();
+            const result = selected
+                ? await (action === 'start' ? StartServices(ids) : StopServices(ids))
+                : await (action === 'start' ? StartAll() : StopAll());
             const verb = action === 'start' ? '启动' : '停止';
+            const scope = selected ? '选中服务' : '服务';
             if ((result.errors ?? []).length > 0) {
-                setOperationIssue({title: `部分服务${verb}失败`, message: result.errors.join('\n\n')});
+                setOperationIssue({title: `部分${scope}${verb}失败`, message: result.errors.join('\n\n')});
             } else if (result.changed === 0) {
-                showToast(action === 'start' ? '所有服务都已在运行' : '当前没有运行中的服务');
+                showToast(selected
+                    ? action === 'start' ? '选中的服务都已在运行' : '选中的服务均未运行'
+                    : action === 'start' ? '所有服务都已在运行' : '当前没有运行中的服务');
             } else {
-                showToast(`已${verb} ${result.changed} 个服务`);
+                showToast(`已${verb} ${result.changed} 个${scope}`);
             }
         } catch (error) {
             showToast(errorMessage(error), 'error');
@@ -127,26 +134,8 @@ export function useServiceActions(context: ServiceActionContext) {
         }
     };
 
-    const runSelectedBatch = async (action: 'start' | 'stop') => {
-        const ids = checkedServices.map(service => service.id);
-        if (ids.length === 0) return;
-        setBatchBusy(`selected-${action}`);
-        try {
-            const result = action === 'start' ? await StartServices(ids) : await StopServices(ids);
-            const verb = action === 'start' ? '启动' : '停止';
-            if ((result.errors ?? []).length > 0) {
-                setOperationIssue({title: `部分选中服务${verb}失败`, message: result.errors.join('\n\n')});
-            } else if (result.changed === 0) {
-                showToast(action === 'start' ? '选中的服务都已在运行' : '选中的服务均未运行');
-            } else {
-                showToast(`已${verb} ${result.changed} 个选中服务`);
-            }
-        } catch (error) {
-            showToast(errorMessage(error), 'error');
-        } finally {
-            setBatchBusy(null); await refreshState();
-        }
-    };
+    const runBatch = (action: 'start' | 'stop') => runBatchAction(action, false);
+    const runSelectedBatch = (action: 'start' | 'stop') => runBatchAction(action, true);
 
     const toggleChecked = (id: string) => {
         setCheckedIds(current => {

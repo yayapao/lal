@@ -85,13 +85,6 @@
     font-variant-numeric: tabular-nums;
 }
 
-.summary-separator {
-    width: 1px;
-    height: 13px;
-    margin: 0 1px;
-    background: var(--line-strong);
-}
-
 .search-field {
     display: flex;
     align-items: center;
@@ -227,13 +220,6 @@
     transition: color 120ms ease, background-color 120ms ease, transform 80ms ease;
 }
 
-.add-button {
-    border: 1px solid #465158;
-    color: var(--accent);
-    background: #171c1f;
-}
-
-.add-button:hover { background: #20272b; }
 .icon-button.subtle { color: var(--muted); }
 
 .icon-button.subtle:hover:not(:disabled),

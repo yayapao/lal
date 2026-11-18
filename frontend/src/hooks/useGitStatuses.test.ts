@@ -1,18 +1,13 @@
-import {act, cleanup, renderHook, waitFor} from '@testing-library/react';
-import {afterEach, beforeEach, expect, it, vi} from 'vitest';
+import {act, renderHook, waitFor} from '@testing-library/react';
+import {expect, it, vi} from 'vitest';
 import * as main from '../../wailsjs/lal/internal/launcher/models';
 import {alphaService, api} from '../testApi';
 import {useGitStatuses} from './useGitStatuses';
 import {useGitDetails} from './useGitDetails';
 
-vi.mock('../../wailsjs/lal/app', () => api);
-
 const service = (directory = '/tmp/alpha') => main.ServiceView.createFrom({...alphaService, directory});
 const status = (directory = '/tmp/alpha', state = 'clean') => main.GitStatus.createFrom({serviceId: 'alpha', directory, state, branch: 'main'});
 const details = (directory: string) => main.GitDetails.createFrom({status: status(directory), files: [], config: []});
-
-beforeEach(() => { vi.clearAllMocks(); });
-afterEach(() => { cleanup(); vi.useRealTimers(); });
 
 it('does not probe again for service runtime updates and ignores obsolete directory results', async () => {
     let resolveOld!: (statuses: main.GitStatus[]) => void;

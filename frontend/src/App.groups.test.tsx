@@ -1,19 +1,8 @@
-import {cleanup, render, screen, waitFor, within} from '@testing-library/react';
+import {render, screen, waitFor, within} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import {afterEach, beforeEach, expect, it, vi} from 'vitest';
+import {expect, it} from 'vitest';
 import {alphaService, api} from './testApi';
 import App from './App';
-
-vi.mock('../wailsjs/lal/app', () => api);
-vi.mock('@wailsio/runtime', async importOriginal => ({...await importOriginal<typeof import('@wailsio/runtime')>(), Events: {On: vi.fn(() => () => undefined)}}));
-
-beforeEach(() => {
-    vi.resetAllMocks();
-    vi.stubGlobal('localStorage', {getItem: () => null, setItem: vi.fn()});
-    api.GetLogs.mockResolvedValue([]);
-    api.GetResourceUsage.mockResolvedValue([]);
-});
-afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
 
 it('folds groups independently and retains their summary, selection, and state across refresh and search', async () => {
     const user = userEvent.setup();

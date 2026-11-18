@@ -1,18 +1,13 @@
-import {cleanup, renderHook, waitFor} from '@testing-library/react';
-import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
+import {renderHook, waitFor} from '@testing-library/react';
+import {describe, expect, it} from 'vitest';
 import * as main from '../../wailsjs/lal/internal/launcher/models';
 import {alphaService, api} from '../testApi';
 import {useServiceIcons} from './useServiceIcons';
-
-vi.mock('../../wailsjs/lal/app', () => api);
 
 describe('service icon cache', () => {
     const service = (updates: Partial<main.ServiceView> = {}) => main.ServiceView.createFrom({
         ...alphaService, iconPath: '/tmp/alpha/public/logo.png', iconVersion: 'v1', ...updates,
     });
-
-    beforeEach(() => vi.resetAllMocks());
-    afterEach(cleanup);
 
     it('keeps unchanged icons cached and reloads when the file version changes', async () => {
         api.GetServiceIcon.mockResolvedValueOnce('old').mockResolvedValue('new');

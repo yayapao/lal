@@ -1,7 +1,7 @@
-import {cleanup, fireEvent, render, screen, within} from '@testing-library/react';
+import {fireEvent, render, screen, within} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {useState} from 'react';
-import {afterEach, beforeEach, expect, it, vi} from 'vitest';
+import {expect, it, vi} from 'vitest';
 import * as main from '../wailsjs/lal/internal/launcher/models';
 import {alphaService} from './testApi';
 import type {WorkspaceDraft} from './types';
@@ -18,8 +18,6 @@ function Harness({saving = false, error = ''}: {saving?: boolean; error?: string
     const [draft, setDraft] = useState<WorkspaceDraft>({workspaces: ['Studio', 'Star'], assignments: {alpha: 'Studio', beta: '', gamma: 'Star'}});
     return <WorkspaceManagerDialog services={projects} draft={draft} saving={saving} error={error} onChange={setDraft} onClose={onClose} onSave={() => onSave(draft)}/>;
 }
-beforeEach(() => { vi.clearAllMocks(); });
-afterEach(cleanup);
 
 it('shows only the selected workspace members without icons or per-project text fields', () => {
     const {container} = render(<Harness/>);

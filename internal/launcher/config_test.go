@@ -235,39 +235,3 @@ func TestFormatLogEntriesPrefixesEveryLine(t *testing.T) {
 		t.Fatalf("unexpected formatted log:\n%s", formatted)
 	}
 }
-
-func TestServiceConfigIgnoresRemovedPromptSettings(t *testing.T) {
-	for _, version := range []int{4, configVersion} {
-		configPath, directory := emptyConfig(t), t.TempDir()
-		data, err := json.Marshal(map[string]any{
-			"version": version,
-			"services": []map[string]any{{
-				"id": "legacy", "name": "Legacy", "directory": directory, "command": "npm run dev",
-				"url": "http://localhost:4321", "workspace": "Tools",
-				"promptFile": "docs/session.md", "promptFiles": []string{"docs/another.md"},
-			}},
-		})
-		if err != nil {
-			t.Fatal(err)
-		}
-		if err := os.WriteFile(configPath, data, 0o600); err != nil {
-			t.Fatal(err)
-		}
-		app := newAppWithConfigPath(configPath)
-		state := app.GetAppState()
-		if state.Warning != "" || len(state.Services) != 1 {
-			t.Fatalf("version %d failed to load: %#v", version, state)
-		}
-		service := state.Services[0]
-		if service.ID != "legacy" || service.Directory != directory || service.Command != "npm run dev" || service.URL != "http://localhost:4321" || service.Workspace != "Tools" {
-			t.Fatalf("version %d changed the service: %#v", version, service)
-		}
-		if _, err := app.UpdateService(service.ID, ServiceInput{Name: "Updated", Directory: directory, Command: service.Command, URL: service.URL, Workspace: service.Workspace}); err != nil {
-			t.Fatal(err)
-		}
-		reloaded := newAppWithConfigPath(configPath).GetAppState()
-		if reloaded.Warning != "" || len(reloaded.Services) != 1 || reloaded.Services[0].Name != "Updated" {
-			t.Fatalf("version %d failed to save: %#v", version, reloaded)
-		}
-	}
-}

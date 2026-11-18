@@ -1,11 +1,10 @@
 import {act, renderHook, waitFor} from '@testing-library/react';
 import {beforeEach, expect, it, vi} from 'vitest';
-import {api, alphaService} from '../testApi';
+import {api} from '../testApi';
 import {useServiceState} from './useServiceState';
 
 const events = vi.hoisted(() => new Map<string, (event: {data: unknown}) => void>());
 const unsubscribed = vi.hoisted(() => vi.fn());
-vi.mock('../../wailsjs/lal/app', () => api);
 vi.mock('@wailsio/runtime', async importOriginal => ({
     ...await importOriginal<typeof import('@wailsio/runtime')>(),
     Events: {On: vi.fn((name: string, callback: (event: {data: unknown}) => void) => {
@@ -14,12 +13,7 @@ vi.mock('@wailsio/runtime', async importOriginal => ({
     })},
 }));
 
-beforeEach(() => {
-    vi.clearAllMocks();
-    api.GetAppState.mockResolvedValue({services: [alphaService], workspaces: [], warning: ''});
-    api.GetLogs.mockResolvedValue([]);
-    events.clear();
-});
+beforeEach(() => events.clear());
 
 it('uses v3 event.data for live logs, ignores other services and disposes listeners', async () => {
     const toast = vi.fn();

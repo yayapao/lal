@@ -1,11 +1,8 @@
-import {cleanup, render, screen, waitFor, within} from '@testing-library/react';
+import {render, screen, waitFor, within} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import {afterEach, beforeEach, expect, it, vi} from 'vitest';
+import {beforeEach, expect, it} from 'vitest';
 import {alphaService, api} from './testApi';
 import App from './App';
-
-vi.mock('../wailsjs/lal/app', () => api);
-vi.mock('@wailsio/runtime', async importOriginal => ({...await importOriginal<typeof import('@wailsio/runtime')>(), Events: {On: vi.fn(() => () => undefined)}}));
 
 const profiles = [
     {id: 'mac-zh', name: 'Mac · 中文', command: 'build --mac --zh'},
@@ -16,13 +13,10 @@ const game = {...alphaService, id: 'amg', name: 'Anti-Magic Gem', module: 'game'
     buildCommand: 'build-default', buildBeforeLaunch: true, buildProfiles: profiles};
 
 beforeEach(() => {
-    vi.clearAllMocks();
     api.GetAppState.mockResolvedValue({services: [game], workspaces: [], warning: ''});
-    api.GetLogs.mockResolvedValue([]);
-    api.GetResourceUsage.mockResolvedValue([]);
+
     api.UpdateService.mockResolvedValue(game);
 });
-afterEach(cleanup);
 
 it('runs the named profile directly without changing launch mode or starting the game', async () => {
     const user = userEvent.setup(); render(<App/>);

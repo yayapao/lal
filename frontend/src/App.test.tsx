@@ -1,29 +1,16 @@
-import {act, cleanup, render, screen, waitFor, within} from '@testing-library/react';
+import {act, render, screen, waitFor, within} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
+import {beforeEach, describe, expect, it} from 'vitest';
 import {alphaService, api} from './testApi';
 import App from './App';
 
-vi.mock('../wailsjs/lal/app', () => api);
-vi.mock('@wailsio/runtime', async importOriginal => ({...await importOriginal<typeof import('@wailsio/runtime')>(), Events: {On: vi.fn(() => () => undefined)}}));
-
 describe('selected service actions', () => {
     beforeEach(() => {
-        vi.clearAllMocks();
-        api.GetAppState.mockResolvedValue({
-            services: [alphaService],
-            configPath: '/tmp/lal.json',
-            warning: '',
-        });
-        api.GetLogs.mockResolvedValue([]);
-        api.GetResourceUsage.mockResolvedValue([]);
         api.DownloadLogs.mockResolvedValue('/tmp/Alpha.log');
         api.StartServices.mockResolvedValue({changed: 1, skipped: 0, errors: []});
         api.RestartService.mockResolvedValue(undefined);
         api.ClearNextCache.mockResolvedValue(undefined);
     });
-
-    afterEach(cleanup);
 
     it('starts only the checked service', async () => {
         const user = userEvent.setup();

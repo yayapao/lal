@@ -1,11 +1,9 @@
-import {cleanup, fireEvent, render, screen, waitFor} from '@testing-library/react';
+import {fireEvent, render, screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import {afterEach, beforeEach, expect, it, vi} from 'vitest';
+import {beforeEach, expect, it, vi} from 'vitest';
 import {alphaService, api} from './testApi';
 import * as main from '../wailsjs/lal/internal/launcher/models';
 import ServiceDialog from './components/ServiceDialog';
-
-vi.mock('../wailsjs/lal/app', () => api);
 
 const project = {
     directory: '/tmp/niu', name: 'niu', workspace: 'Studio', projectType: 'nextjs',
@@ -33,12 +31,10 @@ async function chooseDirectory() {
 }
 
 beforeEach(() => {
-    vi.clearAllMocks();
-    api.DetectProject.mockReset().mockResolvedValue(project);
-    api.ChooseDirectory.mockReset().mockResolvedValue('/tmp/niu');
+    api.DetectProject.mockResolvedValue(project);
+    api.ChooseDirectory.mockResolvedValue('/tmp/niu');
     api.CreateService.mockResolvedValue({...alphaService, name: 'niu'});
 });
-afterEach(cleanup);
 
 it('offers saved workspaces even when they do not have any projects', () => {
     render(<ServiceDialog state={{mode: 'create', module: 'service'}} services={[]} workspaces={['Empty']} onClose={onClose} onSaved={onSaved}/>);

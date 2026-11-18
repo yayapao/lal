@@ -1,10 +1,8 @@
-import {cleanup, render, screen} from '@testing-library/react';
-import {afterEach, describe, expect, it} from 'vitest';
+import {render, screen} from '@testing-library/react';
+import {describe, expect, it} from 'vitest';
 import {groupLogEntries, LogLine, parseLogText} from './LogLine';
 
 describe('LogLine', () => {
-    afterEach(cleanup);
-
     it('highlights service and structured Pino error metadata', () => {
         const entry = {
             timestamp: '2026-08-27T17:43:41+08:00',

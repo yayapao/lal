@@ -131,9 +131,9 @@ func (m *serviceManager) GetAppState() AppState {
 	return state
 }
 
-func (m *serviceManager) CreateService(input ServiceInput) (ServiceView, error) {
-	service := Service{
-		ID:                newID(),
+func (input ServiceInput) service(id string) Service {
+	return Service{
+		ID:                id,
 		Name:              strings.TrimSpace(input.Name),
 		Module:            normalizeModule(input.Module),
 		Workspace:         strings.TrimSpace(input.Workspace),
@@ -147,6 +147,10 @@ func (m *serviceManager) CreateService(input ServiceInput) (ServiceView, error) 
 		URL:               normalizeAccessURL(input.URL),
 		CleanCommand:      normalizeCleanCommand(input.CleanCommand),
 	}
+}
+
+func (m *serviceManager) CreateService(input ServiceInput) (ServiceView, error) {
+	service := input.service(newID())
 	if err := validateService(service); err != nil {
 		return ServiceView{}, err
 	}
@@ -169,21 +173,7 @@ func (m *serviceManager) CreateService(input ServiceInput) (ServiceView, error) 
 }
 
 func (m *serviceManager) UpdateService(id string, input ServiceInput) (ServiceView, error) {
-	updated := Service{
-		ID:                id,
-		Name:              strings.TrimSpace(input.Name),
-		Module:            normalizeModule(input.Module),
-		Workspace:         strings.TrimSpace(input.Workspace),
-		Directory:         cleanDirectory(input.Directory),
-		Command:           strings.TrimSpace(input.Command),
-		ReleaseCommand:    strings.TrimSpace(input.ReleaseCommand),
-		BuildCommand:      strings.TrimSpace(input.BuildCommand),
-		BuildProfiles:     normalizeBuildProfiles(input.BuildProfiles),
-		BuildBeforeLaunch: input.BuildBeforeLaunch,
-		LaunchMode:        strings.TrimSpace(input.LaunchMode),
-		URL:               normalizeAccessURL(input.URL),
-		CleanCommand:      normalizeCleanCommand(input.CleanCommand),
-	}
+	updated := input.service(id)
 	if err := validateService(updated); err != nil {
 		return ServiceView{}, err
 	}

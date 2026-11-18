@@ -1,11 +1,10 @@
-import {act, cleanup, render, screen, waitFor} from '@testing-library/react';
+import {act, render, screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import {afterEach, beforeEach, expect, it, vi} from 'vitest';
+import {expect, it, vi} from 'vitest';
 import * as main from '../wailsjs/lal/internal/launcher/models';
 import {alphaService, api} from './testApi';
 import GitConfigPanel from './components/GitConfigPanel';
 
-vi.mock('../wailsjs/lal/app', () => api);
 const service = main.ServiceView.createFrom(alphaService);
 const details = main.GitDetails.createFrom({
     status: {serviceId: 'alpha', directory: '/tmp/alpha', root: '/tmp/alpha', state: 'clean'}, configError: '', files: [],
@@ -14,9 +13,6 @@ const details = main.GitDetails.createFrom({
 const onSaved = vi.fn().mockResolvedValue(undefined);
 const onEditingChange = vi.fn();
 const panel = (data = details) => <GitConfigPanel service={service} details={data} onSaved={onSaved} onEditingChange={onEditingChange}/>;
-
-beforeEach(() => { vi.clearAllMocks(); api.UpdateGitConfig.mockResolvedValue(undefined); });
-afterEach(cleanup);
 
 it('quickly edits identity and rereads the configuration after saving', async () => {
     const user = userEvent.setup();

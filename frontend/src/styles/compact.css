@@ -23,7 +23,7 @@
 .logs-pane .log-heading { flex-basis: 46px; }
 .git-pane { grid-template-rows: 46px minmax(0, 1fr) 28px; }
 .console-footer, .git-footer { background: var(--panel); color: var(--muted); font-size: 10px; }
-.git-overview, .resource-monitor, .package-panel, .script-preview { background: var(--panel-raised); }
+.git-overview, .resource-monitor, .package-panel { background: var(--panel-raised); }
 .log-git-summary { background: var(--panel); }
 .log-lines { background: var(--console); }
 .log-line { font-size: 11px; }

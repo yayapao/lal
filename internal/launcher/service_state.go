@@ -21,10 +21,8 @@ func (m *serviceManager) serviceByID(id string) (Service, error) {
 }
 
 func (m *serviceManager) serviceByIDLocked(id string) (Service, bool) {
-	for _, service := range m.services {
-		if service.ID == id {
-			return service, true
-		}
+	if index := m.serviceIndexLocked(id); index >= 0 {
+		return m.services[index], true
 	}
 	return Service{}, false
 }
@@ -60,13 +58,12 @@ func (m *serviceManager) serviceViewsLocked() []ServiceView {
 
 func (m *serviceManager) serviceViewLocked(service Service) ServiceView {
 	service.Module = normalizeModule(service.Module)
-	configuredWorkspace := strings.TrimSpace(service.Workspace)
-	service.Workspace = m.effectiveWorkspaceLocked(service)
+	service.Workspace = strings.TrimSpace(service.Workspace)
 	view := ServiceView{
 		Service:             service,
 		PackageInfo:         readPackageInfo(service.Directory),
 		IconPath:            detectServiceIcon(service.Directory),
-		ConfiguredWorkspace: configuredWorkspace,
+		ConfiguredWorkspace: service.Workspace,
 		ProjectType:         detectProjectType(service.Directory, service.Command),
 		Status:              m.lastStatus[service.ID],
 		LastError:           m.lastError[service.ID],
@@ -180,10 +177,6 @@ func (m *serviceManager) GetServiceIcon(id string) (string, error) {
 		return "", fmt.Errorf("不支持的项目图标格式")
 	}
 	return "data:" + mimeType + ";base64," + base64.StdEncoding.EncodeToString(data), nil
-}
-
-func (m *serviceManager) effectiveWorkspaceLocked(service Service) string {
-	return strings.TrimSpace(service.Workspace)
 }
 
 func (m *serviceManager) suggestedWorkspaceLocked(directory string) string {

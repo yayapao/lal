@@ -1,11 +1,8 @@
-import {act, cleanup, fireEvent, render, screen, waitFor, within} from '@testing-library/react';
+import {act, fireEvent, render, screen, waitFor, within} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
+import {beforeEach, describe, expect, it} from 'vitest';
 import {alphaService, api} from './testApi';
 import App from './App';
-
-vi.mock('../wailsjs/lal/app', () => api);
-vi.mock('@wailsio/runtime', async importOriginal => ({...await importOriginal<typeof import('@wailsio/runtime')>(), Events: {On: vi.fn(() => () => undefined)}}));
 
 const wifi = {name: 'en0', label: 'Wi-Fi', up: true, hardware: true, loopback: false,
     ipv4: ['192.168.31.108'], ipv6: ['fe80::1234%en0'], subnetMask: '255.255.255.0', gateway: '192.168.31.1', mac: '12:34:56:78:90:ab', mtu: 1500};
@@ -13,14 +10,11 @@ const snapshot = {primaryInterface: 'en0', interfaces: [wifi, {...wifi, name: 'u
     dns: ['192.168.31.1', '223.5.5.5'], hostname: 'Mac.local', ifconfig: 'en0: flags=8863<UP>\n\tinet 192.168.31.108', warnings: [], checkedAt: '2026-10-29T12:00:00+08:00'};
 
 beforeEach(() => {
-    vi.clearAllMocks();
     api.GetAppState.mockResolvedValue({services: [alphaService], workspaces: [], configPath: '', warning: ''});
-    api.GetLogs.mockResolvedValue([]);
-    api.GetResourceUsage.mockResolvedValue([]);
+
     api.GetNetworkInfo.mockResolvedValue(snapshot);
     api.CopyNetworkValue.mockResolvedValue(undefined);
 });
-afterEach(cleanup);
 
 describe('network information', () => {
     it('opens independently of services, navigates tabs with a keyboard, and returns', async () => {

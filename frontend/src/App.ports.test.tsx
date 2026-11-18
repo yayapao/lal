@@ -1,23 +1,17 @@
-import {cleanup, render, screen, waitFor} from '@testing-library/react';
+import {render, screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import {afterEach, beforeEach, expect, it, vi} from 'vitest';
+import {beforeEach, expect, it} from 'vitest';
 import {alphaService, api} from './testApi';
 import App from './App';
-
-vi.mock('../wailsjs/lal/app', () => api);
-vi.mock('@wailsio/runtime', async importOriginal => ({...await importOriginal<typeof import('@wailsio/runtime')>(), Events: {On: vi.fn(() => () => undefined)}}));
 
 const port = {pid: 123, command: 'python3 -m http.server 18040', directory: '/tmp/alpha', identity: 'start-time command', matchesProject: true, accessible: true, previewOnly: false};
 const external = {...alphaService, url: 'http://127.0.0.1:18040', port};
 
 beforeEach(() => {
-    vi.clearAllMocks();
     api.GetAppState.mockResolvedValue({services: [external], workspaces: [], warning: ''});
-    api.GetLogs.mockResolvedValue([]);
-    api.GetResourceUsage.mockResolvedValue([]);
+
     api.StopExternalAndStart.mockResolvedValue(undefined);
 });
-afterEach(cleanup);
 
 it('shows external state and requires confirmation before stopping and starting', async () => {
     const user = userEvent.setup();
