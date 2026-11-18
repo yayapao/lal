@@ -3,6 +3,22 @@ import {describe, expect, it} from 'vitest';
 import {groupLogEntries, LogLine, parseLogText} from './LogLine';
 
 describe('LogLine', () => {
+    it('colors successful results and emphasizes counts without splitting hashes or paths', () => {
+        const entry = {timestamp: '2026-11-18T18:11:25+08:00', stream: 'stdout',
+            text: 'asset hashes: passed; SUCCESS; 169 audio cues, excluding 79 assets; 1.5ms; ce30fdfb2cc4b1a9; /tmp/123/file; v1.2.3'};
+        const {container} = render(<LogLine entry={entry} fallbackService="AMG"/>);
+        expect(parseLogText(entry.text, entry.stream).severity).toBe('success');
+        expect([...container.querySelectorAll('.log-emphasis.is-success')].map(node => node.textContent)).toEqual(['passed', 'SUCCESS']);
+        expect([...container.querySelectorAll('.log-number')].map(node => node.textContent)).toEqual(['169', '79', '1.5ms']);
+        expect(container.querySelector('.log-message')?.textContent).toBe(entry.text);
+    });
+
+    it('gives actual failures precedence over passing tests and ignores zero failure counters', () => {
+        expect(parseLogText('Tests: 2 failed, 8 passed', 'stdout').severity).toBe('error');
+        expect(parseLogText('Tests: 0 failed, 8 passed', 'stdout').severity).toBe('success');
+        expect(parseLogText('构建并导出失败：进程已退出，退出码 2', 'system').severity).toBe('error');
+    });
+
     it('highlights service and structured Pino error metadata', () => {
         const entry = {
             timestamp: '2026-08-27T17:43:41+08:00',

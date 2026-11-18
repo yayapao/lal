@@ -22,4 +22,8 @@ func (d nativeDesktop) CopyText(value string) error {
 	}
 	return nil
 }
+func (d nativeDesktop) SavePromptFile(filename string) (string, error) {
+	return d.app.Dialog.SaveFileWithOptions(&application.SaveFileDialogOptions{Title: "导出修复 Prompt"}).SetFilename(filename).
+		CanCreateDirectories(true).AddFilter("Markdown (*.md)", "*.md").PromptForSingleSelection()
+}
 func (d nativeDesktop) OpenURL(url string) error { return d.app.Browser.OpenURL(url) }

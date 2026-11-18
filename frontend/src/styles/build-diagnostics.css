@@ -1,0 +1,34 @@
+.build-failure-actions {
+    display: flex;
+    flex: 0 0 auto;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 9px 16px;
+    padding: 10px 12px;
+    border-bottom: 1px solid #654147;
+    color: #e0a7ad;
+    background: #302326;
+    font-size: 11px;
+}
+
+.build-failure-title, .build-failure-buttons, .build-failure-buttons button {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.build-failure-title strong { font-weight: 600; }
+.build-failure-buttons { margin-left: auto; flex-wrap: wrap; }
+.build-failure-buttons button {
+    min-height: 28px;
+    padding: 4px 8px;
+    border: 1px solid #75545b;
+    border-radius: 5px;
+    color: #f0d5d9;
+    background: #3e2e32;
+    cursor: pointer;
+    font-size: 11px;
+}
+.build-failure-buttons button:hover:not(:disabled) { background: #503a40; border-color: #b17d87; }
+.build-failure-buttons button:disabled { opacity: .55; cursor: wait; }
+.build-failure-feedback { flex-basis: 100%; color: #d2b8bd; overflow-wrap: anywhere; }

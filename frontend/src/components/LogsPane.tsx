@@ -7,6 +7,9 @@ import StatusLabel from './StatusLabel';
 import {displayURL} from '../utils';
 import type {AppModule, GitStatus, LogEntry, ResourceUsage, ServiceView} from '../types';
 import {gitCounts} from '../gitUtils';
+import {useMemo} from 'react';
+import {analyzeBuildLogs, createRepairPrompt, failurePosition} from '../buildDiagnostics';
+import BuildFailureActions from './BuildFailureActions';
 
 export default function LogsPane({service, logs, logBlocks, autoScroll, onToggleAutoScroll, downloadingLogs, onDownloadLogs,
     onClearLogs, scriptBusy, onRunScript, onStopScript, usage, history, onOpenURL, gitStatus, onOpenGit, module = 'service'}: {
@@ -29,6 +32,9 @@ export default function LogsPane({service, logs, logBlocks, autoScroll, onToggle
     module?: AppModule;
 }) {
     const noun = module === 'game' ? '游戏' : '服务';
+    const diagnostics = useMemo(() => analyzeBuildLogs(service && logs.every(entry => entry.serviceId === service.id) ? logBlocks : [], service), [logBlocks, logs, service]);
+    const repairPrompt = useMemo(() => service && diagnostics.latest
+        ? createRepairPrompt(service, logBlocks, diagnostics.latest) : '', [service, logBlocks, diagnostics.latest]);
     return <section className="logs-pane" aria-label={`${noun}日志`}>
         <div className="log-heading">
             <div className="log-title"><TerminalSquare size={17}/><span>{service?.name ?? `${noun}日志`}</span>{service && <StatusLabel service={service} compact/>}</div>
@@ -48,11 +54,13 @@ export default function LogsPane({service, logs, logBlocks, autoScroll, onToggle
         <ResourceMonitor service={service} usage={usage} history={history}/>
         {service?.packageInfo && <PackagePanel key={service.id} service={service} busy={scriptBusy}
             onRun={scriptName => onRunScript(service, scriptName)} onStop={() => onStopScript(service)}/>}
+        {service && repairPrompt && <BuildFailureActions key={`${service.id}-${diagnostics.latest?.end}-${logBlocks[diagnostics.latest!.end].timestamp}`}
+            service={service} prompt={repairPrompt}/>}
         <div className="log-viewport">
             {!service ? <div className="console-empty">未选择{noun}</div>
                 : logs.length === 0 ? <div className="console-empty">暂无日志</div>
                     : <div className="log-lines">{logBlocks.map((entry, index) => (
-                        <LogLine entry={entry} fallbackService={service.name} key={`${entry.timestamp}-${index}`}/>
+                        <LogLine entry={entry} fallbackService={service.name} failurePosition={failurePosition(diagnostics.ranges, index)} key={`${entry.timestamp}-${index}`}/>
                     ))}</div>}
         </div>
         {service && <div className="console-footer"><span>{service.directory}</span><span>{logs.length} 行</span></div>}

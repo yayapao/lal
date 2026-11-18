@@ -49,6 +49,10 @@ export function CopyNetworkValue(value: string): $CancellablePromise<void> {
     return $Call.ByID(88002443, value);
 }
 
+export function CopyRepairPrompt(prompt: string): $CancellablePromise<void> {
+    return $Call.ByID(2848404183, prompt);
+}
+
 export function CreateService(input: launcher$0.ServiceInput): $CancellablePromise<launcher$0.ServiceView> {
     return $Call.ByID(1173647428, input).then(($result: any) => {
         return $$createType0($result);
@@ -70,6 +74,10 @@ export function DetectProject(directory: string): $CancellablePromise<launcher$0
 
 export function DownloadLogs(id: string): $CancellablePromise<string> {
     return $Call.ByID(732817834, id);
+}
+
+export function DownloadRepairPrompt(id: string, prompt: string): $CancellablePromise<string> {
+    return $Call.ByID(3003135550, id, prompt);
 }
 
 export function GetAppState(): $CancellablePromise<launcher$0.AppState> {

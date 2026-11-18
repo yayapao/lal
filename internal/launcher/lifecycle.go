@@ -7,6 +7,7 @@ type Desktop interface {
 	Emit(string, any)
 	ChooseDirectory(string) (string, error)
 	SaveLogFile(string) (string, error)
+	SavePromptFile(string) (string, error)
 	CopyText(string) error
 	OpenURL(string) error
 }

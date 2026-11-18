@@ -5,6 +5,7 @@ import './styles/service-list.css';
 import './styles/service-row.css';
 import './styles/logs.css';
 import './styles/console.css';
+import './styles/build-diagnostics.css';
 import './styles/dialogs.css';
 import './styles/overlays.css';
 import './styles/git.css';

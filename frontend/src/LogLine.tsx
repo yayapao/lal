@@ -1,5 +1,7 @@
 import Anser from 'anser';
-import {CSSProperties, memo, useMemo} from 'react';
+import {memo, useMemo} from 'react';
+import LogText from './LogText';
+import {inferSeverity, type Severity} from './logSemantics';
 
 export type LogLineEntry = {
     timestamp: string;
@@ -9,7 +11,6 @@ export type LogLineEntry = {
 
 const logBlockGapMs = 250;
 
-type Severity = 'error' | 'warn' | 'success' | 'info' | 'debug' | 'neutral';
 type LogMeta = {label: string; value?: string; tone?: Severity};
 type ParsedLog = {
     service: string;
@@ -21,25 +22,19 @@ type ParsedLog = {
 };
 
 const servicePrefix = /^\[([^\]\r\n]{1,40})\]\s*(.*)$/s;
-const errorPattern = /\b(?:error|failed|failure|fatal|ETIMEDOUT|CONNECT_TIMEOUT|ECONNREFUSED|EADDRINUSE)\b/i;
-const warningPattern = /\b(?:warn|warning|deprecated|retry|timeout)\b/i;
-const successPattern = /\b(?:ready|started|success|successful|listening)\b/i;
-const infoPattern = /\b(?:starting|stopping|stopped|synchronizing|rerunning|restarting)\b/i;
-const emphasizedToken = /(\b(?:ETIMEDOUT|CONNECT_TIMEOUT|ECONNREFUSED|EADDRINUSE|fatal|error|failed|failure|warning)\b|(?:\d{1,3}\.){3}\d{1,3}:\d+)/gi;
-const exactEmphasizedToken = /^(?:ETIMEDOUT|CONNECT_TIMEOUT|ECONNREFUSED|EADDRINUSE|fatal|error|failed|failure|warning|(?:\d{1,3}\.){3}\d{1,3}:\d+)$/i;
 const httpRequestPattern = /^(GET|POST|PUT|PATCH|DELETE|OPTIONS|HEAD)\s+(\S+)\s+(\d{3})\s+in\s+(\d+(?:\.\d+)?(?:ms|s))(?:\s+\((.+)\))?$/i;
 const httpPhasePattern = /^\s*([^:]+):\s*(\d+(?:\.\d+)?(?:ms|s))\s*$/i;
 
-export const LogLine = memo(function LogLine({entry, fallbackService}: {entry: LogLineEntry; fallbackService: string}) {
+export const LogLine = memo(function LogLine({entry, fallbackService, failurePosition = ''}: {entry: LogLineEntry; fallbackService: string; failurePosition?: string}) {
     const parsed = useMemo(() => parseLogText(entry.text, entry.stream), [entry.stream, entry.text]);
     const service = parsed.service || fallbackService;
     const streamLabel = entry.stream === 'stderr' && parsed.severity === 'error' ? 'ERR' : entry.stream === 'system' ? 'LAL' : 'OUT';
-    return <div className={`log-line stream-${entry.stream} is-${parsed.severity}${parsed.kind ? ` is-${parsed.kind}` : ''}`}>
+    return <div className={`log-line stream-${entry.stream} is-${parsed.severity}${parsed.kind ? ` is-${parsed.kind}` : ''}${failurePosition ? ` in-failure failure-${failurePosition}` : ''}`}>
         <time dateTime={entry.timestamp} title={formatFullTimestamp(entry.timestamp)}>{formatLogTime(entry.timestamp)}</time>
         <span className="stream-mark">{streamLabel}</span>
         <span className={`log-service service-color-${serviceColor(service)}`} title={service}>{service}</span>
         <span className="log-content">
-            <span className="log-message"><AnsiText text={parsed.message || ' '}/></span>
+            <span className="log-message"><LogText text={parsed.message || ' '}/></span>
             {parsed.metadata.length > 0 && <span className="log-metadata">
                 {parsed.metadata.map((item, index) => <span className={`log-meta-chip${item.tone ? ` is-${item.tone}` : ''}`} key={`${item.label}-${item.value ?? ''}-${index}`}>
                     <span>{item.label}</span>{item.value && <strong>{item.value}</strong>}
@@ -153,26 +148,6 @@ function parseHTTPRequest(payload: string): Omit<ParsedLog, 'service'> | null {
     return {message: path, severity: statusTone, metadata, details: '', kind: 'http'};
 }
 
-function AnsiText({text}: {text: string}) {
-    const segments = Anser.ansiToJson(text, {remove_empty: true});
-    return <>{segments.map((segment, segmentIndex) => {
-        const style: CSSProperties = {
-            color: ansiColor(segment.fg_truecolor || segment.fg),
-            backgroundColor: ansiColor(segment.bg_truecolor || segment.bg),
-            fontWeight: segment.decorations.includes('bold') ? 700 : undefined,
-            fontStyle: segment.decorations.includes('italic') ? 'italic' : undefined,
-            textDecoration: segment.decorations.includes('underline') ? 'underline' : undefined,
-        };
-        return <span style={style} key={segmentIndex}>{highlightTokens(segment.content, segmentIndex)}</span>;
-    })}</>;
-}
-
-function highlightTokens(content: string, segmentIndex: number) {
-    return content.split(emphasizedToken).map((part, partIndex) => exactEmphasizedToken.test(part)
-        ? <mark className="log-emphasis" key={`${segmentIndex}-${partIndex}`}>{part}</mark>
-        : part);
-}
-
 function parseJSONObject(value: string): Record<string, unknown> | null {
     if (!value.startsWith('{') || !value.endsWith('}')) return null;
     try {
@@ -187,14 +162,6 @@ function asRecord(value: unknown): Record<string, unknown> | null {
     return value !== null && typeof value === 'object' && !Array.isArray(value)
         ? value as Record<string, unknown>
         : null;
-}
-
-function inferSeverity(message: string, stream: string): Severity {
-    if (errorPattern.test(message)) return 'error';
-    if (warningPattern.test(message)) return 'warn';
-    if (successPattern.test(message)) return 'success';
-    if (stream === 'system' || infoPattern.test(message)) return 'info';
-    return 'neutral';
 }
 
 function severityFromLevel(level: unknown): Severity | null {
@@ -255,10 +222,6 @@ function stringValue(value: unknown) {
 
 function numberOrString(value: unknown) {
     return typeof value === 'number' || typeof value === 'string' ? String(value) : '';
-}
-
-function ansiColor(value: string) {
-    return value ? `rgb(${value})` : undefined;
 }
 
 function serviceColor(service: string) {

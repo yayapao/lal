@@ -102,8 +102,8 @@
     word-break: break-word;
 }
 
-.log-line.is-error .log-message { color: #edb0b0; }
 .stream-system .log-message { color: #9cc5d4; }
+.log-line.is-error .log-message { color: #edb0b0; }
 
 .log-emphasis {
     padding: 0 2px;
@@ -113,6 +113,24 @@
     font: inherit;
     font-weight: 720;
 }
+
+.log-emphasis.is-success {
+    color: #91ddb0;
+    background: rgba(88, 197, 139, 0.1);
+}
+
+.log-emphasis.is-warning { color: #e6bf80; background: rgba(229, 173, 96, 0.1); }
+.log-emphasis.is-address { color: #b9dcf0; background: rgba(112, 199, 232, 0.1); }
+.log-number { color: #f0d49e; font-weight: 750; font-variant-numeric: tabular-nums; }
+.log-line.is-success .log-number { color: #b7e7c9; }
+
+.log-line.in-failure {
+    border-left-color: #c7777e;
+    background: rgba(211, 112, 123, 0.09);
+}
+.log-line.in-failure:hover { background: rgba(211, 112, 123, 0.13); }
+.log-line.failure-start, .log-line.failure-single { box-shadow: inset 0 1px rgba(211, 112, 123, 0.18); }
+.log-line.failure-end, .log-line.failure-single { border-bottom: 1px solid rgba(211, 112, 123, 0.18); }
 
 .log-metadata {
     display: flex;
