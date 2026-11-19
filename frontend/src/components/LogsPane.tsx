@@ -7,7 +7,7 @@ import StatusLabel from './StatusLabel';
 import {displayURL} from '../utils';
 import type {AppModule, GitStatus, LogEntry, ResourceUsage, ServiceView} from '../types';
 import {gitCounts} from '../gitUtils';
-import {useMemo} from 'react';
+import {useLayoutEffect, useMemo, useRef} from 'react';
 import {analyzeBuildLogs, createRepairPrompt, failurePosition} from '../buildDiagnostics';
 import BuildFailureActions from './BuildFailureActions';
 
@@ -31,10 +31,14 @@ export default function LogsPane({service, logs, logBlocks, autoScroll, onToggle
     onOpenURL: (service: ServiceView) => void;
     module?: AppModule;
 }) {
+    const viewportRef = useRef<HTMLDivElement>(null);
     const noun = module === 'game' ? '游戏' : '服务';
     const diagnostics = useMemo(() => analyzeBuildLogs(service && logs.every(entry => entry.serviceId === service.id) ? logBlocks : [], service), [logBlocks, logs, service]);
     const repairPrompt = useMemo(() => service && diagnostics.latest
         ? createRepairPrompt(service, logBlocks, diagnostics.latest) : '', [service, logBlocks, diagnostics.latest]);
+    useLayoutEffect(() => {
+        if (autoScroll && viewportRef.current) viewportRef.current.scrollTop = viewportRef.current.scrollHeight;
+    }, [logs, autoScroll, service?.id]);
     return <section className="logs-pane" aria-label={`${noun}日志`}>
         <div className="log-heading">
             <div className="log-title"><TerminalSquare size={17}/><span>{service?.name ?? `${noun}日志`}</span>{service && <StatusLabel service={service} compact/>}</div>
@@ -56,7 +60,7 @@ export default function LogsPane({service, logs, logBlocks, autoScroll, onToggle
             onRun={scriptName => onRunScript(service, scriptName)} onStop={() => onStopScript(service)}/>}
         {service && repairPrompt && <BuildFailureActions key={`${service.id}-${diagnostics.latest?.end}-${logBlocks[diagnostics.latest!.end].timestamp}`}
             service={service} prompt={repairPrompt}/>}
-        <div className="log-viewport">
+        <div className="log-viewport" ref={viewportRef}>
             {!service ? <div className="console-empty">未选择{noun}</div>
                 : logs.length === 0 ? <div className="console-empty">暂无日志</div>
                     : <div className="log-lines">{logBlocks.map((entry, index) => (

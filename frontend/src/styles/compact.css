@@ -20,7 +20,6 @@
 .workspace-manager-button { color: var(--muted); font-size: 10px; }
 .selection-checkbox { background: transparent; border-color: #71717b; border-radius: 3px; width: 13px; height: 13px; flex-basis: 13px; }
 .log-heading, .git-heading { background: var(--titlebar); min-height: 46px; }
-.logs-pane .log-heading { flex-basis: 46px; }
 .git-pane { grid-template-rows: 46px minmax(0, 1fr) 28px; }
 .console-footer, .git-footer { background: var(--panel); color: var(--muted); font-size: 10px; }
 .git-overview, .resource-monitor, .package-panel { background: var(--panel-raised); }
@@ -46,11 +45,6 @@
     .service-toolbar .button { padding: 0 7px; font-size: 10px; }
     .service-toolbar .toolbar-actions { gap: 4px; }
     .titlebar-search { width: 296px; }
-    .package-panel { grid-template-columns: minmax(0, 1fr) auto; gap: 6px 12px; height: auto; min-height: 76px; }
-    .logs-pane .package-panel { flex-basis: auto; }
-    .package-identity { grid-column: 1; }
-    .package-run { grid-column: 2; grid-row: 1 / 3; }
-    .package-status { grid-column: 1; }
 }
 @media (max-width: 700px) {
     html, body, #root { height: auto; min-height: 100%; overflow: auto; }

@@ -1,4 +1,5 @@
 .log-viewport {
+    flex: 1 1 0;
     min-width: 0;
     min-height: 0;
     overflow-x: hidden;
@@ -11,7 +12,7 @@
 .log-lines {
     width: 100%;
     min-width: 0;
-    padding: 8px 0 20px;
+    padding: 10px 0 16px;
 }
 
 .log-line {
@@ -23,7 +24,7 @@
     width: 100%;
     min-width: 0;
     min-height: 22px;
-    padding: 4px 11px 4px 9px;
+    padding: 4px 14px 4px 12px;
     border-left: 2px solid transparent;
     color: #cbd3d6;
     font-family: var(--mono);
@@ -232,7 +233,8 @@
     justify-content: space-between;
     gap: 14px;
     min-width: 0;
-    padding: 0 12px;
+    min-height: 28px;
+    padding: 5px 14px;
     border-top: 1px solid var(--line);
     color: #626e74;
     background: #111518;
@@ -248,3 +250,9 @@
 }
 
 .console-footer span:last-child { flex: 0 0 auto; }
+
+@container logs (max-width: 520px) {
+    .log-line { grid-template-columns: 54px 30px minmax(0, 1fr); gap: 4px 6px; padding-block: 6px; }
+    .log-service { max-width: 100%; }
+    .log-content { grid-column: 1 / -1; }
+}

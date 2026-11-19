@@ -7,16 +7,24 @@
 
 .services-pane,
 .logs-pane {
-    display: grid;
     min-width: 0;
     min-height: 0;
 }
 
 .services-pane {
+    display: grid;
     grid-template-rows: 46px 32px minmax(0, 1fr) 58px;
     border-right: 1px solid var(--line);
     background: linear-gradient(160deg, #202a34, #191f26 65%);
 }
+
+.logs-pane {
+    display: flex;
+    flex-direction: column;
+    container: logs / inline-size;
+}
+
+.logs-pane > :not(.log-viewport) { flex-shrink: 0; }
 
 .pane-heading,
 .log-heading {

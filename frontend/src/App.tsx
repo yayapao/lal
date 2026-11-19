@@ -1,9 +1,10 @@
-import {useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState} from 'react';
+import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import './styles/base.css';
 import './styles/panes.css';
 import './styles/service-list.css';
 import './styles/service-row.css';
 import './styles/logs.css';
+import './styles/resource-monitor.css';
 import './styles/console.css';
 import './styles/build-diagnostics.css';
 import './styles/dialogs.css';
@@ -55,7 +56,6 @@ function App() {
     const [scriptBusyId, setScriptBusyId] = useState('');
     const [toast, setToast] = useState<ToastState | null>(null);
     const [, setClock] = useState(0);
-    const logViewportRef = useRef<HTMLDivElement>(null);
     const toastTimerRef = useRef<number | null>(null);
 
     const showToast = useCallback((message: string, kind: ToastState['kind'] = 'success') => {
@@ -131,11 +131,6 @@ function App() {
         window.addEventListener('keydown', onKeyDown);
         return () => window.removeEventListener('keydown', onKeyDown);
     }, []);
-
-    useLayoutEffect(() => {
-        if (!autoScroll || !logViewportRef.current) return;
-        logViewportRef.current.scrollTop = logViewportRef.current.scrollHeight;
-    }, [logs, autoScroll, selectedId]);
 
     useEffect(() => () => {
         if (toastTimerRef.current !== null) window.clearTimeout(toastTimerRef.current);
