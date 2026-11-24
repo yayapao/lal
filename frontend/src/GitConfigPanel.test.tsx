@@ -14,10 +14,17 @@ const onSaved = vi.fn().mockResolvedValue(undefined);
 const onEditingChange = vi.fn();
 const panel = (data = details) => <GitConfigPanel service={service} details={data} onSaved={onSaved} onEditingChange={onEditingChange}/>;
 
-it('quickly edits identity and rereads the configuration after saving', async () => {
+it('pins identity and origin before other configuration and rereads after saving', async () => {
     const user = userEvent.setup();
-    render(panel());
-    await user.click(screen.getByRole('button', {name: '用户名'}));
+    render(panel(main.GitDetails.createFrom({...details, config: [
+        {key: 'core.bare', value: 'false'}, {key: 'remote.origin.url', value: 'git@example.test:alpha.git'},
+        {key: 'user.email', value: 'yango@example.test'}, ...details.config,
+    ]})));
+    expect(screen.getAllByRole('term').map(term => term.textContent)).toEqual([
+        'user.name', 'user.email', 'remote.origin.url', 'core.bare', 'lal.multiple', 'lal.multiple', 'lal.multiple',
+    ]);
+    expect(screen.queryByText('快速编辑')).toBeNull();
+    await user.click(screen.getByRole('button', {name: '编辑 user.name'}));
     expect(screen.getByRole('textbox', {name: 'Git 配置键'})).toHaveProperty('readOnly', true);
     const value = screen.getByRole('textbox', {name: '配置值'});
     await user.clear(value);
@@ -36,7 +43,11 @@ it('quickly edits identity and rereads the configuration after saving', async ()
 it('adds a missing email with the local scope and preserves empty values', async () => {
     const user = userEvent.setup();
     render(panel());
-    await user.click(screen.getByRole('button', {name: '邮箱'}));
+    await user.click(screen.getByRole('button', {name: '新增配置'}));
+    await user.type(screen.getByRole('textbox', {name: 'Git 配置键'}), 'user.email');
+    const form = screen.getByRole('textbox', {name: 'Git 配置键'}).closest('form')!;
+    expect(screen.getByText('user.name').compareDocumentPosition(form) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(form.compareDocumentPosition(screen.getAllByText('lal.multiple')[0]) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     await user.click(screen.getByRole('button', {name: '保存配置'}));
     await waitFor(() => expect(api.UpdateGitConfig).toHaveBeenCalledWith('alpha', {
         directory: '/tmp/alpha', root: '/tmp/alpha', key: 'user.email', expectedValues: [], values: [''],
@@ -60,7 +71,7 @@ it('preserves the draft and original duplicate values through background updates
 it('confirms deletion and retains the form when the backend reports an external edit', async () => {
     const user = userEvent.setup();
     render(panel());
-    await user.click(screen.getByRole('button', {name: '用户名'}));
+    await user.click(screen.getByRole('button', {name: '编辑 user.name'}));
     await user.click(screen.getByRole('button', {name: '删除配置'}));
     expect(api.UpdateGitConfig).not.toHaveBeenCalled();
     api.UpdateGitConfig.mockRejectedValueOnce('user.name 已被其他程序修改，请重新读取后编辑');
@@ -87,7 +98,7 @@ it('prevents duplicate submissions and cancels drafts without writing', async ()
     expect(api.UpdateGitConfig).toHaveBeenCalledTimes(1);
     expect(screen.getByRole('button', {name: '取消'})).toHaveProperty('disabled', true);
     await act(async () => resolve());
-    await user.click(screen.getByRole('button', {name: '用户名'}));
+    await user.click(screen.getByRole('button', {name: '编辑 user.name'}));
     await user.click(screen.getByRole('button', {name: '取消'}));
     expect(api.UpdateGitConfig).toHaveBeenCalledTimes(1);
 });

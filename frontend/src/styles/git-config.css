@@ -1,10 +1,7 @@
 .git-config-toolbar .text-button, .git-config-editor-actions .text-button { display: inline-flex; align-items: center; gap: 4px; font-size: 10px; }
 .git-config-toolbar { gap: 8px; }
 .git-config-toolbar input { flex: 1 1 100px; width: 100px; }
-.git-config-toolbar .text-button:disabled, .git-config-shortcuts button:disabled, .git-config-editor .text-button:disabled { opacity: 0.4; cursor: default; }
-.git-config-shortcuts { display: flex; flex-wrap: wrap; align-items: center; gap: 5px 10px; padding: 8px 18px; border-bottom: 1px solid var(--line); }
-.git-config-shortcuts > span { color: var(--faint); font-size: 9px; }
-.git-config-shortcuts .text-button { padding: 3px 0; font-size: 10px; }
+.git-config-toolbar .text-button:disabled, .git-config-editor .text-button:disabled { opacity: 0.4; cursor: default; }
 .git-config-success { margin: 10px 18px; color: var(--green); font-size: 10px; }
 .git-config-editor { margin: 12px 18px; padding: 12px; border: 1px solid var(--line-strong); border-radius: 5px; background: var(--panel); }
 .git-config-editor-heading { display: flex; align-items: center; gap: 10px; min-width: 0; margin-bottom: 8px; }

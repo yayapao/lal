@@ -41,7 +41,7 @@ it('opens repository changes from the list and shows searchable local configurat
     within(pane).getByRole('tab', {name: '变更文件 2'}).focus();
     await user.keyboard('{ArrowRight}');
     expect(document.activeElement).toBe(within(pane).getByRole('tab', {name: '本地配置 5'}));
-    expect(within(pane).getByText('git config --list --local')).toBeDefined();
+    expect(within(pane).queryByText('git config --list --local')).toBeNull();
     expect(within(pane).getAllByText('lal.multiple')).toHaveLength(2);
     expect(within(pane).getByText('line one line two')).toBeDefined();
     await user.type(within(pane).getByRole('searchbox', {name: '搜索 Git 配置'}), 'remote');
@@ -92,7 +92,7 @@ it('keeps a configuration draft while switching tabs and refreshes details after
     await user.click(await screen.findByRole('button', {name: 'Git 详情'}));
     await screen.findByText('src/new name.ts');
     await user.click(screen.getByRole('tab', {name: '本地配置 5'}));
-    await user.click(screen.getByRole('button', {name: '用户名'}));
+    await user.click(screen.getByRole('button', {name: '编辑 user.name'}));
     await user.clear(screen.getByRole('textbox', {name: '配置值'}));
     await user.type(screen.getByRole('textbox', {name: '配置值'}), 'New Name');
     await user.click(screen.getByRole('tab', {name: '变更文件 2'}));

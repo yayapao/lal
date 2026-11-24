@@ -7,7 +7,11 @@ import {canonicalGitConfigKey} from '../gitUtils';
 import '../styles/git-config.css';
 
 type Editor = {key: string; values: string[]; expectedValues: string[]; creating: boolean};
-const shortcuts = [{key: 'user.name', name: '用户名'}, {key: 'user.email', name: '邮箱'}, {key: 'remote.origin.url', name: 'Origin 地址'}];
+const pinnedKeys = ['user.name', 'user.email', 'remote.origin.url'];
+const configOrder = (key: string) => {
+    const index = pinnedKeys.indexOf(key);
+    return index < 0 ? pinnedKeys.length : index;
+};
 
 export default function GitConfigPanel({service, details, onEditingChange, onSaved}: {
     service: ServiceView; details: GitDetails; onEditingChange: (editing: boolean) => void; onSaved: () => Promise<void>;
@@ -19,7 +23,8 @@ export default function GitConfigPanel({service, details, onEditingChange, onSav
     const [error, setError] = useState('');
     const [message, setMessage] = useState('');
     const keyword = query.trim().toLocaleLowerCase();
-    const config = details.config.filter(entry => `${entry.key}\n${entry.value}`.toLocaleLowerCase().includes(keyword));
+    const config = details.config.filter(entry => `${entry.key}\n${entry.value}`.toLocaleLowerCase().includes(keyword))
+        .sort((a, b) => configOrder(a.key) - configOrder(b.key));
 
     useEffect(() => () => onEditingChange(false), [onEditingChange]);
 
@@ -52,14 +57,17 @@ export default function GitConfigPanel({service, details, onEditingChange, onSav
         finally { setSaving(false); }
     };
 
+    const renderConfig = (entries: GitDetails['config']) => entries.length > 0 && <dl className="git-config-list">{entries.map((entry, index) => <div key={`${entry.key}-${index}`}><dt>{entry.key}</dt><dd>{entry.value || <span className="git-empty-value">空值</span>}</dd>
+        <button className="git-config-edit-button" type="button" disabled={editor !== null} aria-label={`编辑 ${entry.key}`} title={`编辑 ${entry.key}`} onClick={() => open(entry.key)}><Pencil size={12}/></button>
+    </div>)}</dl>;
+
     return <>
-        <div className="git-config-toolbar"><code>git config --list --local</code>
+        <div className="git-config-toolbar">
             <input type="search" aria-label="搜索 Git 配置" placeholder="搜索配置" value={query} onChange={event => setQuery(event.target.value)}/>
             <button className="text-button" type="button" onClick={() => open('', true)} disabled={editor !== null || !!details.configError}><Plus size={12}/>新增配置</button>
         </div>
-        <div className="git-config-shortcuts"><span>快速编辑</span>{shortcuts.map(shortcut => <button className="text-button" type="button" key={shortcut.key}
-            disabled={editor !== null || !!details.configError} onClick={() => open(shortcut.key)}>{shortcut.name}</button>)}</div>
         {message && <p className="git-config-success" role="status">{message}</p>}
+        {!details.configError && renderConfig(config.filter(entry => pinnedKeys.includes(entry.key)))}
         {editor && <form className="git-config-editor" onSubmit={event => { event.preventDefault(); void save(); }}>
             <div className="git-config-editor-heading"><strong>{editor.creating ? '新增配置' : '编辑配置'}</strong><span>仅此仓库 · local</span>
                 <button className="icon-button subtle" type="button" aria-label="取消编辑 Git 配置" onClick={close} disabled={saving}><X size={14}/></button></div>
@@ -83,8 +91,6 @@ export default function GitConfigPanel({service, details, onEditingChange, onSav
         </form>}
         {details.configError ? <p className="git-error" role="alert">{details.configError}</p>
             : config.length === 0 ? <div className="git-empty">{query ? '没有匹配的配置' : '暂无本地配置'}</div>
-                : <dl className="git-config-list">{config.map((entry, index) => <div key={`${entry.key}-${index}`}><dt>{entry.key}</dt><dd>{entry.value || <span className="git-empty-value">空值</span>}</dd>
-                    <button className="git-config-edit-button" type="button" disabled={editor !== null} aria-label={`编辑 ${entry.key}`} title={`编辑 ${entry.key}`} onClick={() => open(entry.key)}><Pencil size={12}/></button>
-                </div>)}</dl>}
+                : renderConfig(config.filter(entry => !pinnedKeys.includes(entry.key)))}
     </>;
 }
