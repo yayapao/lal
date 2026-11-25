@@ -7,7 +7,7 @@ import StatusLabel from './StatusLabel';
 import {displayURL} from '../utils';
 import type {AppModule, GitStatus, LogEntry, ResourceUsage, ServiceView} from '../types';
 import {gitCounts} from '../gitUtils';
-import {useLayoutEffect, useMemo, useRef} from 'react';
+import {useLayoutEffect, useMemo, useRef, useState} from 'react';
 import {analyzeBuildLogs, createRepairPrompt, failurePosition} from '../buildDiagnostics';
 import BuildFailureActions from './BuildFailureActions';
 
@@ -31,11 +31,16 @@ export default function LogsPane({service, logs, logBlocks, autoScroll, onToggle
     onOpenURL: (service: ServiceView) => void;
     module?: AppModule;
 }) {
+    const [targetFilter, setTargetFilter] = useState<{project: string; id: string}>({project: '', id: ''});
+    const activeFilter = targetFilter.project === service?.id && service?.targetViews?.some(target => target.id === targetFilter.id) ? targetFilter.id : '';
+    const visibleLogs = activeFilter ? logs.filter(entry => entry.targetId === activeFilter) : logs;
+    const visibleBlocks = activeFilter ? groupLogEntries(visibleLogs) : logBlocks;
+    const diagnosticsService = activeFilter ? service?.targetViews?.find(target => target.id === activeFilter) ?? service : service;
     const viewportRef = useRef<HTMLDivElement>(null);
     const noun = module === 'game' ? '游戏' : '服务';
-    const diagnostics = useMemo(() => analyzeBuildLogs(service && logs.every(entry => entry.serviceId === service.id) ? logBlocks : [], service), [logBlocks, logs, service]);
-    const repairPrompt = useMemo(() => service && diagnostics.latest
-        ? createRepairPrompt(service, logBlocks, diagnostics.latest) : '', [service, logBlocks, diagnostics.latest]);
+    const diagnostics = useMemo(() => analyzeBuildLogs(service && logs.every(entry => entry.serviceId === service.id) ? visibleBlocks : [], diagnosticsService), [visibleBlocks, logs, service, diagnosticsService]);
+    const repairPrompt = useMemo(() => diagnosticsService && diagnostics.latest
+        ? createRepairPrompt(diagnosticsService, visibleBlocks, diagnostics.latest) : '', [diagnosticsService, visibleBlocks, diagnostics.latest]);
     useLayoutEffect(() => {
         if (autoScroll && viewportRef.current) viewportRef.current.scrollTop = viewportRef.current.scrollHeight;
     }, [logs, autoScroll, service?.id]);
@@ -43,6 +48,7 @@ export default function LogsPane({service, logs, logBlocks, autoScroll, onToggle
         <div className="log-heading">
             <div className="log-title"><TerminalSquare size={17}/><span>{service?.name ?? `${noun}日志`}</span>{service && <StatusLabel service={service} compact/>}</div>
             <div className="log-actions">
+                {Boolean(service?.launchTargets?.length) && <select className="target-log-select" aria-label="日志进程" value={activeFilter} onChange={event => setTargetFilter({project: service!.id, id: event.target.value})}><option value="">全部进程</option>{service?.targetViews?.map(target => <option key={target.id} value={target.id}>{target.name}</option>)}</select>}
                 {service?.url && <button className="log-url" type="button" onClick={() => void onOpenURL(service)} title={`打开 ${service.url}`}>
                     <ExternalLink size={13}/><span>{displayURL(service.url)}</span>
                 </button>}
@@ -58,15 +64,15 @@ export default function LogsPane({service, logs, logBlocks, autoScroll, onToggle
         <ResourceMonitor service={service} usage={usage} history={history}/>
         {service?.packageInfo && <PackagePanel key={service.id} service={service} busy={scriptBusy}
             onRun={scriptName => onRunScript(service, scriptName)} onStop={() => onStopScript(service)}/>}
-        {service && repairPrompt && <BuildFailureActions key={`${service.id}-${diagnostics.latest?.end}-${logBlocks[diagnostics.latest!.end].timestamp}`}
-            service={service} prompt={repairPrompt}/>}
+        {service && repairPrompt && <BuildFailureActions key={`${service.id}-${diagnostics.latest?.end}-${visibleBlocks[diagnostics.latest!.end].timestamp}`}
+            service={diagnosticsService ?? service} prompt={repairPrompt}/>}
         <div className="log-viewport" ref={viewportRef}>
             {!service ? <div className="console-empty">未选择{noun}</div>
-                : logs.length === 0 ? <div className="console-empty">暂无日志</div>
-                    : <div className="log-lines">{logBlocks.map((entry, index) => (
+                : visibleLogs.length === 0 ? <div className="console-empty">暂无日志</div>
+                    : <div className="log-lines">{visibleBlocks.map((entry, index) => (
                         <LogLine entry={entry} fallbackService={service.name} failurePosition={failurePosition(diagnostics.ranges, index)} key={`${entry.timestamp}-${index}`}/>
                     ))}</div>}
         </div>
-        {service && <div className="console-footer"><span>{service.directory}</span><span>{logs.length} 行</span></div>}
+        {service && <div className="console-footer"><span>{service.directory}</span><span>{visibleLogs.length} 行</span></div>}
     </section>;
 }

@@ -38,6 +38,10 @@ func (m *serviceManager) RunPackageScript(id, name string) error {
 	}
 
 	m.mu.Lock()
+	if m.shuttingDown || m.targetBusy[parentID(id)] {
+		m.mu.Unlock()
+		return fmt.Errorf("项目正在执行启停或清理操作，请稍后再试")
+	}
 	if service.Module == moduleGame && m.processes[id] != nil {
 		m.mu.Unlock()
 		return fmt.Errorf("请先停止游戏或等待构建完成")

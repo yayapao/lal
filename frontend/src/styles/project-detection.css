@@ -3,13 +3,6 @@
     overflow-y: auto;
 }
 
-.service-dialog-intro {
-    margin: 8px 0 0;
-    color: var(--muted);
-    font-size: 11px;
-    line-height: 18px;
-}
-
 .project-detection-status {
     display: flex;
     align-items: flex-start;

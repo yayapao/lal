@@ -36,11 +36,6 @@ export function ClearLogs(id: string): $CancellablePromise<void> {
     return $Call.ByID(1566804265, id);
 }
 
-/**
- * ClearNextCache runs the configured cache-cleanup command in the project
- * directory. A running service is restarted after cleanup so that Next.js
- * rebuilds from the fresh cache state.
- */
 export function ClearNextCache(id: string): $CancellablePromise<void> {
     return $Call.ByID(4170818395, id);
 }
@@ -132,11 +127,6 @@ export function OpenServiceURL(id: string): $CancellablePromise<void> {
     return $Call.ByID(2973453681, id);
 }
 
-/**
- * RestartService stops the process managed by LAL and starts it again. A
- * stopped service is started directly; services in a transition state must
- * finish that transition before another lifecycle operation is allowed.
- */
 export function RestartService(id: string): $CancellablePromise<void> {
     return $Call.ByID(242694647, id);
 }
@@ -163,6 +153,15 @@ export function SaveWorkspaceLayout(input: launcher$0.WorkspaceLayout): $Cancell
 }
 
 /**
+ * SetDefaultLaunchTargets changes only the saved selection, including while running.
+ */
+export function SetDefaultLaunchTargets(id: string, ids: string[]): $CancellablePromise<launcher$0.ServiceView> {
+    return $Call.ByID(1569902587, id, ids).then(($result: any) => {
+        return $$createType0($result);
+    });
+}
+
+/**
  * SetGameLaunchMode persists the next launch choice without changing a running game.
  */
 export function SetGameLaunchMode(id: string, mode: string): $CancellablePromise<launcher$0.ServiceView> {
@@ -184,6 +183,14 @@ export function StartAll(): $CancellablePromise<launcher$0.BatchResult> {
     return $Call.ByID(1593724210).then(($result: any) => {
         return $$createType11($result);
     });
+}
+
+/**
+ * StartLaunchTargets starts an explicit selection without changing defaults or
+ * stopping already-running targets. Commands always come from saved config.
+ */
+export function StartLaunchTargets(id: string, targetIDs: string[]): $CancellablePromise<void> {
+    return $Call.ByID(1936396262, id, targetIDs);
 }
 
 export function StartService(id: string): $CancellablePromise<void> {

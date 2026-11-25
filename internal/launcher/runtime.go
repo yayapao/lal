@@ -69,30 +69,10 @@ func (m *serviceManager) serviceIDsForModule(module string) []string {
 	return ids
 }
 
-func (m *serviceManager) runningIDs() []string {
-	m.mu.RLock()
-	defer m.mu.RUnlock()
-	ids := make([]string, 0, len(m.processes))
-	for _, service := range m.services {
-		if _, ok := m.processes[service.ID]; ok {
-			ids = append(ids, service.ID)
-		}
-	}
-	return ids
-}
-
-func (m *serviceManager) isRunningOrStarting(id string) bool {
-	m.mu.RLock()
-	defer m.mu.RUnlock()
-	_, ok := m.processes[id]
-	return ok || m.lastStatus[id] == "starting"
-}
-
 func (m *serviceManager) isStoppable(id string) bool {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
-	_, running := m.processes[id]
-	return running && m.lastStatus[id] != "stopping"
+	return m.serviceBusyLocked(id) && m.lastStatus[id] != "stopping"
 }
 
 func (m *serviceManager) runningCount() int {
@@ -102,8 +82,15 @@ func (m *serviceManager) runningCount() int {
 }
 
 func (m *serviceManager) stopAllProcesses() {
-	for _, id := range m.runningIDs() {
-		_ = m.StopService(id)
+	m.mu.Lock()
+	m.shuttingDown = true
+	ids := make([]string, 0, len(m.processes))
+	for id := range m.processes {
+		ids = append(ids, id)
+	}
+	m.mu.Unlock()
+	for _, id := range ids {
+		_ = m.stopManagedProcess(id)
 	}
 	for _, id := range m.runningScriptIDs() {
 		_ = m.StopPackageScript(id)
@@ -140,10 +127,13 @@ func validateService(service Service) error {
 	if strings.TrimSpace(service.Directory) == "" {
 		return fmt.Errorf("项目目录不能为空")
 	}
-	if command := strings.TrimSpace(service.Command); command == "" {
+	if command := strings.TrimSpace(service.Command); command == "" && len(service.LaunchTargets) == 0 {
 		return fmt.Errorf("启动命令不能为空")
 	} else if len(command) > maxCommandLength {
 		return fmt.Errorf("启动命令不能超过 %d 个字符", maxCommandLength)
+	}
+	if err := validateLaunchTargets(service); err != nil {
+		return err
 	}
 	if err := validateGameLaunch(service); err != nil {
 		return err
@@ -175,7 +165,7 @@ func uniqueIDs(ids []string) []string {
 
 func serviceEqual(left, right Service) bool {
 	return left.ID == right.ID && left.Name == right.Name && left.Module == right.Module && left.Workspace == right.Workspace && left.Directory == right.Directory && left.Command == right.Command &&
-		left.BuildCommand == right.BuildCommand && slices.Equal(left.BuildProfiles, right.BuildProfiles) && left.BuildBeforeLaunch == right.BuildBeforeLaunch && left.ReleaseCommand == right.ReleaseCommand && left.LaunchMode == right.LaunchMode && left.URL == right.URL && left.CleanCommand == right.CleanCommand
+		slices.Equal(left.LaunchTargets, right.LaunchTargets) && left.BuildCommand == right.BuildCommand && slices.Equal(left.BuildProfiles, right.BuildProfiles) && left.BuildBeforeLaunch == right.BuildBeforeLaunch && left.ReleaseCommand == right.ReleaseCommand && left.LaunchMode == right.LaunchMode && left.URL == right.URL && left.CleanCommand == right.CleanCommand
 }
 
 func normalizeModule(value string) string {

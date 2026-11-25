@@ -2,10 +2,12 @@ package launcher
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"io"
 	"net"
 	"net/url"
+	"os"
 	"strings"
 	"time"
 )
@@ -63,7 +65,7 @@ func (m *serviceManager) captureOutput(id, stream string, reader io.Reader) {
 		}
 		m.appendLog(id, stream, line)
 	}
-	if err := scanner.Err(); err != nil {
+	if err := scanner.Err(); err != nil && !errors.Is(err, os.ErrClosed) {
 		m.appendLog(id, "system", fmt.Sprintf("读取%s失败：%v", stream, err))
 	}
 }
@@ -167,13 +169,23 @@ func (m *serviceManager) appendLog(id, stream, text string) {
 		Text:      text,
 	}
 	m.mu.Lock()
-	entries := append(m.logs[id], entry)
-	if len(entries) > maxLogEntries {
-		entries = append([]LogEntry(nil), entries[len(entries)-maxLogEntries:]...)
+	m.storeLogLocked(id, entry)
+	root := parentID(id)
+	var aggregate *LogEntry
+	if root != id {
+		copy := entry
+		copy.ServiceID, copy.TargetID = root, id
+		if child, ok := m.targetByIDLocked(id); ok {
+			copy.Text = "[" + child.Name + "] " + copy.Text
+		}
+		m.storeLogLocked(root, copy)
+		aggregate = &copy
 	}
-	m.logs[id] = entries
 	m.mu.Unlock()
 	m.emitEvent("service:log", entry)
+	if aggregate != nil {
+		m.emitEvent("service:log", *aggregate)
+	}
 }
 
 func (m *serviceManager) failStart(id string, err error) {
@@ -224,7 +236,7 @@ func (m *serviceManager) finalizeStoppedProcess(id string, process *processState
 
 func (m *serviceManager) emitState(id string) {
 	m.mu.RLock()
-	service, ok := m.serviceByIDLocked(id)
+	service, ok := m.serviceByIDLocked(parentID(id))
 	if !ok {
 		m.mu.RUnlock()
 		return

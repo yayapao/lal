@@ -36,7 +36,7 @@ import {useWorkspaceManager} from './hooks/useWorkspaceManager';
 import {useNetworkInfo} from './hooks/useNetworkInfo';
 import {moduleOf, ungroupedWorkspace} from './types';
 import type {AppModule, BatchBusyState, DialogState, MenuState, OperationIssue, RightView, ServiceView, ToastState, WorkspaceGroup} from './types';
-import {isActive, isStoppable} from './utils';
+import {needsDefaultStart, isActive, isStoppable} from './utils';
 
 function App() {
     const [activeModule, setActiveModule] = useState<AppModule>('service');
@@ -81,7 +81,7 @@ function App() {
     const filteredServices = useMemo(() => {
         const keyword = query.trim().toLocaleLowerCase();
         if (!keyword) return activeServices;
-        return activeServices.filter(service => [service.name, service.workspace ?? '', service.directory, service.command, service.url ?? '', service.projectType]
+        return activeServices.filter(service => [service.name, service.workspace ?? '', service.directory, service.command, service.url ?? '', service.projectType, ...(service.launchTargets ?? []).flatMap(target => [target.name, target.command, target.url ?? ''])]
             .some(value => value.toLocaleLowerCase().includes(keyword)));
     }, [query, activeServices]);
     const workspaceGroups = useMemo(() => {
@@ -96,7 +96,7 @@ function App() {
     }, [filteredServices]);
     const showWorkspaceGroups = workspaceGroups.length > 1 || workspaceGroups[0]?.name !== ungroupedWorkspace;
     const checkedServices = useMemo(() => activeServices.filter(service => checkedIds.has(service.id)), [checkedIds, activeServices]);
-    const checkedStartableCount = checkedServices.filter(service => !isActive(service) && service.pathExists).length;
+    const checkedStartableCount = checkedServices.filter(service => needsDefaultStart(service)).length;
     const checkedStoppableCount = checkedServices.filter(isStoppable).length;
     const visibleCheckedCount = filteredServices.filter(service => checkedIds.has(service.id)).length;
     const allVisibleChecked = filteredServices.length > 0 && visibleCheckedCount === filteredServices.length;

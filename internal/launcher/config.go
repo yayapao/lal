@@ -23,6 +23,7 @@ func defaultConfigPath() string {
 func newServiceManager(configPath string) *serviceManager {
 	m := &serviceManager{
 		configPath:       configPath,
+		targetBusy:       make(map[string]bool),
 		processes:        make(map[string]*processState),
 		lastStatus:       make(map[string]string),
 		lastError:        make(map[string]string),
@@ -124,7 +125,13 @@ func (m *serviceManager) GetAppState() AppState {
 	m.mu.RUnlock()
 	for i := range state.Services {
 		view := &state.Services[i]
-		if view.URL != "" && (view.Status != "running" || isNativeGame(view.Service)) {
+		for j := range view.TargetViews {
+			target := &view.TargetViews[j]
+			if target.Status != "running" && target.URL != "" {
+				target.Port = inspectExternalPort(target.Service)
+			}
+		}
+		if len(view.LaunchTargets) == 0 && view.URL != "" && (view.Status != "running" || isNativeGame(view.Service)) {
 			view.Port = inspectExternalPort(view.Service)
 		}
 	}
@@ -134,6 +141,7 @@ func (m *serviceManager) GetAppState() AppState {
 func (input ServiceInput) service(id string) Service {
 	return Service{
 		ID:                id,
+		LaunchTargets:     normalizeLaunchTargets(input.LaunchTargets),
 		Name:              strings.TrimSpace(input.Name),
 		Module:            normalizeModule(input.Module),
 		Workspace:         strings.TrimSpace(input.Workspace),
@@ -184,7 +192,7 @@ func (m *serviceManager) UpdateService(id string, input ServiceInput) (ServiceVi
 		m.mu.Unlock()
 		return ServiceView{}, fmt.Errorf("服务不存在")
 	}
-	if _, running := m.processes[id]; running || m.lastStatus[id] == "starting" {
+	if m.serviceBusyLocked(id) {
 		m.mu.Unlock()
 		return ServiceView{}, fmt.Errorf("请先停止服务再修改配置")
 	}
@@ -203,6 +211,7 @@ func (m *serviceManager) UpdateService(id string, input ServiceInput) (ServiceVi
 		m.mu.Unlock()
 		return ServiceView{}, err
 	}
+	m.clearTargetStateLocked(previous)
 	view := m.serviceViewLocked(updated)
 	m.mu.Unlock()
 	m.emitEvent("services:changed", view)
@@ -216,7 +225,7 @@ func (m *serviceManager) DeleteService(id string) error {
 		m.mu.Unlock()
 		return fmt.Errorf("服务不存在")
 	}
-	if _, running := m.processes[id]; running || m.lastStatus[id] == "starting" {
+	if m.serviceBusyLocked(id) {
 		m.mu.Unlock()
 		return fmt.Errorf("请先停止服务再删除")
 	}
@@ -231,6 +240,7 @@ func (m *serviceManager) DeleteService(id string) error {
 		m.mu.Unlock()
 		return err
 	}
+	m.clearTargetStateLocked(previous[index])
 	delete(m.logs, id)
 	delete(m.scriptProcesses, id)
 	delete(m.activeScript, id)

@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	configVersion         = 9
+	configVersion         = 10
 	maxLogEntries         = 1200
 	maxCommandLength      = 1000
 	maxCleanCommandLength = 2000
@@ -31,6 +31,7 @@ var ansiPattern = regexp.MustCompile(`\x1b(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])`)
 const shellCommandWrapper = `if [[ -r "$HOME/.zshrc" ]]; then source "$HOME/.zshrc"; fi; eval "$1"`
 
 type Service struct {
+	LaunchTargets     []LaunchTarget `json:"launchTargets,omitempty"`
 	ID                string         `json:"id"`
 	Name              string         `json:"name"`
 	Module            string         `json:"module,omitempty"`
@@ -47,6 +48,7 @@ type Service struct {
 }
 
 type ServiceInput struct {
+	LaunchTargets     []LaunchTarget `json:"launchTargets,omitempty"`
 	Name              string         `json:"name"`
 	Module            string         `json:"module"`
 	Workspace         string         `json:"workspace"`
@@ -63,24 +65,25 @@ type ServiceInput struct {
 
 type ServiceView struct {
 	Service
-	PackageInfo         *PackageInfo `json:"packageInfo,omitempty"`
-	IconPath            string       `json:"iconPath,omitempty"`
-	IconVersion         string       `json:"iconVersion,omitempty"`
-	ConfiguredWorkspace string       `json:"configuredWorkspace,omitempty"`
-	ActiveScript        string       `json:"activeScript,omitempty"`
-	ActiveBuildName     string       `json:"activeBuildName,omitempty"`
-	ActiveBuildCommand  string       `json:"activeBuildCommand,omitempty"`
-	ScriptStatus        string       `json:"scriptStatus,omitempty"`
-	ScriptStatusInfo    string       `json:"scriptStatusInfo,omitempty"`
-	ProjectType         string       `json:"projectType"`
-	Status              string       `json:"status"`
-	PID                 int          `json:"pid"`
-	StartedAt           string       `json:"startedAt"`
-	LastError           string       `json:"lastError"`
-	PathExists          bool         `json:"pathExists"`
-	Health              string       `json:"health"`
-	HealthInfo          string       `json:"healthInfo"`
-	Port                *PortView    `json:"port,omitempty"`
+	TargetViews         []ServiceView `json:"targetViews,omitempty"`
+	PackageInfo         *PackageInfo  `json:"packageInfo,omitempty"`
+	IconPath            string        `json:"iconPath,omitempty"`
+	IconVersion         string        `json:"iconVersion,omitempty"`
+	ConfiguredWorkspace string        `json:"configuredWorkspace,omitempty"`
+	ActiveScript        string        `json:"activeScript,omitempty"`
+	ActiveBuildName     string        `json:"activeBuildName,omitempty"`
+	ActiveBuildCommand  string        `json:"activeBuildCommand,omitempty"`
+	ScriptStatus        string        `json:"scriptStatus,omitempty"`
+	ScriptStatusInfo    string        `json:"scriptStatusInfo,omitempty"`
+	ProjectType         string        `json:"projectType"`
+	Status              string        `json:"status"`
+	PID                 int           `json:"pid"`
+	StartedAt           string        `json:"startedAt"`
+	LastError           string        `json:"lastError"`
+	PathExists          bool          `json:"pathExists"`
+	Health              string        `json:"health"`
+	HealthInfo          string        `json:"healthInfo"`
+	Port                *PortView     `json:"port,omitempty"`
 }
 
 type PackageScript struct {
@@ -104,6 +107,7 @@ type AppState struct {
 }
 
 type LogEntry struct {
+	TargetID  string `json:"targetId,omitempty"`
 	ServiceID string `json:"serviceId"`
 	Timestamp string `json:"timestamp"`
 	Stream    string `json:"stream"`
@@ -182,6 +186,8 @@ type serviceManager struct {
 	configPath       string
 	services         []Service
 	workspaces       []string
+	shuttingDown     bool
+	targetBusy       map[string]bool
 	processes        map[string]*processState
 	lastStatus       map[string]string
 	lastError        map[string]string

@@ -15,6 +15,7 @@ type ProjectScript struct {
 }
 
 type ProjectDetection struct {
+	LaunchTargets     []LaunchTarget  `json:"launchTargets"`
 	Directory         string          `json:"directory"`
 	Name              string          `json:"name"`
 	Workspace         string          `json:"workspace"`
@@ -104,6 +105,7 @@ func (m *serviceManager) DetectProject(directory string) (ProjectDetection, erro
 	if manifestURL != "" {
 		result.URL = manifestURL
 	}
+	applyDetectedTargets(&result)
 	appendManifestNotice(&result, manifestFound, manifestWarning)
 	if result.ProjectType == "vite" && result.CleanCommand == defaultCleanCommand {
 		result.CleanCommand = "rm -rf node_modules/.vite"

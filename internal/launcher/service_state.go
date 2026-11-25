@@ -24,7 +24,7 @@ func (m *serviceManager) serviceByIDLocked(id string) (Service, bool) {
 	if index := m.serviceIndexLocked(id); index >= 0 {
 		return m.services[index], true
 	}
-	return Service{}, false
+	return m.targetByIDLocked(id)
 }
 
 func (m *serviceManager) serviceIndexLocked(id string) int {
@@ -98,6 +98,9 @@ func (m *serviceManager) serviceViewLocked(service Service) ServiceView {
 	} else {
 		view.ScriptStatus = m.scriptStatus[service.ID]
 		view.ScriptStatusInfo = m.scriptStatusInfo[service.ID]
+	}
+	if len(service.LaunchTargets) > 0 {
+		m.applyTargetViewsLocked(&view)
 	}
 	return view
 }

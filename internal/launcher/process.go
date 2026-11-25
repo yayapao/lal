@@ -9,11 +9,7 @@ import (
 	"time"
 )
 
-func (m *serviceManager) StartService(id string) error {
-	return m.startManagedService(id, false)
-}
-
-func (m *serviceManager) StopService(id string) error {
+func (m *serviceManager) stopManagedProcess(id string) error {
 	m.mu.Lock()
 	process, running := m.processes[id]
 	if !running {
@@ -64,10 +60,10 @@ func (m *serviceManager) StopService(id string) error {
 	return nil
 }
 
-// RestartService stops the process managed by LAL and starts it again. A
+// restartSingleService stops the process managed by LAL and starts it again. A
 // stopped service is started directly; services in a transition state must
 // finish that transition before another lifecycle operation is allowed.
-func (m *serviceManager) RestartService(id string) error {
+func (m *serviceManager) restartSingleService(id string) error {
 	m.mu.RLock()
 	service, ok := m.serviceByIDLocked(id)
 	status := m.lastStatus[id]
@@ -83,17 +79,17 @@ func (m *serviceManager) RestartService(id string) error {
 		return fmt.Errorf("项目目录不存在：%s", service.Directory)
 	}
 	if running {
-		if err := m.StopService(id); err != nil {
+		if err := m.stopManagedProcess(id); err != nil {
 			return err
 		}
 	}
-	return m.StartService(id)
+	return m.startManagedService(id, false)
 }
 
-// ClearNextCache runs the configured cache-cleanup command in the project
+// clearSingleCache runs the configured cache-cleanup command in the project
 // directory. A running service is restarted after cleanup so that Next.js
 // rebuilds from the fresh cache state.
-func (m *serviceManager) ClearNextCache(id string) error {
+func (m *serviceManager) clearSingleCache(id string) error {
 	service, err := m.serviceByID(id)
 	if err != nil {
 		return err
@@ -111,7 +107,7 @@ func (m *serviceManager) ClearNextCache(id string) error {
 	}
 	service.CleanCommand = normalizeCleanCommand(service.CleanCommand)
 	if running {
-		if err := m.StopService(id); err != nil {
+		if err := m.stopManagedProcess(id); err != nil {
 			return err
 		}
 	}
@@ -129,7 +125,7 @@ func (m *serviceManager) ClearNextCache(id string) error {
 	m.appendLog(id, "system", fmt.Sprintf("已执行缓存清理脚本：%s", service.CleanCommand))
 
 	if running {
-		if err := m.StartService(id); err != nil {
+		if err := m.startManagedService(id, false); err != nil {
 			return fmt.Errorf("缓存已清除，但服务重启失败：%w", err)
 		}
 	}

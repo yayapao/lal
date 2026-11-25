@@ -55,3 +55,9 @@ export function errorMessage(error: unknown) {
     if (error instanceof Error && error.message) return error.message;
     return '操作失败';
 }
+
+export function needsDefaultStart(service: ServiceView) {
+    if (!service.pathExists) return false;
+    if (!service.launchTargets?.length) return !isActive(service);
+    return service.launchTargets.some(target => target.default && !service.targetViews?.some(view => view.id === `${service.id}::${target.id}` && isActive(view)));
+}

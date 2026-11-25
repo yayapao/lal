@@ -10,6 +10,7 @@ export {
     GitConfigEntry,
     GitDetails,
     GitStatus,
+    LaunchTarget,
     LogEntry,
     NetworkInterface,
     NetworkSnapshot,

@@ -12,6 +12,25 @@ For example, an existing Vite project might use the folder `~/Projects/my-web`, 
 }
 ```
 
+A monorepo can declare multiple processes under one project directory:
+
+```json
+{
+  "url": "http://localhost:3900",
+  "cleanCommand": "rm -rf apps/platform/.next",
+  "launchTargets": [
+    {"id": "platform", "name": "ViewAI", "command": "npm run dev:platform", "url": "http://localhost:3900", "default": true},
+    {"id": "ppt", "name": "PPT", "command": "npm run dev:ppt", "url": "http://localhost:3930", "default": false}
+  ]
+}
+```
+
+New projects read the declaration automatically. For existing projects, use **Project processes → Read from project** in the editor and save. Up to16 processes share the directory, Git context and root package tasks. IDs must be unique, at most64 characters, and contain letters, digits, underscores or hyphens. Saved LAL configuration takes precedence over later manifest edits.
+
+Expand the card to start a temporary selection, save defaults or control individual processes. Main and batch startup use saved defaults; stopping the project stops all its managed processes. Restart and cache cleanup preserve the currently running combination. Empty defaults prompt for a selection and never fall back to the old single-process command. Running processes are not duplicated; a failed process does not stop its siblings. Dependency order and readiness are not inferred.
+
+Logs retain process labels and support filtering; resources sum all managed process groups. Run a shared build once through the root package task panel: selecting processes does not trigger repeated builds. Adapt cleanup commands to the project; production cleanup should retain built artifacts. Configuration version10 preserves existing single-process projects and games without automatically merging old project records. Exiting LAL stops owned processes; foreign listeners are not taken over automatically.
+
 Games can also declare Release launch and build/export commands:
 
 ```json

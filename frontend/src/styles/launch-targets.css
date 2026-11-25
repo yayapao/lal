@@ -1,0 +1,23 @@
+.launch-targets-editor { display: grid; gap: 10px; border-top: 1px solid var(--line); padding-top: 12px; }
+.target-heading, .target-main, .target-actions { display: flex; align-items: center; gap: 8px; }
+.target-heading { justify-content: space-between; }
+.target-heading label { flex: 1; min-width: 0; }
+.target-fields { display: grid; gap: 10px; padding: 12px; background: var(--panel-raised); border: 1px solid var(--line); border-radius: 8px; }
+.target-checkbox { display: flex !important; align-items: center; gap: 7px; min-width: 0; }
+.target-checkbox input { width: 14px; height: 14px; flex: 0 0 14px; margin: 0; }
+.target-checkbox span { overflow-wrap: anywhere; }
+.launch-target-panel { margin-top: 8px; min-width: 0; }
+.target-disclosure { display: inline-flex; align-items: center; gap: 5px; border: 0; background: transparent; padding: 3px 0; color: var(--muted); font-size: 11px; cursor: pointer; }
+.target-disclosure svg { transform: rotate(-90deg); }
+.target-disclosure svg.is-open { transform: rotate(0); }
+.target-list { display: grid; gap: 8px; margin-top: 7px; }
+.target-row { display: grid; gap: 5px; border-left: 2px solid var(--line); padding: 5px 0 5px 10px; min-width: 0; }
+.target-main { flex-wrap: wrap; font-size: 12px; }
+.target-main .icon-button { width: 24px; height: 24px; margin-left: auto; }
+.target-row code { font-size: 10px; color: var(--muted); white-space: normal; overflow-wrap: anywhere; }
+.target-default { border: 1px solid var(--line); border-radius: 4px; padding: 1px 4px; font-size: 10px; color: var(--muted); }
+.target-actions { flex-wrap: wrap; padding-top: 3px; }
+.target-actions button { font-size: 11px; }
+.target-log-select { min-width: 0; max-width: 150px; font-size: 11px; padding: 4px; }
+
+.launch-target-panel .service-error { white-space: pre-wrap; overflow-wrap: anywhere; }

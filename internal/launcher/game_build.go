@@ -101,6 +101,9 @@ func (m *serviceManager) startGameProcess(id string, buildOnly bool, profileID s
 // The caller holds mu through process registration, including build-to-launch
 // handoff, so stop, edit and duplicate starts cannot race that handoff.
 func (m *serviceManager) launchProcessLocked(service Service, command, status string) (*processState, error) {
+	if m.shuttingDown {
+		return nil, fmt.Errorf("LAL 正在退出，无法启动新进程")
+	}
 	args := append(append([]string(nil), m.commandArgs...), command)
 	cmd := exec.Command(m.commandShell, args...)
 	cmd.Dir = service.Directory

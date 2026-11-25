@@ -1,6 +1,7 @@
 import * as main from '../wailsjs/lal/internal/launcher/models';
 
 export type ServiceView = main.ServiceView;
+export type LaunchTarget = main.LaunchTarget;
 export type BuildProfile = main.BuildProfile;
 export type LogEntry = main.LogEntry;
 export type ResourceUsage = main.ResourceUsage;
@@ -12,7 +13,7 @@ export type AppModule = 'service' | 'game';
 export type RightView = 'logs' | 'git' | 'network';
 export type BatchBusyState = 'all-start' | 'all-stop' | 'selected-start' | 'selected-stop' | null;
 export type DialogState = {mode: 'create'; module: AppModule} | {mode: 'edit'; service: ServiceView};
-export type ServiceForm = {name: string; workspace: string; directory: string; command: string; releaseCommand?: string; buildCommand?: string; buildProfiles?: BuildProfile[]; buildBeforeLaunch?: boolean; launchMode?: string; url: string; cleanCommand: string};
+export type ServiceForm = {launchTargets?: LaunchTarget[];name: string; workspace: string; directory: string; command: string; releaseCommand?: string; buildCommand?: string; buildProfiles?: BuildProfile[]; buildBeforeLaunch?: boolean; launchMode?: string; url: string; cleanCommand: string};
 export type ToastState = {kind: 'success' | 'error'; message: string};
 export type MenuState = {service: ServiceView; left: number; top: number};
 export type OperationIssue = {title: string; message: string; actionLabel?: string; onAction?: () => Promise<void>};

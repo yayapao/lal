@@ -16,8 +16,10 @@ func (m *serviceManager) GetResourceUsage() ([]ResourceUsage, error) {
 	groupServiceIDs := make(map[int]string, len(m.processes))
 	for _, service := range m.services {
 		serviceIDs = append(serviceIDs, service.ID)
-		if process, running := m.processes[service.ID]; running && process.cmd.Process != nil {
-			groupServiceIDs[process.cmd.Process.Pid] = service.ID
+		for _, id := range runtimeIDs(service) {
+			if process := m.processes[id]; process != nil && process.cmd.Process != nil {
+				groupServiceIDs[process.cmd.Process.Pid] = service.ID
+			}
 		}
 	}
 	m.mu.RUnlock()

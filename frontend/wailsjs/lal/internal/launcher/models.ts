@@ -364,7 +364,45 @@ export class GitStatus {
     }
 }
 
+/**
+ * LaunchTarget is a process in the same project, not a second project record.
+ */
+export class LaunchTarget {
+    "id": string;
+    "name": string;
+    "command": string;
+    "url"?: string;
+    "default": boolean;
+
+    /** Creates a new LaunchTarget instance. */
+    constructor($$source: Partial<LaunchTarget> = {}) {
+        if (!("id" in $$source)) {
+            this["id"] = "";
+        }
+        if (!("name" in $$source)) {
+            this["name"] = "";
+        }
+        if (!("command" in $$source)) {
+            this["command"] = "";
+        }
+        if (!("default" in $$source)) {
+            this["default"] = false;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new LaunchTarget instance from a string or object.
+     */
+    static createFrom($$source: any = {}): LaunchTarget {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new LaunchTarget($$parsedSource as Partial<LaunchTarget>);
+    }
+}
+
 export class LogEntry {
+    "targetId"?: string;
     "serviceId": string;
     "timestamp": string;
     "stream": string;
@@ -623,6 +661,7 @@ export class PortView {
 }
 
 export class ProjectDetection {
+    "launchTargets": LaunchTarget[];
     "directory": string;
     "name": string;
     "workspace": string;
@@ -640,6 +679,9 @@ export class ProjectDetection {
 
     /** Creates a new ProjectDetection instance. */
     constructor($$source: Partial<ProjectDetection> = {}) {
+        if (!("launchTargets" in $$source)) {
+            this["launchTargets"] = [];
+        }
         if (!("directory" in $$source)) {
             this["directory"] = "";
         }
@@ -690,22 +732,26 @@ export class ProjectDetection {
      * Creates a new ProjectDetection instance from a string or object.
      */
     static createFrom($$source: any = {}): ProjectDetection {
-        const $$createField6_0 = $$createType13;
-        const $$createField11_0 = $$createType15;
-        const $$createField12_0 = $$createType2;
+        const $$createField0_0 = $$createType13;
+        const $$createField7_0 = $$createType15;
+        const $$createField12_0 = $$createType17;
         const $$createField13_0 = $$createType2;
+        const $$createField14_0 = $$createType2;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("launchTargets" in $$parsedSource) {
+            $$parsedSource["launchTargets"] = $$createField0_0($$parsedSource["launchTargets"]);
+        }
         if ("buildProfiles" in $$parsedSource) {
-            $$parsedSource["buildProfiles"] = $$createField6_0($$parsedSource["buildProfiles"]);
+            $$parsedSource["buildProfiles"] = $$createField7_0($$parsedSource["buildProfiles"]);
         }
         if ("scripts" in $$parsedSource) {
-            $$parsedSource["scripts"] = $$createField11_0($$parsedSource["scripts"]);
+            $$parsedSource["scripts"] = $$createField12_0($$parsedSource["scripts"]);
         }
         if ("sources" in $$parsedSource) {
-            $$parsedSource["sources"] = $$createField12_0($$parsedSource["sources"]);
+            $$parsedSource["sources"] = $$createField13_0($$parsedSource["sources"]);
         }
         if ("warnings" in $$parsedSource) {
-            $$parsedSource["warnings"] = $$createField13_0($$parsedSource["warnings"]);
+            $$parsedSource["warnings"] = $$createField14_0($$parsedSource["warnings"]);
         }
         return new ProjectDetection($$parsedSource as Partial<ProjectDetection>);
     }
@@ -778,6 +824,7 @@ export class ResourceUsage {
 }
 
 export class ServiceInput {
+    "launchTargets"?: LaunchTarget[];
     "name": string;
     "module": string;
     "workspace": string;
@@ -822,16 +869,21 @@ export class ServiceInput {
      * Creates a new ServiceInput instance from a string or object.
      */
     static createFrom($$source: any = {}): ServiceInput {
-        const $$createField6_0 = $$createType13;
+        const $$createField0_0 = $$createType13;
+        const $$createField7_0 = $$createType15;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("launchTargets" in $$parsedSource) {
+            $$parsedSource["launchTargets"] = $$createField0_0($$parsedSource["launchTargets"]);
+        }
         if ("buildProfiles" in $$parsedSource) {
-            $$parsedSource["buildProfiles"] = $$createField6_0($$parsedSource["buildProfiles"]);
+            $$parsedSource["buildProfiles"] = $$createField7_0($$parsedSource["buildProfiles"]);
         }
         return new ServiceInput($$parsedSource as Partial<ServiceInput>);
     }
 }
 
 export class ServiceView {
+    "launchTargets"?: LaunchTarget[];
     "id": string;
     "name": string;
     "module"?: string;
@@ -845,6 +897,7 @@ export class ServiceView {
     "launchMode"?: string;
     "url"?: string;
     "cleanCommand": string;
+    "targetViews"?: ServiceView[];
     "packageInfo"?: PackageInfo | null;
     "iconPath"?: string;
     "iconVersion"?: string;
@@ -913,18 +966,26 @@ export class ServiceView {
      * Creates a new ServiceView instance from a string or object.
      */
     static createFrom($$source: any = {}): ServiceView {
-        const $$createField7_0 = $$createType13;
-        const $$createField13_0 = $$createType17;
-        const $$createField30_0 = $$createType19;
+        const $$createField0_0 = $$createType13;
+        const $$createField8_0 = $$createType15;
+        const $$createField14_0 = $$createType1;
+        const $$createField15_0 = $$createType19;
+        const $$createField32_0 = $$createType21;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("launchTargets" in $$parsedSource) {
+            $$parsedSource["launchTargets"] = $$createField0_0($$parsedSource["launchTargets"]);
+        }
         if ("buildProfiles" in $$parsedSource) {
-            $$parsedSource["buildProfiles"] = $$createField7_0($$parsedSource["buildProfiles"]);
+            $$parsedSource["buildProfiles"] = $$createField8_0($$parsedSource["buildProfiles"]);
+        }
+        if ("targetViews" in $$parsedSource) {
+            $$parsedSource["targetViews"] = $$createField14_0($$parsedSource["targetViews"]);
         }
         if ("packageInfo" in $$parsedSource) {
-            $$parsedSource["packageInfo"] = $$createField13_0($$parsedSource["packageInfo"]);
+            $$parsedSource["packageInfo"] = $$createField15_0($$parsedSource["packageInfo"]);
         }
         if ("port" in $$parsedSource) {
-            $$parsedSource["port"] = $$createField30_0($$parsedSource["port"]);
+            $$parsedSource["port"] = $$createField32_0($$parsedSource["port"]);
         }
         return new ServiceView($$parsedSource as Partial<ServiceView>);
     }
@@ -951,7 +1012,7 @@ export class WorkspaceLayout {
      */
     static createFrom($$source: any = {}): WorkspaceLayout {
         const $$createField0_0 = $$createType2;
-        const $$createField1_0 = $$createType20;
+        const $$createField1_0 = $$createType22;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("workspaces" in $$parsedSource) {
             $$parsedSource["workspaces"] = $$createField0_0($$parsedSource["workspaces"]);
@@ -976,12 +1037,14 @@ const $$createType8 = NetworkInterface.createFrom;
 const $$createType9 = $Create.Array($$createType8);
 const $$createType10 = PackageScript.createFrom;
 const $$createType11 = $Create.Array($$createType10);
-const $$createType12 = BuildProfile.createFrom;
+const $$createType12 = LaunchTarget.createFrom;
 const $$createType13 = $Create.Array($$createType12);
-const $$createType14 = ProjectScript.createFrom;
+const $$createType14 = BuildProfile.createFrom;
 const $$createType15 = $Create.Array($$createType14);
-const $$createType16 = PackageInfo.createFrom;
-const $$createType17 = $Create.Nullable($$createType16);
-const $$createType18 = PortView.createFrom;
+const $$createType16 = ProjectScript.createFrom;
+const $$createType17 = $Create.Array($$createType16);
+const $$createType18 = PackageInfo.createFrom;
 const $$createType19 = $Create.Nullable($$createType18);
-const $$createType20 = $Create.Map($Create.Any, $Create.Any);
+const $$createType20 = PortView.createFrom;
+const $$createType21 = $Create.Nullable($$createType20);
+const $$createType22 = $Create.Map($Create.Any, $Create.Any);

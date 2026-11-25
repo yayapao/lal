@@ -10,6 +10,8 @@ import (
 const lalManifestFilename = ".lal.json"
 
 type lalProjectManifest struct {
+	LaunchTargets     []LaunchTarget `json:"launchTargets"`
+	CleanCommand      string         `json:"cleanCommand"`
 	URL               string         `json:"url"`
 	ReleaseCommand    string         `json:"releaseCommand"`
 	BuildCommand      string         `json:"buildCommand"`

@@ -14,7 +14,7 @@ func (m *serviceManager) StartServices(ids []string) BatchResult {
 			result.Errors = append(result.Errors, err.Error())
 			continue
 		}
-		if m.isRunningOrStarting(id) {
+		if m.defaultTargetsRunning(id) {
 			result.Skipped++
 			continue
 		}

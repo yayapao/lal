@@ -1,3 +1,4 @@
+import LaunchTargetPanel from './LaunchTargetPanel';
 import PortNotice from './PortNotice';
 import {portActionLabel} from '../hooks/usePortActions';
 import {CircleAlert, Ellipsis, ExternalLink, LoaderCircle, Play, Square} from 'lucide-react';
@@ -34,7 +35,7 @@ export default function ServiceRow({service, usage, selected, checked, busy, sel
                 </div>
                 <div className={service.pathExists ? 'service-path' : 'service-path path-invalid'} title={service.directory}>{!service.pathExists && <CircleAlert size={12}/>}<span>{service.directory}</span></div>
                 <div className="service-meta">
-                    <code className="service-command" title={service.command}>{service.command}</code>
+                    <code className="service-command" title={service.command}>{service.launchTargets?.length ? `${service.launchTargets.length} 个进程 · 默认 ${service.launchTargets.filter(target => target.default).length} 个` : service.command}</code>
                 </div>
                 <div className="service-links">
                     <GitBadge status={gitStatus} name={service.name} onOpen={onOpenGit}/>
@@ -42,6 +43,7 @@ export default function ServiceRow({service, usage, selected, checked, busy, sel
                         <ExternalLink size={11}/><span>{displayURL(service.url)}</span>
                     </button>}
                 </div>
+                {Boolean(service.launchTargets?.length) && <LaunchTargetPanel service={service} disabled={busy}/>}
                 <PortNotice service={service}/>
                 {service.lastError && !(service.port && service.lastError.startsWith('启动失败：端口')) && <div className="service-error" title={service.lastError}>{service.lastError}</div>}
             </div>
