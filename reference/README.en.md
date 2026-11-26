@@ -16,20 +16,22 @@ A monorepo can declare multiple processes under one project directory:
 
 ```json
 {
-  "url": "http://localhost:3900",
-  "cleanCommand": "rm -rf apps/platform/.next",
+  "url": "http://localhost:3000",
+  "cleanCommand": "rm -rf apps/web/.next",
   "launchTargets": [
-    {"id": "platform", "name": "ViewAI", "command": "npm run dev:platform", "url": "http://localhost:3900", "default": true},
-    {"id": "ppt", "name": "PPT", "command": "npm run dev:ppt", "url": "http://localhost:3930", "default": false}
+    {"id": "web", "name": "Web", "command": "npm run dev:web", "url": "http://localhost:3000", "default": true},
+    {"id": "api", "name": "API", "command": "npm run dev:api", "url": "http://localhost:3001", "default": true}
   ]
 }
 ```
 
 New projects read the declaration automatically. For existing projects, use **Project processes → Read from project** in the editor and save. Up to16 processes share the directory, Git context and root package tasks. IDs must be unique, at most64 characters, and contain letters, digits, underscores or hyphens. Saved LAL configuration takes precedence over later manifest edits.
 
-Expand the card to start a temporary selection, save defaults or control individual processes. Main and batch startup use saved defaults; stopping the project stops all its managed processes. Restart and cache cleanup preserve the currently running combination. Empty defaults prompt for a selection and never fall back to the old single-process command. Running processes are not duplicated; a failed process does not stop its siblings. Dependency order and readiness are not inferred.
+Switch to Monorepo in the service module and choose a project to see its flat service list. Open the project actions (...) and select “配置默认启动” (Configure default startup), select multiple services and save. “启动默认” (Start defaults) launches that combination. Defaults can be changed while services are running and apply to the next default start. Each service has independent controls and a URL.
 
-Logs retain process labels and support filtering; resources sum all managed process groups. Run a shared build once through the root package task panel: selecting processes does not trigger repeated builds. Adapt cleanup commands to the project; production cleanup should retain built artifacts. Configuration version10 preserves existing single-process projects and games without automatically merging old project records. Exiting LAL stops owned processes; foreign listeners are not taken over automatically.
+The main and batch start actions use saved defaults. Stopping a project stops all its managed processes; restart and cache cleanup preserve the running combination. Empty defaults disable Start defaults in the Monorepo view; configure a new selection or start services individually. Running processes are not duplicated, and a failure does not stop its siblings. The project handles dependencies and readiness order.
+
+Selecting a service row or changing the log filter keeps both selections in sync. Choose all logs for the complete project. Resource usage sums all managed process groups. Run a shared build once through the root package task panel: selecting processes does not trigger repeated builds. Adapt cleanup commands to the project; production cleanup should retain built artifacts. Configuration version10 preserves existing single-process projects and games without automatically merging old project records. Exiting LAL stops owned processes; foreign listeners are not taken over automatically.
 
 Games can also declare Release launch and build/export commands:
 
@@ -102,6 +104,7 @@ Use separate demo projects and configuration. Keep only LAL and any necessary pr
 
 Screenshots show the actual frontend using demo projects and data. The UI and feature diagram are primarily in Chinese.
 
-- [Service workbench screenshot](../assets/readme/services.jpg)
-- [Game library screenshot](../assets/readme/games.jpg)
-- [Feature diagram](../assets/readme/overview.png) · [Editable Excalidraw source](../assets/readme/overview.excalidraw)
+- [Monorepo workbench](../assets/readme/monorepo.png)
+- [Default startup selection](../assets/readme/default-launch.png)
+- [Service overview](../assets/readme/services.png)
+- [Game library and build profiles](../assets/readme/games.png)

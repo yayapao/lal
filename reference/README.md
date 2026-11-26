@@ -16,20 +16,22 @@ Monorepo 可在同一项目内声明多个进程，共用项目目录、Git 信�
 
 ```json
 {
-  "url": "http://localhost:3900",
-  "cleanCommand": "rm -rf apps/platform/.next",
+  "url": "http://localhost:3000",
+  "cleanCommand": "rm -rf apps/web/.next",
   "launchTargets": [
-    {"id": "platform", "name": "ViewAI", "command": "npm run dev:platform", "url": "http://localhost:3900", "default": true},
-    {"id": "ppt", "name": "PPT", "command": "npm run dev:ppt", "url": "http://localhost:3930", "default": false}
+    {"id": "web", "name": "Web", "command": "npm run dev:web", "url": "http://localhost:3000", "default": true},
+    {"id": "api", "name": "API", "command": "npm run dev:api", "url": "http://localhost:3001", "default": true}
   ]
 }
 ```
 
 添加项目时自动读取；已有项目在编辑配置中的“项目进程 → 从项目读取”导入并保存。每个项目最多16个进程，ID 唯一，由字母、数字、下划线或连字符组成，最多64位；命令在项目根目录执行。进程选择保存后以 LAL 配置为准，不会随声明文件变化自动覆盖。
 
-展开项目卡片可临时勾选“启动所选”，也可“设为默认”。主启动按钮与批量启动使用保存的默认组合，停止项目会停止其全部受管进程；重启和清缓存保留实际运行组合。默认组合可为空，此时主按钮提示选择，不运行原单进程命令。已运行进程不重复启动，单个失败不停止其他进程；独立进程不自动推断依赖或等待其他进程就绪。
+在服务模块切换到 Monorepo 视图，选择项目后直接查看平铺的服务列表。通过“项目操作（…）→ 配置默认启动”勾选多个服务并保存，“启动默认”启动保存的组合；运行中也可调整默认组合，下次默认启动时生效。每个服务可独立启停与打开访问地址。
 
-各进程保留状态、PID、端口检查与日志；项目资源合计所有受管进程组，日志面板可切换“全部进程”或指定进程。一次性的统一构建通过根项目脚本执行，选进程启动不会自动重复构建。缓存清理脚本需适配实际目录，生产包应只清缓存，保留构建产物。退出 LAL 时清理所有受管进程，外部端口占用不自动接管。配置版本10兼容旧单进程项目，不会自动合并此前添加的独立项目。
+项目的主启动按钮与批量启动使用默认组合，停止项目会停止其全部受管进程；重启和清缓存保留实际运行组合。默认组合可为空，此时 Monorepo 的“启动默认”禁用，可重新配置或逐个启动服务。已运行进程不重复启动，单个失败不停止其他进程；进程之间的依赖与就绪顺序由项目自行处理。
+
+各进程保留状态、端口检查与日志；项目资源合计所有受管进程组。点击服务行与切换日志进程会同步选中状态，也可查看“全部日志”。一次性的统一构建通过根项目脚本执行，选进程启动不会自动重复构建。缓存清理脚本需适配实际目录，生产包应只清缓存，保留构建产物。退出 LAL 时清理所有受管进程，外部端口占用不自动接管。配置版本10兼容旧单进程项目，不会自动合并此前添加的独立项目。
 
 游戏还可以声明正式启动和构建导出命令：
 
@@ -102,6 +104,7 @@ Kap 可通过 `brew install --cask kap` 安装。打开后选择 LAL 窗口区�
 
 界面截图来自实际前端，使用演示项目与演示数据；界面和功能示意图主要为中文。
 
-- [服务工作台截图](../assets/readme/services.jpg)
-- [游戏库截图](../assets/readme/games.jpg)
-- [功能示意图](../assets/readme/overview.png) · [可编辑 Excalidraw 源文件](../assets/readme/overview.excalidraw)
+- [Monorepo 工作台](../assets/readme/monorepo.png)
+- [默认启动多选配置](../assets/readme/default-launch.png)
+- [服务总览](../assets/readme/services.png)
+- [游戏库与打包方案](../assets/readme/games.png)

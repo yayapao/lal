@@ -5,48 +5,53 @@
 <h1 align="center">LAL · Local App Launcher</h1>
 
 <p align="center"><a href="README.md">简体中文</a> · <strong>English</strong></p>
-
-<p align="center"><strong>AI helps you build more projects. LAL helps you run them.</strong></p>
-<p align="center">A local project manager for macOS: launch development servers and games, inspect logs, ports and Git, and get back to building.</p>
+<p align="center"><strong>One click back to your development session.</strong></p>
+<p align="center">A local development workbench for macOS. Manage monorepos, development servers and games in one app.</p>
 <p align="center">
-  <a href="#getting-started">Getting started</a> · <a href="#features">Features</a> · <a href="reference/README.en.md">Reference</a> · <a href="LICENSE">MIT License</a>
+  <a href="#getting-started">Getting started</a> · <a href="#start-your-monorepo-your-way">Monorepos</a> · <a href="#a-home-for-your-game-projects">Game development</a> · <a href="reference/README.en.md">Reference</a>
 </p>
 
-![LAL service workbench with demo projects and data](assets/readme/services.jpg)
+![LAL monorepo workbench with a flat service list and process logs; demo projects and data](assets/readme/monorepo.png)
 
-As projects multiply, their folders, terminals, ports and startup commands become harder to track. LAL groups projects on your computer into Workspaces so you can start and stop them, open their pages and inspect their running state in one place.
+Web, API and worker processes often need to run together. LAL keeps their launch controls, URLs and logs in one workbench. Save the combination you use, then start it again with a click.
 
-## Features
+## Start your monorepo, your way
 
-| Capability | What you can do |
+Add the repository once. Switch projects in the dedicated Monorepo view, where each service gets one row: status, name, port and a start/stop control.
+
+Open the project's “... → 配置默认启动” (Configure default startup), select several services and save. “启动默认” (Start defaults) launches that combination. You can change defaults while services are running; the new selection applies to the next default start.
+
+<p align="center"><img src="assets/readme/default-launch.png" width="420" alt="Default startup configuration with multiple services selected; demo data"></p>
+
+Each service also keeps its own start/stop control and URL. Start another service directly from its row whenever you need it.
+
+## Logs follow your selection
+
+Click a service to see its logs in the right pane. Switch processes from the log panel, or choose all logs for the complete project. The selected service and log filter stay in sync.
+
+Port reachability and CPU / memory trends sit alongside the logs. When a build or script fails, LAL highlights the failure and offers a repair prompt with the executed command and error context, ready to copy into Codex or another coding agent.
+
+## A home for your game projects
+
+Godot, Unity and Phaser / Web games have their own library. Choose Debug or Release startup, optionally build before launching Release, or save named export profiles such as “macOS · 中文” and “Web · English” and run them from the Build menu.
+
+![LAL game library with Debug and Release controls, named build profiles and build logs; demo projects and data](assets/readme/games.png)
+
+Services and games have separate controls. Starting all services applies to the service module. Install game engines and project runtimes separately.
+
+## Everyday development tasks
+
+| What you need | In LAL |
 | --- | --- |
-| Services | Detect startup commands and URLs; start or stop one, several or all services |
-| Games | Detect Godot, Unity and Phaser / Web projects; configure launch, preview and cache cleanup |
-| Workspaces | Group projects by product or workflow, search, collapse groups and move projects in bulk |
-| Diagnostics | Inspect live logs, CPU / memory trends, PID, uptime and port ownership; export logs |
-| Development context | Inspect Git branches, changes and conflicts; edit repository-local Git configuration; reveal project directories in Finder |
-| Project tasks | Inspect and run `package.json` scripts |
-
-![LAL game library with demo projects and data](assets/readme/games.jpg)
-
-Services and games are managed separately; starting all services does not launch games. “可访问” means the TCP port is reachable. Install Godot / Unity separately. See [Reference](reference/README.en.md#status-and-engines) for details.
+| Organize projects | Group them into Workspaces, search, collapse groups and move projects in bulk |
+| Start or stop several services | Use batch controls or a project's saved default combination |
+| Check repository context | Inspect branches, changes and conflicts; edit repository-local Git configuration |
+| Run a project task | Execute root `package.json` scripts and inspect their logs |
+| Diagnose local access | Inspect port ownership and network interfaces; copy LAN IPv4 and gateway addresses |
 
 ## Getting started
 
-### Download the app
-
-Download the [macOS universal preview from Releases](https://github.com/yayapao/lal/releases/tag/v0.1.0) for Apple Silicon and Intel. Verify it against `SHA256SUMS.txt` on the release page, extract the archive, and drag `LAL.app` into your Applications folder.
-
-The preview uses an ad-hoc signature and has not been signed with Developer ID or notarized by Apple. macOS may block it from opening; see the release notes for signing status and validation scope. The current UI is primarily Chinese, and desktop integrations target macOS.
-
-### Add your first project
-
-1. Click “添加服务” (Add service), choose a project folder, and review the detected launch command and URL.
-2. Choose or create a Workspace, save, and click the green start button.
-3. Open the project's URL, or inspect its logs and resource trends in the right pane.
-4. To add a game, switch to “游戏” (Games) and choose its project folder.
-
-Install the runtimes, package managers and game engines your projects need. LAL runs startup commands through zsh in the project folder and loads `~/.zshrc`; review commands before running them.
+This page shows the current source version with demo data. Build from source for the full feature set; see the notes for each [published preview](https://github.com/yayapao/lal/releases) for its included features. The UI is currently in Chinese.
 
 ### Build from source
 
@@ -62,12 +67,49 @@ scripts/build-macos.sh
 open "$HOME/Applications/LAL.app"
 ```
 
-Make sure Go's bin directory is on your `PATH` so you can run `wails3`. The script builds a universal app and installs it at `~/Applications/LAL.app`. Add `--no-install` to build without installing; the app is written to `build/bin/LAL.app`.
+Make sure Go's bin directory is on your `PATH`. The script builds a universal app for Apple Silicon and Intel and installs it at `~/Applications/LAL.app`. Add `--no-install` to build only; the output is `build/bin/LAL.app`.
+
+### Add your project
+
+1. Click “添加服务” (Add service), choose the project root, review the detected command and URL, choose a Workspace and save.
+2. For a monorepo, declare services in a root `.lal.json`; LAL reads them when you add the project. For an existing project, import them through “项目进程 → 从项目读取” (Project processes → Read from project) in the editor.
+3. Switch to the Monorepo view, configure a default combination and click “启动默认” (Start defaults). For a single service, use its card's start button.
+4. Click a service to inspect logs or open its URL. Switch to “游戏” (Games) to add a game.
+
+<details>
+<summary><strong>Example .lal.json: start Web and API together</strong></summary>
+
+```json
+{
+  "launchTargets": [
+    {
+      "id": "web",
+      "name": "Web",
+      "command": "npm run dev:web",
+      "url": "http://localhost:3000",
+      "default": true
+    },
+    {
+      "id": "api",
+      "name": "API",
+      "command": "npm run dev:api",
+      "url": "http://localhost:3001",
+      "default": true
+    }
+  ]
+}
+```
+
+Commands run in the project root. The project handles dependencies and readiness order. You can change the saved default combination in the UI.
+
+</details>
+
+Projects and Workspaces are stored locally, with no account required. Commands run through zsh and load `~/.zshrc`; install the required runtimes and review configured commands. “可访问” means the TCP port is reachable.
 
 ## More
 
-- [Configuration and usage boundaries](reference/README.en.md): `.lal.json`, local data, process management and permissions.
-- [Development and contributing](reference/CONTRIBUTING.en.md): development commands, checks, project structure and bug reports.
-- [Recording demos](reference/README.en.md#recording-demos): open-source recording tools, GIF / video guidance and recording sequences.
+- [Configuration and usage](reference/README.en.md): process declarations, game exports, local data and process management.
+- [Development and contributing](reference/CONTRIBUTING.en.md): development commands, checks and project structure.
+- [Report an issue](https://github.com/yayapao/lal/issues): include your macOS version, project type and reproduction steps.
 
 [MIT](LICENSE) © 2026 Yango. Third-party dependencies and bundled fonts retain their own licenses.
