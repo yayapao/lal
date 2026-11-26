@@ -1,0 +1,14 @@
+.godot-web { display: grid; gap: 7px; margin-top: 6px; padding-top: 11px; border-top: 1px solid var(--line-strong); }
+.godot-web-heading { display: flex; align-items: center; gap: 6px; color: #9ddcff; font-size: 10px; }
+.godot-web-heading strong { flex: 1; color: var(--text); font-weight: 600; }
+.godot-web-heading [role="status"] { display: inline-flex; align-items: center; gap: 5px; color: #9da9ae; font-size: 9px; }
+.godot-web-heading i { width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+.godot-web.state-running [role="status"], .godot-web.state-external [role="status"] { color: #79e5ae; }
+.godot-web.state-failed [role="status"], .godot-web-error { color: #f29a9a; }
+.godot-web-location { min-width: 0; overflow: hidden; color: #9da9ae; font-family: var(--mono); font-size: 9px; text-overflow: ellipsis; white-space: nowrap; }
+.godot-web-location button { display: inline-flex; align-items: center; gap: 5px; max-width: 100%; padding: 0; border: 0; color: #8bdcff; background: transparent; font: inherit; cursor: pointer; }
+.godot-web-location button:hover { color: #fff; }
+.godot-web-error { font-size: 9px; line-height: 1.6; overflow-wrap: anywhere; }
+.godot-web-actions { display: flex; gap: 5px; }
+.godot-web-actions .game-action { padding: 0 12px; }
+.godot-web-actions .game-action:first-child { color: #b8e7ff; border-color: #4e6a7b; }

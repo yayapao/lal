@@ -20,6 +20,7 @@ import LogsPane from './components/LogsPane';
 import GitPane from './components/GitPane';
 import GamesPane from './components/GamesPane';
 import ServiceDialog from './components/ServiceDialog';
+import GlobalSearchPane from './components/GlobalSearchPane';
 import ServicesPane from './components/ServicesPane';
 import Toast from './components/Toast';
 import Toolbar from './components/Toolbar';
@@ -34,12 +35,13 @@ import {useServiceState} from './hooks/useServiceState';
 import {useGitStatuses} from './hooks/useGitStatuses';
 import {useWorkspaceManager} from './hooks/useWorkspaceManager';
 import {useNetworkInfo} from './hooks/useNetworkInfo';
-import {moduleOf, ungroupedWorkspace} from './types';
-import type {AppModule, BatchBusyState, DialogState, MenuState, OperationIssue, RightView, ServiceView, ToastState, WorkspaceGroup} from './types';
+import {categoryOf, moduleOf, ungroupedWorkspace} from './types';
+import type {AppModule, ServiceCategory, BatchBusyState, DialogState, MenuState, OperationIssue, RightView, ServiceView, ToastState, WorkspaceGroup} from './types';
 import {needsDefaultStart, isActive, isStoppable} from './utils';
 
 function App() {
     const [activeModule, setActiveModule] = useState<AppModule>('service');
+    const [serviceView, setServiceView] = useState<ServiceCategory>('standalone');
     const [query, setQuery] = useState('');
     const [busyIds, setBusyIds] = useState<Set<string>>(new Set());
     const [batchBusy, setBatchBusy] = useState<BatchBusyState>(null);
@@ -73,7 +75,7 @@ function App() {
     const network = useNetworkInfo();
     const networkError = (message: string) => showToast(message, 'error');
 
-    const activeServices = useMemo(() => services.filter(service => moduleOf(service) === activeModule), [activeModule, services]);
+    const activeServices = useMemo(() => services.filter(service => moduleOf(service) === activeModule && (activeModule === 'game' || categoryOf(service) === serviceView)), [activeModule, serviceView, services]);
     const selectedService = activeServices.find(service => service.id === selectedId) ?? null;
     const selectedTargetId = logTarget.serviceId === selectedId && selectedService?.targetViews?.some(target => target.id === logTarget.targetId)
         ? logTarget.targetId : '';
@@ -84,12 +86,14 @@ function App() {
     const selectedResourceHistory = selectedService ? resourceHistory[selectedService.id] ?? [] : [];
     const logBlocks = useMemo(() => groupLogEntries(logs), [logs]);
     const runningCount = activeServices.filter(isActive).length;
-    const filteredServices = useMemo(() => {
-        const keyword = query.trim().toLocaleLowerCase();
-        if (!keyword) return activeServices;
-        return activeServices.filter(service => [service.name, service.workspace ?? '', service.directory, service.command, service.url ?? '', service.projectType, ...(service.launchTargets ?? []).flatMap(target => [target.name, target.command, target.url ?? ''])]
-            .some(value => value.toLocaleLowerCase().includes(keyword)));
-    }, [query, activeServices]);
+    const filteredServices = activeServices;
+    const standaloneServices = services.filter(service => moduleOf(service) === 'service' && categoryOf(service) === 'standalone');
+    const projects = services.filter(service => moduleOf(service) === 'service' && categoryOf(service) === 'monorepo');
+    const changeServiceView = (next: ServiceCategory) => { setServiceView(next); setCheckedIds(new Set()); };
+    const openSearchResult = (service: ServiceView, targetId = '') => {
+        setActiveModule(moduleOf(service)); setServiceView(categoryOf(service)); setQuery(''); setCheckedIds(new Set());
+        selectService(service.id, targetId);
+    };
     const workspaceGroups = useMemo(() => {
         const groups = new Map<string, WorkspaceGroup>();
         for (const service of filteredServices) {
@@ -110,13 +114,13 @@ function App() {
 
     const serviceActions = useServiceActions({
         onSelectService: selectService,
-        selectedId, logs, checkedServices, filteredServices, allVisibleChecked, cacheTarget, deleteTarget,
+        selectedId, logs, checkedServices, filteredServices, batchServices: standaloneServices, allVisibleChecked, cacheTarget, deleteTarget,
         refreshState, showToast, setBusyIds, setBatchBusy, setOperationIssue, setMenu, setDialog, setDeleteTarget,
         setCacheTarget, setCacheBusyId, setScriptBusyId, setCheckedIds, setLogs, setRefreshing, setDownloadingLogs,
     });
     const changeModule = (next: AppModule) => {
         setActiveModule(next); setQuery(''); setCheckedIds(new Set()); setRightView('logs'); setLogTarget({serviceId: '', targetId: ''});
-        setSelectedId(services.find(service => moduleOf(service) === next)?.id ?? '');
+        setSelectedId(services.find(service => moduleOf(service) === next && (next === 'game' || categoryOf(service) === serviceView))?.id ?? '');
     };
 
     useEffect(() => {
@@ -147,6 +151,9 @@ function App() {
             <Toolbar query={query} module={activeModule} onModuleChange={changeModule} onQueryChange={setQuery} onAdd={() => setDialog({mode: 'create', module: activeModule})}/>
 
             <main className="workspace">
+                <div className="library-pane">
+                {query.trim() && <GlobalSearchPane query={query} services={services} loading={loading} iconURLs={iconURLs} onOpen={openSearchResult}/>}
+                <div className="library-content" hidden={Boolean(query.trim())}>
                 {activeModule === 'game' ? <GamesPane loading={loading} query={query} total={activeServices.length} games={filteredServices} selectedId={selectedId}
                     busyIds={busyIds} refreshing={refreshing} iconURLs={iconURLs} resourceUsage={resourceUsage}
                     footer={<NetworkSummary network={network} active={rightView === 'network'} onDetails={() => setRightView('network')} onError={networkError}/>}
@@ -154,8 +161,9 @@ function App() {
                     onSelect={id => { setSelectedId(id); setRightView('logs'); }} onToggle={game => void serviceActions.toggleService(game)}
                     onBuild={(game, profileID) => void serviceActions.buildGame(game, profileID)} onModeChange={(game, mode) => void serviceActions.changeGameMode(game, mode)}
                     onReveal={game => void serviceActions.revealService(game)}
+                    onWebChanged={refreshState} onWebError={networkError}
                     onOpenURL={game => void serviceActions.openServiceURL(game)} onMenu={(event, game) => serviceActions.openMenu(event, game)}/>
-                : <ServicesPane loading={loading} query={query} total={activeServices.length} monorepoCount={activeServices.filter(service => service.launchTargets?.length).length} selectedId={selectedId}
+                : <ServicesPane loading={loading} total={standaloneServices.length} projects={projects} view={serviceView} onViewChange={changeServiceView} monorepoCount={projects.length} selectedId={selectedId}
                     refreshing={refreshing} onRefresh={() => void serviceActions.refreshAppState()}
                     onDefaultsSaved={() => void refreshState()}
                     selectedTargetId={selectedTargetId} onSelectTarget={selectService}
@@ -178,6 +186,7 @@ function App() {
                     onCheckService={serviceActions.toggleChecked}
                     onOpenURL={service => void serviceActions.openServiceURL(service)}
                     onMenu={(event, service) => serviceActions.openMenu(event, service)}/>}
+                </div></div>
 
                 {rightView === 'network' ? <NetworkPane network={network} onBack={() => setRightView('logs')} onError={networkError}/>
                 : rightView === 'git' && selectedService ? <GitPane key={`${selectedService.id}:${selectedService.directory}`} service={selectedService}
@@ -204,7 +213,7 @@ function App() {
 
             {dialog && (
                 <ServiceDialog state={dialog} services={services} workspaces={workspaces} onClose={() => setDialog(null)} onSaved={async service => {
-                    setDialog(null); setSelectedId(service.id);
+                    setDialog(null); setActiveModule(moduleOf(service)); setServiceView(categoryOf(service)); selectService(service.id);
                     showToast(dialog.mode === 'create' ? `${service.name} 已添加` : `${service.name} 已更新`);
                     await refreshState();
                 }}/>

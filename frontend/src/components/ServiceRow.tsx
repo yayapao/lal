@@ -1,6 +1,6 @@
 import PortNotice from './PortNotice';
 import {portActionLabel} from '../hooks/usePortActions';
-import {ChevronRight, CircleAlert, Ellipsis, ExternalLink, LoaderCircle, Play, Square} from 'lucide-react';
+import {CircleAlert, Ellipsis, ExternalLink, LoaderCircle, Play, Square} from 'lucide-react';
 import type {KeyboardEvent} from 'react';
 import GitBadge from './GitBadge';
 import ProjectIcon from './ProjectIcon';
@@ -8,10 +8,9 @@ import StatusLabel from './StatusLabel';
 import {displayURL, formatCPU, formatMemory, formatUptime, isActive, serviceVisualState} from '../utils';
 import type {GitStatus, ResourceUsage, ServiceView} from '../types';
 
-export default function ServiceRow({service, usage, selected, onOpenMonorepo, checked, busy, selectionDisabled, iconURL, gitStatus, onOpenGit, onSelect, onCheck, onToggle, onOpenURL, onMenu}: {
+export default function ServiceRow({service, usage, selected, checked, busy, selectionDisabled, iconURL, gitStatus, onOpenGit, onSelect, onCheck, onToggle, onOpenURL, onMenu}: {
     service: ServiceView; usage?: ResourceUsage; selected: boolean; checked: boolean; busy: boolean; selectionDisabled: boolean; iconURL?: string;
     gitStatus?: GitStatus; onOpenGit: () => void;
-    onOpenMonorepo: () => void;
     onSelect: () => void; onCheck: () => void; onToggle: () => void;
     onOpenURL: () => void;
     onMenu: (event: React.MouseEvent<HTMLButtonElement>) => void;
@@ -35,10 +34,7 @@ export default function ServiceRow({service, usage, selected, onOpenMonorepo, ch
                 </div>
                 <div className={service.pathExists ? 'service-path' : 'service-path path-invalid'} title={service.directory}>{!service.pathExists && <CircleAlert size={12}/>}<span>{service.directory}</span></div>
                 <div className="service-meta">
-                    {service.launchTargets?.length ? <button className="monorepo-entry" type="button" onClick={event => { event.stopPropagation(); onOpenMonorepo(); }}
-                        aria-label={`管理 ${service.name} 的应用进程`}>
-                        <span>{service.launchTargets.length} 个进程</span><span className="monorepo-entry-count">{service.targetViews?.filter(isActive).length ?? 0} 运行</span><ChevronRight size={11}/>
-                    </button> : <code className="service-command" title={service.command}>{service.command}</code>}
+                    <code className="service-command" title={service.command}>{service.command}</code>
                 </div>
                 <div className="service-links">
                     <GitBadge status={gitStatus} name={service.name} onOpen={onOpenGit}/>

@@ -6,9 +6,9 @@ import {errorMessage, isActive, isStoppable, needsDefaultStart} from '../utils';
 import LaunchTargetPanel from './LaunchTargetPanel';
 import DefaultLaunchTargetsDialog from './DefaultLaunchTargetsDialog';
 
-export default function MonorepoPane({projects, selectedId, selectedTargetId, busy, query,
+export default function MonorepoPane({projects, selectedId, selectedTargetId, busy,
     onSelectService, onSelectTarget, onOpenGit, onOpenWorkspaceManager, onDefaultsSaved, onMenu}: {
-    projects: ServiceView[]; selectedId: string; selectedTargetId: string; busy: boolean; query: string;
+    projects: ServiceView[]; selectedId: string; selectedTargetId: string; busy: boolean;
     onSelectService: (id: string) => void;
     onSelectTarget: (serviceId: string, targetId: string) => void;
     onOpenGit: (service: ServiceView) => void;
@@ -34,9 +34,10 @@ export default function MonorepoPane({projects, selectedId, selectedTargetId, bu
         return () => { document.removeEventListener('pointerdown', outside); document.removeEventListener('keydown', escape); };
     }, []);
     const project = projects.find(service => service.id === selectedId) ?? projects[0];
-    if (!project) return <div className="empty-state monorepo-empty"><TerminalSquare size={25}/><span>{query ? '没有匹配的 Monorepo 项目' : '暂无 Monorepo 项目'}</span></div>;
+    if (!project) return <div className="empty-state monorepo-empty"><TerminalSquare size={25}/><span>暂无 Monorepo 项目</span></div>;
     const locked = busy || pending !== null;
     const running = project.targetViews?.filter(isActive).length ?? 0;
+    const hasTargets = Boolean(project.launchTargets?.length);
     const defaults = project.launchTargets?.filter(target => target.default) ?? [];
     const run = async (action: 'start' | 'stop') => {
         closeMenu(); setPending(action); setFailure({id: '', message: ''});
@@ -54,8 +55,8 @@ export default function MonorepoPane({projects, selectedId, selectedTargetId, bu
                 <details ref={menuRef} className="monorepo-menu" key={project.id}>
                     <summary aria-label={`${project.name} 项目操作`} title="项目操作">{pending ? <LoaderCircle className="spin" size={15}/> : <Ellipsis size={17}/>}</summary>
                     <div className="monorepo-menu-items">
-                        <button type="button" disabled={locked || !project.pathExists || !needsDefaultStart(project)} title={defaults.length ? `启动 ${defaults.map(target => target.name).join('、')}` : '请先配置默认启动服务'} onClick={() => void run('start')}><Play size={13}/>启动默认</button>
-                        <button type="button" disabled={locked} onClick={() => { closeMenu(); setDefaultsProject(project); }}><ListChecks size={13}/>配置默认启动<span className="monorepo-menu-count" aria-hidden="true">{defaults.length}</span></button>
+                        <button type="button" disabled={locked || !project.pathExists || !needsDefaultStart(project)} title={!hasTargets ? project.command : defaults.length ? `启动 ${defaults.map(target => target.name).join('、')}` : '请先配置默认启动服务'} onClick={() => void run('start')}><Play size={13}/>{hasTargets ? '启动默认' : '启动项目'}</button>
+                        {hasTargets && <button type="button" disabled={locked} onClick={() => { closeMenu(); setDefaultsProject(project); }}><ListChecks size={13}/>配置默认启动<span className="monorepo-menu-count" aria-hidden="true">{defaults.length}</span></button>}
                         <button type="button" disabled={locked || !isStoppable(project)} onClick={() => void run('stop')}><Square size={12}/>停止项目</button>
                         <button type="button" className="monorepo-menu-divider" onClick={() => { closeMenu(); onOpenGit(project); }}><GitBranch size={13}/>Git 详情</button>
                         <button type="button" onClick={event => { onMenu(event, project); closeMenu(); }}><Settings2 size={13}/>配置与管理</button>
@@ -63,7 +64,7 @@ export default function MonorepoPane({projects, selectedId, selectedTargetId, bu
                     </div>
                 </details>
             </div>
-            <div className="monorepo-running">{running} / {project.launchTargets?.length} 运行</div>
+            <div className="monorepo-running">{hasTargets ? `${running} / ${project.launchTargets?.length} 运行` : '使用根启动命令'}</div>
             {!project.pathExists && <div className="service-error">项目路径失效</div>}
             {project.lastError && <div className="service-error">{project.lastError}</div>}
             {failure.id === project.id && <div className="service-error" role="alert">{failure.message}</div>}
@@ -71,6 +72,7 @@ export default function MonorepoPane({projects, selectedId, selectedTargetId, bu
         <div className="monorepo-content">
             <button type="button" className="monorepo-all-logs" aria-pressed={selectedId === project.id && !selectedTargetId}
                 onClick={() => onSelectService(project.id)}><Layers3 size={13}/><span>全部日志</span></button>
+            {!hasTargets && <div className="empty-state"><span>尚未配置项目进程</span><button className="text-button" type="button" onClick={event => onMenu(event, project)}>配置项目进程</button></div>}
             <LaunchTargetPanel key={project.id} service={project} disabled={locked} flat selectedTargetId={selectedId === project.id ? selectedTargetId : ''}
                 onSelectTarget={targetId => onSelectTarget(project.id, targetId)}/>
         </div>

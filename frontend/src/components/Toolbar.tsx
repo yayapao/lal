@@ -25,7 +25,7 @@ export default function Toolbar({query, module, onModuleChange, onQueryChange, o
         </div>
         <label className="search-field titlebar-search">
             <Search size={15}/>
-            <input ref={search} value={query} onChange={event => onQueryChange(event.target.value)} placeholder={`搜索${noun}`} aria-label={`搜索${noun}`}/>
+            <input ref={search} value={query} onChange={event => onQueryChange(event.target.value)} placeholder="全局搜索" aria-label="全局搜索"/>
             {query ? <button type="button" onClick={() => onQueryChange('')} aria-label="清除搜索" title="清除搜索"><X size={14}/></button> : <kbd>⌘ F</kbd>}
         </label>
         <button className="button primary titlebar-add" type="button" onClick={onAdd} aria-label={`添加${noun}`}><Plus size={16}/>添加{noun}</button>

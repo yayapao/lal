@@ -22,6 +22,11 @@ func Startup(app *App, ctx context.Context, desktop Desktop) {
 func HasRunningProcesses(app *App) bool {
 	app.mu.RLock()
 	defer app.mu.RUnlock()
+	for _, session := range app.godotWeb {
+		if session.server != nil {
+			return true
+		}
+	}
 	return len(app.processes)+len(app.scriptProcesses) > 0
 }
 func Shutdown(app *App) { app.stopAllProcesses() }

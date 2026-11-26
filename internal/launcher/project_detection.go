@@ -15,6 +15,8 @@ type ProjectScript struct {
 }
 
 type ProjectDetection struct {
+	Category          string          `json:"category"`
+	MonorepoEvidence  []string        `json:"monorepoEvidence"`
 	LaunchTargets     []LaunchTarget  `json:"launchTargets"`
 	Directory         string          `json:"directory"`
 	Name              string          `json:"name"`
@@ -106,6 +108,7 @@ func (m *serviceManager) DetectProject(directory string) (ProjectDetection, erro
 		result.URL = manifestURL
 	}
 	applyDetectedTargets(&result)
+	applyMonorepoDetection(&result)
 	appendManifestNotice(&result, manifestFound, manifestWarning)
 	if result.ProjectType == "vite" && result.CleanCommand == defaultCleanCommand {
 		result.CleanCommand = "rm -rf node_modules/.vite"

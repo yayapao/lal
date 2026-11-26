@@ -66,7 +66,7 @@ it('links process cards and log scope in both directions, including URLs and ret
         {serviceId: 'alpha', targetId: 'alpha::ppt', timestamp: '2026-11-25T00:00:01Z', stream: 'stdout', text: '[PPT] ppt-only-output'},
     ]);
     render(<App/>);
-    await user.click(await screen.findByRole('button', {name: '管理 Alpha 的应用进程'}));
+    await user.click(await screen.findByRole('button', {name: 'Monorepo 1'}));
     await screen.findByText('web-only-output');
     await user.click(screen.getByRole('button', {name: '查看 PPT 的日志'}));
     const filter = screen.getByRole('combobox', {name: '日志进程'});
@@ -87,10 +87,10 @@ it('links process cards and log scope in both directions, including URLs and ret
     await user.click(screen.getByRole('button', {name: '全部日志'}));
     expect((filter as HTMLSelectElement).value).toBe('');
     await user.click(screen.getByRole('button', {name: '查看 PPT 的日志'}));
-    await user.click(screen.getByRole('button', {name: '全部服务 2'}));
+    await user.click(screen.getByRole('button', {name: '普通服务 1'}));
     await user.click(screen.getByRole('heading', {name: 'Beta'}));
     expect(screen.queryByRole('combobox', {name: '日志进程'})).toBeNull();
-    await user.click(screen.getByRole('button', {name: '管理 Alpha 的应用进程'}));
+    await user.click(screen.getByRole('button', {name: 'Monorepo 1'}));
     expect((screen.getByRole('combobox', {name: '日志进程'}) as HTMLSelectElement).value).toBe('');
     await user.click(screen.getByRole('button', {name: '查看 PPT 的日志'}));
     const withoutPPT = project();

@@ -52,6 +52,10 @@ func (m *serviceManager) startGameProcess(id string, buildOnly bool, profileID s
 		}
 	}
 	building := buildOnly || (service.Module == moduleGame && service.LaunchMode == "release" && service.BuildBeforeLaunch)
+	if session := m.godotWeb[id]; building && session != nil && session.server != nil {
+		m.mu.Unlock()
+		return fmt.Errorf("请先停止浏览器服务再构建游戏")
+	}
 	var command, buildName string
 	var err error
 	status := "running"

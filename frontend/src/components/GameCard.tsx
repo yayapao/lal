@@ -5,6 +5,7 @@ import type {KeyboardEvent} from 'react';
 import ProjectIcon from './ProjectIcon';
 import StatusLabel from './StatusLabel';
 import GameBuildButton from './GameBuildButton';
+import GodotWebPreview from './GodotWebPreview';
 import {displayURL, formatCPU, formatMemory, isActive, serviceVisualState} from '../utils';
 import type {ResourceUsage, ServiceView} from '../types';
 
@@ -16,12 +17,13 @@ const engineLabels: Record<string, string> = {
     generic: 'GAME',
 };
 
-export default function GameCard({service, index, selected, busy, usage, iconURL, onSelect, onToggle, onBuild, onModeChange, onReveal, onOpenURL, onMenu}: {
+export default function GameCard({service, index, selected, busy, usage, iconURL, onSelect, onToggle, onBuild, onModeChange, onReveal, onOpenURL, onMenu, onWebChanged, onWebError}: {
     service: ServiceView; index: number; selected: boolean; busy: boolean; usage?: ResourceUsage; iconURL?: string;
     onSelect: () => void; onToggle: () => void; onReveal: () => void; onOpenURL: () => void;
     onBuild: (profileID?: string) => void;
     onModeChange: (mode: 'release' | 'debug') => void;
     onMenu: (event: React.MouseEvent<HTMLButtonElement>) => void;
+    onWebChanged: () => Promise<void>; onWebError: (message: string) => void;
 }) {
     const release = service.launchMode === 'release';
     const modeLabel = release ? '正式版' : 'Debug';
@@ -42,7 +44,7 @@ export default function GameCard({service, index, selected, busy, usage, iconURL
             <span className="game-sequence">{String(index + 1).padStart(2, '0')}</span>
             <ProjectIcon projectType={service.projectType} projectName={service.name} iconURL={iconURL}/>
             <div className="game-identity"><span>{engineLabels[engine]}</span><h3 title={service.name}>{service.name}</h3></div>
-            <StatusLabel service={service} compact/>
+            {['running', 'external'].includes(service.godotWeb?.status ?? '') && !isActive(service) ? <span className="status-label state-running">浏览器运行</span> : <StatusLabel service={service} compact/>}
             <button className="icon-button game-menu" type="button" aria-label={`${service.name} 更多操作`} title="更多操作" onClick={event => { event.stopPropagation(); onMenu(event); }}><MoreHorizontal size={17}/></button>
         </div>
         <div className={service.pathExists ? 'game-path' : 'game-path is-invalid'} title={service.directory}>
@@ -58,20 +60,21 @@ export default function GameCard({service, index, selected, busy, usage, iconURL
         </div>
         <code className="game-command" title={command}>{command}</code>
         <div className="game-runtime-line">
-            {service.url ? <button className="game-url" type="button" onClick={event => { event.stopPropagation(); onOpenURL(); }}><ExternalLink size={11}/><span>{displayURL(service.url)}</span></button> : <span className="game-native">NATIVE RUNTIME</span>}
+            {service.url && !service.godotWeb ? <button className="game-url" type="button" onClick={event => { event.stopPropagation(); onOpenURL(); }}><ExternalLink size={11}/><span>{displayURL(service.url)}</span></button> : <span className="game-native">NATIVE RUNTIME</span>}
             {isActive(service) && <span className="game-usage">CPU {formatCPU(usage?.cpuPercent ?? 0)} · MEM {formatMemory(usage?.memoryBytes ?? 0)}</span>}
         </div>
         {service.lastError && !(service.port && service.lastError.startsWith('启动失败：端口')) && <div className="game-error" title={service.lastError}>{service.lastError}</div>}
         <PortNotice service={service}/>
         <div className="game-actions">
             <button type="button" className={isActive(service) ? 'game-action stop' : 'game-action start'} onClick={event => { event.stopPropagation(); onToggle(); }}
-                disabled={busy || transition || !service.pathExists} aria-label={portLabel ? `${portLabel} ${service.name}` : isActive(service) ? `${building ? '取消构建' : '停止'} ${service.name}` : `${startLabel} ${service.name}`}>
+                disabled={busy || transition || !service.pathExists || (!isActive(service) && buildFirst && service.godotWeb?.status === 'running')} aria-label={portLabel ? `${portLabel} ${service.name}` : isActive(service) ? `${building ? '取消构建' : '停止'} ${service.name}` : `${startLabel} ${service.name}`}>
                 {busy || transition ? <LoaderCircle className="spin" size={14}/> : isActive(service) ? <Square size={11}/> : <Play size={13}/>}
                 <span>{portLabel || (building ? '取消构建' : isActive(service) ? `停止 ${modeLabel}` : startLabel)}</span>
             </button>
-            <GameBuildButton service={service} onBuild={onBuild} disabled={busy || isActive(service) || !service.pathExists}/>
+            <GameBuildButton service={service} onBuild={onBuild} disabled={busy || isActive(service) || service.godotWeb?.status === 'running' || !service.pathExists}/>
             <button type="button" className="game-action" onClick={event => { event.stopPropagation(); onReveal(); }} disabled={!service.pathExists}
                 aria-label={`在 Finder 中显示 ${service.name}`} title="在 Finder 中显示"><FolderOpen size={14}/><span>Finder</span></button>
         </div>
+        {service.projectType === 'godot' && <GodotWebPreview service={service} onChanged={onWebChanged} onError={onWebError}/>}
     </article>;
 }

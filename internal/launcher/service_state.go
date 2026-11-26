@@ -61,6 +61,7 @@ func (m *serviceManager) serviceViewLocked(service Service) ServiceView {
 	service.Workspace = strings.TrimSpace(service.Workspace)
 	view := ServiceView{
 		Service:             service,
+		GodotWeb:            m.godotWebViewLocked(service),
 		PackageInfo:         readPackageInfo(service.Directory),
 		IconPath:            detectServiceIcon(service.Directory),
 		ConfiguredWorkspace: service.Workspace,

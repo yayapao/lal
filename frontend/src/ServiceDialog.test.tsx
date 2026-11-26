@@ -53,7 +53,7 @@ it('starts with the directory and fills project settings before saving a selecte
     await user.selectOptions(screen.getByRole('combobox', {name: 'Workspace'}), 'Studio');
     await user.click(screen.getByRole('button', {name: '添加服务'}));
     expect(api.CreateService).toHaveBeenCalledWith({
-        name: 'niu', module: 'service', workspace: 'Studio', directory: '/tmp/niu', command: 'pnpm run dev',
+        name: 'niu', module: 'service', category: 'standalone', workspace: 'Studio', directory: '/tmp/niu', command: 'pnpm run dev',
         url: 'http://localhost:35790', cleanCommand: 'pnpm run clean',
     });
     expect(onSaved).toHaveBeenCalled();
@@ -152,4 +152,31 @@ it('clears old generated settings if a different project cannot be parsed', asyn
     expect((screen.getByRole('textbox', {name: '启动命令'}) as HTMLInputElement).value).toBe('');
     expect((screen.getByLabelText(/访问地址/) as HTMLInputElement).value).toBe('');
     expect((screen.getByLabelText(/缓存清理脚本/) as HTMLTextAreaElement).value).toBe('rm -rf .next');
+});
+
+it('classifies workspace projects with concrete evidence and permits manual confirmation', async () => {
+    api.DetectProject.mockResolvedValue({...project, category: 'monorepo', monorepoEvidence: ['package.json 声明了 workspaces']});
+    createDialog();
+    const user = await chooseDirectory();
+    const category = screen.getByRole('combobox', {name: '项目分类'});
+    expect(category).toHaveProperty('value', 'monorepo');
+    expect(screen.getByText(/识别依据：package.json 声明了 workspaces/)).toBeDefined();
+    await user.click(screen.getByRole('button', {name: '添加服务'}));
+    expect(api.CreateService).toHaveBeenCalledWith(expect.objectContaining({category: 'monorepo', command: 'pnpm run dev'}));
+});
+
+it('preserves an explicit category while automatic detection is pending', async () => {
+    let finish!: (value: typeof project & {category: string}) => void;
+    api.DetectProject.mockImplementationOnce(() => new Promise(resolve => { finish = resolve; }));
+    createDialog();
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', {name: '选择目录'}));
+    await waitFor(() => expect(api.DetectProject).toHaveBeenCalled());
+    await user.selectOptions(screen.getByRole('combobox', {name: '项目分类'}), 'monorepo');
+    finish({...project, category: 'standalone'});
+    await screen.findByText(/已读取 package.json/);
+    expect(screen.getByRole('combobox', {name: '项目分类'})).toHaveProperty('value', 'monorepo');
+    await user.selectOptions(screen.getByRole('combobox', {name: '项目分类'}), 'standalone');
+    await user.click(screen.getByRole('button', {name: '添加服务'}));
+    expect(api.CreateService).toHaveBeenCalledWith(expect.objectContaining({category: 'standalone'}));
 });

@@ -12,11 +12,9 @@ import {
     RevealService,
     RestartService,
     RunPackageScript,
-    StartAll,
     StartServices,
     StartService,
     SetGameLaunchMode,
-    StopAll,
     StopPackageScript,
     StopService,
     StopServices,
@@ -30,6 +28,7 @@ type ServiceActionContext = {
     logs: LogEntry[];
     checkedServices: ServiceView[];
     filteredServices: ServiceView[];
+    batchServices: ServiceView[];
     allVisibleChecked: boolean;
     cacheTarget: ServiceView | null;
     deleteTarget: ServiceView | null;
@@ -109,13 +108,11 @@ export function useServiceActions(context: ServiceActionContext) {
     };
 
     const runBatchAction = async (action: 'start' | 'stop', selected: boolean) => {
-        const ids = checkedServices.map(service => service.id);
+        const ids = (selected ? checkedServices : context.batchServices).map(service => service.id);
         if (selected && ids.length === 0) return;
         setBatchBusy(`${selected ? 'selected' : 'all'}-${action}`);
         try {
-            const result = selected
-                ? await (action === 'start' ? StartServices(ids) : StopServices(ids))
-                : await (action === 'start' ? StartAll() : StopAll());
+            const result = await (action === 'start' ? StartServices(ids) : StopServices(ids));
             const verb = action === 'start' ? '启动' : '停止';
             const scope = selected ? '选中服务' : '服务';
             if ((result.errors ?? []).length > 0) {

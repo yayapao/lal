@@ -1,7 +1,7 @@
 import {useEffect, useRef, useState} from 'react';
 import {DetectProject} from '../../wailsjs/lal/app';
 import type * as main from '../../wailsjs/lal/internal/launcher/models';
-import {defaultCleanCommand} from '../types';
+import {categoryOf, defaultCleanCommand} from '../types';
 import type {ServiceForm} from '../types';
 import {errorMessage} from '../utils';
 
@@ -34,6 +34,8 @@ export function useProjectDetection(initial: ServiceForm, editing: boolean) {
                         next.url = result.scripts.find(script => script.command === next.command)?.url ?? '';
                     }
                     if (!edited.current.has('launchTargets')) next.launchTargets = result.launchTargets ?? [];
+                    if (!edited.current.has('category')) next.category = categoryOf(result);
+                    if (next.launchTargets?.length) next.category = 'monorepo';
                     if (!edited.current.has('releaseCommand')) next.releaseCommand = result.releaseCommand ?? '';
                     if (!edited.current.has('buildCommand')) next.buildCommand = result.buildCommand ?? '';
                     if (!edited.current.has('buildProfiles')) next.buildProfiles = result.buildProfiles ?? [];
@@ -68,6 +70,7 @@ export function useProjectDetection(initial: ServiceForm, editing: boolean) {
                     if (!edited.current.has(generated)) next[generated] = '';
                 }
                 if (!edited.current.has('launchTargets')) next.launchTargets = [];
+                if (!edited.current.has('category')) next.category = 'standalone';
                 if (!edited.current.has('releaseCommand')) next.releaseCommand = '';
                 if (!edited.current.has('buildCommand')) next.buildCommand = '';
                 if (!edited.current.has('buildProfiles')) next.buildProfiles = [];
@@ -75,6 +78,7 @@ export function useProjectDetection(initial: ServiceForm, editing: boolean) {
                 if (!edited.current.has('launchMode')) next.launchMode = 'debug';
                 if (!edited.current.has('cleanCommand')) next.cleanCommand = defaultCleanCommand;
             }
+            if (field === 'launchTargets' && next.launchTargets?.length) next.category = 'monorepo';
             if (field === 'buildCommand') {
                 if (!String(value).trim()) next.buildBeforeLaunch = false;
                 else if (!edited.current.has('buildBeforeLaunch')) next.buildBeforeLaunch = true;

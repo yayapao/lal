@@ -5,7 +5,7 @@ import type {ResourceUsage, ServiceView} from '../types';
 import {isActive} from '../utils';
 
 export default function GamesPane({loading, query, total, games, selectedId, busyIds, refreshing, iconURLs, resourceUsage, footer,
-    onAdd, onRefresh, onSelect, onToggle, onBuild, onModeChange, onReveal, onOpenURL, onMenu}: {
+    onAdd, onRefresh, onSelect, onToggle, onBuild, onModeChange, onReveal, onOpenURL, onMenu, onWebChanged, onWebError}: {
     loading: boolean; query: string; total: number; games: ServiceView[]; selectedId: string; busyIds: Set<string>; refreshing: boolean;
     iconURLs: Record<string, string>; resourceUsage: Record<string, ResourceUsage>; footer: ReactNode;
     onAdd: () => void; onRefresh: () => void; onSelect: (id: string) => void; onToggle: (game: ServiceView) => void;
@@ -13,8 +13,9 @@ export default function GamesPane({loading, query, total, games, selectedId, bus
     onModeChange: (game: ServiceView, mode: 'release' | 'debug') => void;
     onReveal: (game: ServiceView) => void; onOpenURL: (game: ServiceView) => void;
     onMenu: (event: React.MouseEvent<HTMLButtonElement>, game: ServiceView) => void;
+    onWebChanged: () => Promise<void>; onWebError: (message: string) => void;
 }) {
-    const running = games.filter(game => isActive(game) || (!game.port?.previewOnly && game.port?.matchesProject)).length;
+    const running = games.filter(game => isActive(game) || ['running', 'external'].includes(game.godotWeb?.status ?? '') || (!game.port?.previewOnly && game.port?.matchesProject)).length;
     return <section className="games-pane" aria-label="游戏列表">
         <header className="game-library-head">
             <div className="game-library-title"><span><Gamepad2 size={14}/>PLAY LIBRARY</span><div className="game-title-line"><strong>游戏库</strong><small>启动、预览、继续玩</small></div></div>
@@ -28,6 +29,7 @@ export default function GamesPane({loading, query, total, games, selectedId, bus
                 : <div className="game-grid">{games.map((game, index) => <GameCard key={game.id} service={game} index={index}
                     selected={game.id === selectedId} busy={busyIds.has(game.id)} usage={resourceUsage[game.id]} iconURL={iconURLs[game.id]}
                     onBuild={profileID => onBuild(game, profileID)} onModeChange={mode => onModeChange(game, mode)}
+                    onWebChanged={onWebChanged} onWebError={onWebError}
                     onSelect={() => onSelect(game.id)} onToggle={() => onToggle(game)}
                     onReveal={() => onReveal(game)} onOpenURL={() => onOpenURL(game)} onMenu={event => onMenu(event, game)}/>)}</div>}
         </div>

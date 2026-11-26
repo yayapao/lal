@@ -10,10 +10,6 @@
 .service-view-switcher > button > span { min-width: 16px; padding: 1px 4px; border-radius: 3px; color: var(--muted); background: var(--panel-hover); font-family: var(--mono); font-size: 9px; text-align: center; }
 .service-view-switcher > button[aria-pressed="true"] > span { color: var(--text); background: var(--sidebar-selected); }
 .service-view-switcher > button:disabled { opacity: .45; cursor: default; }
-.monorepo-entry { display: inline-flex; align-items: center; gap: 7px; max-width: 100%; padding: 0; border: 0; color: var(--accent); background: transparent; font-size: 9px; line-height: 17px; cursor: pointer; }
-.monorepo-entry:hover { color: var(--accent-strong); }
-.monorepo-entry-count { color: var(--muted); }
-.monorepo-entry svg { flex-shrink: 0; }
 .services-pane.is-monorepo { grid-template-rows: minmax(0, 1fr); }
 .monorepo-refresh { width: 26px; height: 26px; flex-basis: 26px; }
 .monorepo-pane { display: flex; flex: 1; flex-direction: column; min-width: 0; min-height: 0; background: var(--sidebar); }

@@ -10,21 +10,23 @@ const project = (id: string, name: string, workspace = 'Product') => ({...alphaS
     targetViews: [{...alphaService, id: `${id}::web`}, {...alphaService, id: `${id}::worker`}],
 });
 
-it('opens flat process management from the overview and clears hidden batch selections', async () => {
+it('classifies projects separately and clears batch selections when switching categories', async () => {
     const user = userEvent.setup();
     api.GetAppState.mockResolvedValue({services: [project('mono', 'Mono'), alphaService]});
     const {container} = render(<App/>);
     await user.click(await screen.findByRole('checkbox', {name: '选择 Alpha'}));
     expect(screen.getAllByText('已选 1').length).toBeGreaterThan(0);
     expect(screen.queryByRole('button', {name: '查看 Mono Web 的日志'})).toBeNull();
-    await user.click(screen.getByRole('button', {name: '管理 Mono 的应用进程'}));
+    expect(screen.queryByRole('heading', {name: 'Mono'})).toBeNull();
+    expect(screen.queryByRole('button', {name: '收起 Product'})).toBeNull();
+    await user.click(screen.getByRole('button', {name: 'Monorepo 1'}));
     expect(screen.getByRole('button', {name: 'Monorepo 1'}).getAttribute('aria-pressed')).toBe('true');
     expect(screen.getByRole('button', {name: '查看 Mono Web 的日志'})).toBeDefined();
     expect(screen.getByRole('button', {name: '查看 Mono Worker 的日志'})).toBeDefined();
     expect(container.querySelector('.monorepo-pane .workspace-group')).toBeNull();
     expect(container.querySelector('.monorepo-pane .service-row')).toBeNull();
     expect(screen.queryByRole('button', {name: /个进程运行中/})).toBeNull();
-    await user.click(screen.getByRole('button', {name: '全部服务 2'}));
+    await user.click(screen.getByRole('button', {name: '普通服务 1'}));
     expect((screen.getByRole('checkbox', {name: '选择 Alpha'}) as HTMLInputElement).checked).toBe(false);
     expect(screen.queryAllByText('已选 1')).toHaveLength(0);
     expect(api.StartService).not.toHaveBeenCalled();
@@ -56,17 +58,17 @@ it('switches projects, scopes project controls and errors, and follows search an
     expect(screen.queryByRole('alert')).toBeNull();
     expect(api.StartAll).not.toHaveBeenCalled();
     expect(api.StopAll).not.toHaveBeenCalled();
-    await user.type(screen.getByRole('textbox', {name: '搜索服务'}), 'Two');
+    await user.type(screen.getByRole('textbox', {name: '全局搜索'}), 'Two');
+    await user.click(screen.getByRole('button', {name: '打开 Two'}));
     await waitFor(() => expect(switcher).toHaveProperty('value', 'two'));
     expect((screen.getByRole('combobox', {name: '日志进程'}) as HTMLSelectElement).value).toBe('');
     expect(screen.getByRole('button', {name: 'Monorepo 2'})).toBeDefined();
-    await user.clear(screen.getByRole('textbox', {name: '搜索服务'}));
     api.GetAppState.mockResolvedValue({services: [alphaService, one]});
     await user.click(screen.getByRole('button', {name: '刷新状态'}));
     await waitFor(() => expect(switcher).toHaveProperty('value', 'one'));
     expect((screen.getByRole('combobox', {name: '日志进程'}) as HTMLSelectElement).value).toBe('');
-    await user.type(screen.getByRole('textbox', {name: '搜索服务'}), 'missing');
-    expect(screen.getByText('没有匹配的 Monorepo 项目')).toBeDefined();
-    await user.clear(screen.getByRole('textbox', {name: '搜索服务'}));
+    await user.type(screen.getByRole('textbox', {name: '全局搜索'}), 'missing');
+    expect(screen.getByText('没有匹配的项目或进程')).toBeDefined();
+    await user.clear(screen.getByRole('textbox', {name: '全局搜索'}));
     expect(screen.getByRole('button', {name: '查看 One Web 的日志'})).toBeDefined();
 });

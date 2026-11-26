@@ -1,0 +1,14 @@
+.library-pane, .library-content { display: grid; min-width: 0; min-height: 0; }
+.library-content[hidden] { display: none; }
+.global-search-pane { display: flex; flex-direction: column; min-height: 0; min-width: 0; border-right: 1px solid var(--line); background: var(--sidebar); }
+.global-search-pane > .pane-heading { min-height: 42px; flex-shrink: 0; }
+.global-search-list { overflow-y: auto; min-height: 0; padding: 6px 8px 14px; }
+.global-search-result { display: flex; align-items: center; gap: 10px; width: 100%; padding: 11px 9px; border: 0; border-radius: 5px; color: var(--text); background: transparent; text-align: left; cursor: pointer; }
+.global-search-result:hover { background: var(--sidebar-selected); }
+.global-search-result:focus-visible { outline-offset: -2px; }
+.global-search-result > svg { flex-shrink: 0; color: var(--muted); }
+.global-search-copy { display: grid; gap: 4px; min-width: 0; flex: 1; }
+.global-search-copy strong { font-size: 12px; font-weight: 550; }
+.global-search-copy > span { color: var(--muted); font-size: 10px; }
+.global-search-copy code { color: var(--faint); font-family: var(--mono); font-size: 10px; }
+.global-search-copy > * { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

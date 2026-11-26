@@ -82,7 +82,7 @@ describe('network information', () => {
         expect(screen.queryByRole('region', {name: '网络详情'})).toBeNull();
         expect(screen.getByRole('button', {name: '启动 Alpha'})).toBeDefined();
         fireEvent.keyDown(window, {key: 'f', metaKey: true});
-        expect(document.activeElement).toBe(screen.getByRole('textbox', {name: '搜索服务'}));
+        expect(document.activeElement).toBe(screen.getByRole('textbox', {name: '全局搜索'}));
     });
 
     it('refreshes on window focus without issuing overlapping probes', async () => {

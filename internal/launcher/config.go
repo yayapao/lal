@@ -25,6 +25,7 @@ func newServiceManager(configPath string) *serviceManager {
 		configPath:       configPath,
 		targetBusy:       make(map[string]bool),
 		processes:        make(map[string]*processState),
+		godotWeb:         make(map[string]*godotWebSession),
 		lastStatus:       make(map[string]string),
 		lastError:        make(map[string]string),
 		health:           make(map[string]string),
@@ -69,6 +70,7 @@ func (m *serviceManager) loadConfig() error {
 	for index, service := range config.Services {
 		original := service
 		service.Module = normalizeModule(service.Module)
+		service.Category = normalizeServiceCategory(service.Category, service.Module, service.LaunchTargets)
 		if config.Version < 7 && service.Module == moduleGame {
 			service.ReleaseCommand = detectedReleaseCommand(service.Directory)
 			if service.ReleaseCommand != "" {
@@ -131,9 +133,10 @@ func (m *serviceManager) GetAppState() AppState {
 				target.Port = inspectExternalPort(target.Service)
 			}
 		}
-		if len(view.LaunchTargets) == 0 && view.URL != "" && (view.Status != "running" || isNativeGame(view.Service)) {
+		if len(view.LaunchTargets) == 0 && view.URL != "" && (view.GodotWeb == nil || view.GodotWeb.Status != "running") && (view.Status != "running" || isNativeGame(view.Service)) {
 			view.Port = inspectExternalPort(view.Service)
 		}
+		applyGodotWebExternal(view)
 	}
 	return state
 }
@@ -141,6 +144,7 @@ func (m *serviceManager) GetAppState() AppState {
 func (input ServiceInput) service(id string) Service {
 	return Service{
 		ID:                id,
+		Category:          normalizeServiceCategory(input.Category, normalizeModule(input.Module), input.LaunchTargets),
 		LaunchTargets:     normalizeLaunchTargets(input.LaunchTargets),
 		Name:              strings.TrimSpace(input.Name),
 		Module:            normalizeModule(input.Module),
@@ -212,6 +216,7 @@ func (m *serviceManager) UpdateService(id string, input ServiceInput) (ServiceVi
 		return ServiceView{}, err
 	}
 	m.clearTargetStateLocked(previous)
+	delete(m.godotWeb, id)
 	view := m.serviceViewLocked(updated)
 	m.mu.Unlock()
 	m.emitEvent("services:changed", view)
@@ -241,6 +246,7 @@ func (m *serviceManager) DeleteService(id string) error {
 		return err
 	}
 	m.clearTargetStateLocked(previous[index])
+	delete(m.godotWeb, id)
 	delete(m.logs, id)
 	delete(m.scriptProcesses, id)
 	delete(m.activeScript, id)

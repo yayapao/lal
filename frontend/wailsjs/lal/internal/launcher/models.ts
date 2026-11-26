@@ -364,6 +364,47 @@ export class GitStatus {
     }
 }
 
+export class GodotWebView {
+    "status": string;
+    "url": string;
+    "entryPath": string;
+    "preset": string;
+    "available": boolean;
+    "lastError": string;
+
+    /** Creates a new GodotWebView instance. */
+    constructor($$source: Partial<GodotWebView> = {}) {
+        if (!("status" in $$source)) {
+            this["status"] = "";
+        }
+        if (!("url" in $$source)) {
+            this["url"] = "";
+        }
+        if (!("entryPath" in $$source)) {
+            this["entryPath"] = "";
+        }
+        if (!("preset" in $$source)) {
+            this["preset"] = "";
+        }
+        if (!("available" in $$source)) {
+            this["available"] = false;
+        }
+        if (!("lastError" in $$source)) {
+            this["lastError"] = "";
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new GodotWebView instance from a string or object.
+     */
+    static createFrom($$source: any = {}): GodotWebView {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new GodotWebView($$parsedSource as Partial<GodotWebView>);
+    }
+}
+
 /**
  * LaunchTarget is a process in the same project, not a second project record.
  */
@@ -661,6 +702,8 @@ export class PortView {
 }
 
 export class ProjectDetection {
+    "category": string;
+    "monorepoEvidence": string[];
     "launchTargets": LaunchTarget[];
     "directory": string;
     "name": string;
@@ -679,6 +722,12 @@ export class ProjectDetection {
 
     /** Creates a new ProjectDetection instance. */
     constructor($$source: Partial<ProjectDetection> = {}) {
+        if (!("category" in $$source)) {
+            this["category"] = "";
+        }
+        if (!("monorepoEvidence" in $$source)) {
+            this["monorepoEvidence"] = [];
+        }
         if (!("launchTargets" in $$source)) {
             this["launchTargets"] = [];
         }
@@ -732,26 +781,30 @@ export class ProjectDetection {
      * Creates a new ProjectDetection instance from a string or object.
      */
     static createFrom($$source: any = {}): ProjectDetection {
-        const $$createField0_0 = $$createType13;
-        const $$createField7_0 = $$createType15;
-        const $$createField12_0 = $$createType17;
-        const $$createField13_0 = $$createType2;
-        const $$createField14_0 = $$createType2;
+        const $$createField1_0 = $$createType2;
+        const $$createField2_0 = $$createType13;
+        const $$createField9_0 = $$createType15;
+        const $$createField14_0 = $$createType17;
+        const $$createField15_0 = $$createType2;
+        const $$createField16_0 = $$createType2;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("monorepoEvidence" in $$parsedSource) {
+            $$parsedSource["monorepoEvidence"] = $$createField1_0($$parsedSource["monorepoEvidence"]);
+        }
         if ("launchTargets" in $$parsedSource) {
-            $$parsedSource["launchTargets"] = $$createField0_0($$parsedSource["launchTargets"]);
+            $$parsedSource["launchTargets"] = $$createField2_0($$parsedSource["launchTargets"]);
         }
         if ("buildProfiles" in $$parsedSource) {
-            $$parsedSource["buildProfiles"] = $$createField7_0($$parsedSource["buildProfiles"]);
+            $$parsedSource["buildProfiles"] = $$createField9_0($$parsedSource["buildProfiles"]);
         }
         if ("scripts" in $$parsedSource) {
-            $$parsedSource["scripts"] = $$createField12_0($$parsedSource["scripts"]);
+            $$parsedSource["scripts"] = $$createField14_0($$parsedSource["scripts"]);
         }
         if ("sources" in $$parsedSource) {
-            $$parsedSource["sources"] = $$createField13_0($$parsedSource["sources"]);
+            $$parsedSource["sources"] = $$createField15_0($$parsedSource["sources"]);
         }
         if ("warnings" in $$parsedSource) {
-            $$parsedSource["warnings"] = $$createField14_0($$parsedSource["warnings"]);
+            $$parsedSource["warnings"] = $$createField16_0($$parsedSource["warnings"]);
         }
         return new ProjectDetection($$parsedSource as Partial<ProjectDetection>);
     }
@@ -824,6 +877,7 @@ export class ResourceUsage {
 }
 
 export class ServiceInput {
+    "category"?: string;
     "launchTargets"?: LaunchTarget[];
     "name": string;
     "module": string;
@@ -869,20 +923,21 @@ export class ServiceInput {
      * Creates a new ServiceInput instance from a string or object.
      */
     static createFrom($$source: any = {}): ServiceInput {
-        const $$createField0_0 = $$createType13;
-        const $$createField7_0 = $$createType15;
+        const $$createField1_0 = $$createType13;
+        const $$createField8_0 = $$createType15;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("launchTargets" in $$parsedSource) {
-            $$parsedSource["launchTargets"] = $$createField0_0($$parsedSource["launchTargets"]);
+            $$parsedSource["launchTargets"] = $$createField1_0($$parsedSource["launchTargets"]);
         }
         if ("buildProfiles" in $$parsedSource) {
-            $$parsedSource["buildProfiles"] = $$createField7_0($$parsedSource["buildProfiles"]);
+            $$parsedSource["buildProfiles"] = $$createField8_0($$parsedSource["buildProfiles"]);
         }
         return new ServiceInput($$parsedSource as Partial<ServiceInput>);
     }
 }
 
 export class ServiceView {
+    "category"?: string;
     "launchTargets"?: LaunchTarget[];
     "id": string;
     "name": string;
@@ -897,6 +952,7 @@ export class ServiceView {
     "launchMode"?: string;
     "url"?: string;
     "cleanCommand": string;
+    "godotWeb"?: GodotWebView | null;
     "targetViews"?: ServiceView[];
     "packageInfo"?: PackageInfo | null;
     "iconPath"?: string;
@@ -966,26 +1022,30 @@ export class ServiceView {
      * Creates a new ServiceView instance from a string or object.
      */
     static createFrom($$source: any = {}): ServiceView {
-        const $$createField0_0 = $$createType13;
-        const $$createField8_0 = $$createType15;
-        const $$createField14_0 = $$createType1;
+        const $$createField1_0 = $$createType13;
+        const $$createField9_0 = $$createType15;
         const $$createField15_0 = $$createType19;
-        const $$createField32_0 = $$createType21;
+        const $$createField16_0 = $$createType1;
+        const $$createField17_0 = $$createType21;
+        const $$createField34_0 = $$createType23;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("launchTargets" in $$parsedSource) {
-            $$parsedSource["launchTargets"] = $$createField0_0($$parsedSource["launchTargets"]);
+            $$parsedSource["launchTargets"] = $$createField1_0($$parsedSource["launchTargets"]);
         }
         if ("buildProfiles" in $$parsedSource) {
-            $$parsedSource["buildProfiles"] = $$createField8_0($$parsedSource["buildProfiles"]);
+            $$parsedSource["buildProfiles"] = $$createField9_0($$parsedSource["buildProfiles"]);
+        }
+        if ("godotWeb" in $$parsedSource) {
+            $$parsedSource["godotWeb"] = $$createField15_0($$parsedSource["godotWeb"]);
         }
         if ("targetViews" in $$parsedSource) {
-            $$parsedSource["targetViews"] = $$createField14_0($$parsedSource["targetViews"]);
+            $$parsedSource["targetViews"] = $$createField16_0($$parsedSource["targetViews"]);
         }
         if ("packageInfo" in $$parsedSource) {
-            $$parsedSource["packageInfo"] = $$createField15_0($$parsedSource["packageInfo"]);
+            $$parsedSource["packageInfo"] = $$createField17_0($$parsedSource["packageInfo"]);
         }
         if ("port" in $$parsedSource) {
-            $$parsedSource["port"] = $$createField32_0($$parsedSource["port"]);
+            $$parsedSource["port"] = $$createField34_0($$parsedSource["port"]);
         }
         return new ServiceView($$parsedSource as Partial<ServiceView>);
     }
@@ -1012,7 +1072,7 @@ export class WorkspaceLayout {
      */
     static createFrom($$source: any = {}): WorkspaceLayout {
         const $$createField0_0 = $$createType2;
-        const $$createField1_0 = $$createType22;
+        const $$createField1_0 = $$createType24;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("workspaces" in $$parsedSource) {
             $$parsedSource["workspaces"] = $$createField0_0($$parsedSource["workspaces"]);
@@ -1043,8 +1103,10 @@ const $$createType14 = BuildProfile.createFrom;
 const $$createType15 = $Create.Array($$createType14);
 const $$createType16 = ProjectScript.createFrom;
 const $$createType17 = $Create.Array($$createType16);
-const $$createType18 = PackageInfo.createFrom;
+const $$createType18 = GodotWebView.createFrom;
 const $$createType19 = $Create.Nullable($$createType18);
-const $$createType20 = PortView.createFrom;
+const $$createType20 = PackageInfo.createFrom;
 const $$createType21 = $Create.Nullable($$createType20);
-const $$createType22 = $Create.Map($Create.Any, $Create.Any);
+const $$createType22 = PortView.createFrom;
+const $$createType23 = $Create.Nullable($$createType22);
+const $$createType24 = $Create.Map($Create.Any, $Create.Any);

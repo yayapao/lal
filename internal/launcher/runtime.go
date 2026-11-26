@@ -88,7 +88,14 @@ func (m *serviceManager) stopAllProcesses() {
 	for id := range m.processes {
 		ids = append(ids, id)
 	}
+	webIDs := make([]string, 0, len(m.godotWeb))
+	for id := range m.godotWeb {
+		webIDs = append(webIDs, id)
+	}
 	m.mu.Unlock()
+	for _, id := range webIDs {
+		_ = m.StopGodotWeb(id)
+	}
 	for _, id := range ids {
 		_ = m.stopManagedProcess(id)
 	}
@@ -115,6 +122,9 @@ func validateService(service Service) error {
 	}
 	if service.Module != moduleService && service.Module != moduleGame {
 		return fmt.Errorf("项目模块必须是 service 或 game")
+	}
+	if service.Category != "" && service.Category != categoryStandalone && service.Category != categoryMonorepo {
+		return fmt.Errorf("项目分类必须是 standalone 或 monorepo")
 	}
 	if name := strings.TrimSpace(service.Name); name == "" {
 		return fmt.Errorf("服务名称不能为空")
@@ -164,7 +174,7 @@ func uniqueIDs(ids []string) []string {
 }
 
 func serviceEqual(left, right Service) bool {
-	return left.ID == right.ID && left.Name == right.Name && left.Module == right.Module && left.Workspace == right.Workspace && left.Directory == right.Directory && left.Command == right.Command &&
+	return left.ID == right.ID && left.Name == right.Name && left.Module == right.Module && left.Category == right.Category && left.Workspace == right.Workspace && left.Directory == right.Directory && left.Command == right.Command &&
 		slices.Equal(left.LaunchTargets, right.LaunchTargets) && left.BuildCommand == right.BuildCommand && slices.Equal(left.BuildProfiles, right.BuildProfiles) && left.BuildBeforeLaunch == right.BuildBeforeLaunch && left.ReleaseCommand == right.ReleaseCommand && left.LaunchMode == right.LaunchMode && left.URL == right.URL && left.CleanCommand == right.CleanCommand
 }
 

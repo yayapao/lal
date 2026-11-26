@@ -34,9 +34,10 @@ it('folds groups independently and retains their summary, selection, and state a
     await user.click(screen.getByRole('button', {name: '刷新状态'}));
     await waitFor(() => expect(screen.getByRole('button', {name: '展开 工作区 A'}).textContent).toContain('运行 0'));
 
-    await user.type(screen.getByRole('textbox', {name: '搜索服务'}), 'Alpha');
-    expect((screen.getByRole('checkbox', {name: '选择 Alpha'}) as HTMLInputElement).checked).toBe(true);
-    await user.clear(screen.getByRole('textbox', {name: '搜索服务'}));
+    await user.type(screen.getByRole('textbox', {name: '全局搜索'}), 'Alpha');
+    expect(screen.getByRole('button', {name: '打开 Alpha'})).toBeDefined();
+    expect(screen.queryByRole('checkbox', {name: '选择 Alpha'})).toBeNull();
+    await user.clear(screen.getByRole('textbox', {name: '全局搜索'}));
     expect(screen.getByRole('button', {name: '展开 工作区 A'})).toBeDefined();
     await user.click(screen.getByRole('button', {name: '展开 工作区 A'}));
     expect((screen.getByRole('checkbox', {name: '选择 Alpha'}) as HTMLInputElement).checked).toBe(true);

@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	configVersion         = 10
+	configVersion         = 11
 	maxLogEntries         = 1200
 	maxCommandLength      = 1000
 	maxCleanCommandLength = 2000
@@ -31,6 +31,7 @@ var ansiPattern = regexp.MustCompile(`\x1b(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])`)
 const shellCommandWrapper = `if [[ -r "$HOME/.zshrc" ]]; then source "$HOME/.zshrc"; fi; eval "$1"`
 
 type Service struct {
+	Category          string         `json:"category,omitempty"`
 	LaunchTargets     []LaunchTarget `json:"launchTargets,omitempty"`
 	ID                string         `json:"id"`
 	Name              string         `json:"name"`
@@ -48,6 +49,7 @@ type Service struct {
 }
 
 type ServiceInput struct {
+	Category          string         `json:"category,omitempty"`
 	LaunchTargets     []LaunchTarget `json:"launchTargets,omitempty"`
 	Name              string         `json:"name"`
 	Module            string         `json:"module"`
@@ -65,6 +67,7 @@ type ServiceInput struct {
 
 type ServiceView struct {
 	Service
+	GodotWeb            *GodotWebView `json:"godotWeb,omitempty"`
 	TargetViews         []ServiceView `json:"targetViews,omitempty"`
 	PackageInfo         *PackageInfo  `json:"packageInfo,omitempty"`
 	IconPath            string        `json:"iconPath,omitempty"`
@@ -189,6 +192,7 @@ type serviceManager struct {
 	shuttingDown     bool
 	targetBusy       map[string]bool
 	processes        map[string]*processState
+	godotWeb         map[string]*godotWebSession
 	lastStatus       map[string]string
 	lastError        map[string]string
 	health           map[string]string

@@ -1,6 +1,9 @@
 import {vi} from 'vitest';
 
 export const api = {
+    StartGodotWeb: vi.fn(),
+    StopGodotWeb: vi.fn(),
+    OpenGodotWeb: vi.fn(),
     StartLaunchTargets: vi.fn().mockResolvedValue(undefined),
     SetDefaultLaunchTargets: vi.fn().mockResolvedValue(undefined),
     BuildGame: vi.fn().mockResolvedValue(undefined),

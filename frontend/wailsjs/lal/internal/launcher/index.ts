@@ -10,6 +10,7 @@ export {
     GitConfigEntry,
     GitDetails,
     GitStatus,
+    GodotWebView,
     LaunchTarget,
     LogEntry,
     NetworkInterface,

@@ -92,6 +92,9 @@ func (m *serviceManager) targetByIDLocked(id string) (Service, bool) {
 }
 
 func (m *serviceManager) serviceBusyLocked(id string) bool {
+	if session := m.godotWeb[id]; session != nil && session.server != nil {
+		return true
+	}
 	if m.targetBusy[parentID(id)] {
 		return true
 	}

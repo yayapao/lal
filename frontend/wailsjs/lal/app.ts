@@ -123,6 +123,10 @@ export function GetServiceIcon(id: string): $CancellablePromise<string> {
     return $Call.ByID(2200818847, id);
 }
 
+export function OpenGodotWeb(id: string): $CancellablePromise<void> {
+    return $Call.ByID(4160431876, id);
+}
+
 export function OpenServiceURL(id: string): $CancellablePromise<void> {
     return $Call.ByID(2973453681, id);
 }
@@ -186,6 +190,13 @@ export function StartAll(): $CancellablePromise<launcher$0.BatchResult> {
 }
 
 /**
+ * StartGodotWeb serves an existing export, independently of native game launch.
+ */
+export function StartGodotWeb(id: string): $CancellablePromise<void> {
+    return $Call.ByID(3066571470, id);
+}
+
+/**
  * StartLaunchTargets starts an explicit selection without changing defaults or
  * stopping already-running targets. Commands always come from saved config.
  */
@@ -214,6 +225,10 @@ export function StopAll(): $CancellablePromise<launcher$0.BatchResult> {
  */
 export function StopExternalAndStart(id: string, pid: number, identity: string): $CancellablePromise<void> {
     return $Call.ByID(2689382433, id, pid, identity);
+}
+
+export function StopGodotWeb(id: string): $CancellablePromise<void> {
+    return $Call.ByID(512177640, id);
 }
 
 export function StopPackageScript(id: string): $CancellablePromise<void> {
