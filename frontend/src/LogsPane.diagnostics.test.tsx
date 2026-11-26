@@ -18,7 +18,7 @@ const logs = [
 ].map(([stream, text], index) => ({serviceId: service.id, timestamp: `2026-11-18T18:11:${20 + index}+08:00`, stream, text})) as LogEntry[];
 
 function pane(entries = logs, selectedService = service) {
-    return <LogsPane service={selectedService} logs={entries} logBlocks={groupLogEntries(entries)} autoScroll onToggleAutoScroll={() => {}}
+    return <LogsPane selectedTargetId="" onSelectTarget={() => {}} service={selectedService} logs={entries} logBlocks={groupLogEntries(entries)} autoScroll onToggleAutoScroll={() => {}}
         downloadingLogs={false} onDownloadLogs={() => {}} onClearLogs={() => {}} scriptBusy={false} onRunScript={() => {}}
         onStopScript={() => {}} history={[]} onOpenURL={() => {}} onOpenGit={() => {}} module="game"/>;
 }

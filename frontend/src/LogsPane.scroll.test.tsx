@@ -10,7 +10,7 @@ const service = alphaService as ServiceView;
 const entry = {serviceId: service.id, timestamp: '2026-11-19T15:10:00+08:00', stream: 'stdout', text: 'ready'} as LogEntry;
 
 function pane(logs: LogEntry[], autoScroll = true, selectedService = service) {
-    return <LogsPane service={selectedService} logs={logs} logBlocks={groupLogEntries(logs)} autoScroll={autoScroll}
+    return <LogsPane selectedTargetId="" onSelectTarget={() => {}} service={selectedService} logs={logs} logBlocks={groupLogEntries(logs)} autoScroll={autoScroll}
         onToggleAutoScroll={noop} downloadingLogs={false} onDownloadLogs={noop} onClearLogs={noop}
         scriptBusy={false} onRunScript={noop} onStopScript={noop} history={[]} onOpenURL={noop} onOpenGit={noop}/>;
 }

@@ -1,10 +1,15 @@
 package launcher
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
 func (m *serviceManager) applyTargetViewsLocked(view *ServiceView) {
 	view.Status, view.Health, view.LastError = "stopped", "not_configured", ""
 	active, failed := 0, 0
+	var problems []string
+	checking := false
 	for _, target := range view.LaunchTargets {
 		child := m.serviceViewLocked(targetService(view.Service, target))
 		view.TargetViews = append(view.TargetViews, child)
@@ -14,16 +19,31 @@ func (m *serviceManager) applyTargetViewsLocked(view *ServiceView) {
 				view.StartedAt = child.StartedAt
 			}
 			view.Status = "running"
+			checking = checking || child.Health == "checking"
+			if child.Health == "unreachable" {
+				problems = append(problems, child.Name+"："+child.HealthInfo)
+			}
 		}
 		if child.Status == "failed" {
 			failed++
+			problems = append(problems, child.Name+"："+child.LastError)
 		}
 	}
 	if active == 0 && failed > 0 {
 		view.Status = "failed"
 	}
-	if failed > 0 {
-		view.LastError = fmt.Sprintf("%d 个进程启动或运行失败", failed)
+	if active > 0 {
+		view.Health = "ready"
+		if checking {
+			view.Health = "checking"
+		}
+		if len(problems) > 0 {
+			view.Health = "unreachable"
+		}
+	}
+	if len(problems) > 0 {
+		view.LastError = fmt.Sprintf("%d 个进程不可用", len(problems))
+		view.HealthInfo = strings.Join(problems, "\n")
 	}
 }
 

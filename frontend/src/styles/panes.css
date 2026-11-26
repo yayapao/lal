@@ -13,15 +13,16 @@
 
 .services-pane {
     display: grid;
-    grid-template-rows: 46px 32px minmax(0, 1fr) 58px;
+    grid-template-rows: 46px minmax(0, 1fr) 58px;
     border-right: 1px solid var(--line);
-    background: linear-gradient(160deg, #202a34, #191f26 65%);
+    background: var(--sidebar);
 }
 
 .logs-pane {
     display: flex;
     flex-direction: column;
     container: logs / inline-size;
+    background: var(--canvas);
 }
 
 .logs-pane > :not(.log-viewport) { flex-shrink: 0; }
@@ -66,10 +67,10 @@
     margin: 0;
     padding: 0;
     appearance: none;
-    border: 1px solid #4a555b;
+    border: 1px solid #555555;
     border-radius: 3px;
     outline: 0;
-    background: #0e1113;
+    background: #191919;
     cursor: pointer;
 }
 
@@ -77,8 +78,8 @@
     content: "";
     width: 7px;
     height: 4px;
-    border-bottom: 1.5px solid #071014;
-    border-left: 1.5px solid #071014;
+    border-bottom: 1.5px solid #161616;
+    border-left: 1.5px solid #161616;
     opacity: 0;
     transform: translateY(-1px) rotate(-45deg);
 }
@@ -96,7 +97,7 @@
     height: 1.5px;
     border: 0;
     opacity: 1;
-    background: #071014;
+    background: #161616;
     transform: none;
 }
 
@@ -119,10 +120,10 @@
 .workspace-manager-button {
     height: 26px;
     padding: 0 7px;
-    color: #93a0a5;
+    color: #a0a0a0;
 }
 
-.workspace-manager-button:hover:not(:disabled) { color: var(--text); background: #23292d; }
+.workspace-manager-button:hover:not(:disabled) { color: var(--text); background: #303030; }
 
 .selection-count {
     margin-right: 4px;
@@ -146,7 +147,7 @@
     cursor: pointer;
 }
 
-.selection-action:hover:not(:disabled) { color: var(--text); background: #242a2e; }
+.selection-action:hover:not(:disabled) { color: var(--text); background: #303030; }
 .selection-action:first-of-type { color: var(--green); }
 .selection-action:nth-of-type(2) { color: var(--red); }
 .selection-action:disabled { opacity: 0.35; cursor: default; }

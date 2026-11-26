@@ -1,4 +1,4 @@
-.network-summary { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, .86fr) auto; align-items: center; gap: 12px; min-width: 0; padding: 8px 16px; border-top: 1px solid var(--line); background: #242529; }
+.network-summary { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, .86fr) auto; align-items: center; gap: 12px; min-width: 0; padding: 8px 16px; border-top: 1px solid var(--line); background: var(--sidebar); }
 .network-summary-field { min-width: 0; }
 .network-summary-field + .network-summary-field { border-left: 1px solid var(--line); padding-left: 12px; }
 .network-summary-label { display: flex; align-items: center; gap: 5px; color: var(--muted); font-size: 10px; line-height: 15px; }
@@ -8,10 +8,10 @@
 .network-summary-value { font-family: var(--mono); font-size: 14px; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .network-summary-empty { color: var(--muted); font-size: 12px; }
 .network-copy { color: var(--muted); width: 28px; height: 28px; flex-basis: 28px; border-radius: 5px; }
-.network-copy:hover:not(:disabled) { color: var(--text); background: #3a3b42; }
+.network-copy:hover:not(:disabled) { color: var(--text); background: #3b3b3b; }
 .network-copy.is-copied { color: var(--green); }
-.network-details-button { display: flex; align-items: center; gap: 2px; height: 28px; padding: 0 5px; border: 1px solid #4c4e56; border-radius: 6px; background: #303238; color: var(--text); font: inherit; font-size: 11px; cursor: pointer; }
-.network-details-button[aria-pressed="true"] { color: #b5d8ff; border-color: #45678f; background: #253a54; }
+.network-details-button { display: flex; align-items: center; gap: 2px; height: 28px; padding: 0 5px; border: 1px solid #4c4c4c; border-radius: 6px; background: #303030; color: var(--text); font: inherit; font-size: 11px; cursor: pointer; }
+.network-details-button[aria-pressed="true"] { color: #e0e0e0; border-color: #666666; background: #353535; }
 .network-details-button:hover { border-color: var(--accent); }
 .network-summary.is-stale .network-summary-value { color: var(--amber); }
 .network-pane { display: grid; grid-template-rows: 46px minmax(0, 1fr) 28px; min-width: 0; min-height: 0; background: var(--canvas); }
@@ -19,7 +19,7 @@
 .network-tabs { display: flex; align-items: center; flex-shrink: 0; padding: 2px; height: 30px; border: 1px solid var(--line-strong); border-radius: 6px; background: var(--canvas); }
 .network-tabs button { min-width: 72px; height: 24px; padding: 0 12px; border: 0; border-radius: 4px; background: transparent; color: var(--muted); font: inherit; font-size: 11px; cursor: pointer; }
 .network-tabs button:last-child { font-family: var(--mono); }
-.network-tabs button[aria-selected="true"] { color: var(--text); background: #41434b; box-shadow: 0 1px 2px #0003; }
+.network-tabs button[aria-selected="true"] { color: var(--text); background: #414141; box-shadow: 0 1px 2px #0003; }
 .network-toolbar-actions { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
 .network-toolbar-actions .icon-button { width: 28px; height: 28px; flex-basis: 28px; }
 .network-back { display: inline-flex; align-items: center; gap: 6px; min-height: 28px; font-size: 11px; font-weight: 400; white-space: nowrap; }

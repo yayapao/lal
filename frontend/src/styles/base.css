@@ -1,22 +1,25 @@
 :root {
-    --canvas: #1c1c1e;
-    --titlebar: #242426;
-    --panel: #202124;
-    --panel-raised: #252629;
-    --panel-hover: #292a2e;
-    --panel-selected: #303238;
-    --line: #3a3a40;
-    --line-strong: #4b4c54;
-    --text: #f2f2f7;
-    --muted: #a1a1aa;
-    --faint: #8e8e98;
-    --accent: #76b5ff;
-    --accent-strong: #a3ceff;
-    --accent-soft: rgba(118, 181, 255, 0.11);
+    --canvas: #111111;
+    --titlebar: #1d1d1d;
+    --panel: #1b1b1b;
+    --panel-raised: #252525;
+    --sidebar: #242424;
+    --sidebar-raised: #2a2a2a;
+    --sidebar-selected: #353535;
+    --panel-hover: #303030;
+    --panel-selected: #353535;
+    --line: #333333;
+    --line-strong: #484848;
+    --text: #f0f0f0;
+    --muted: #ababab;
+    --faint: #858585;
+    --accent: #a3bed8;
+    --accent-strong: #c7daeb;
+    --accent-soft: rgba(255, 255, 255, 0.06);
     --green: #66d28a;
     --amber: #e5ad60;
     --red: #ef7474;
-    --console: #1c1c1e;
+    --console: #111111;
     --mono: "JetBrains Mono", "SFMono-Regular", Menlo, monospace;
 }
 
@@ -94,7 +97,7 @@
     border: 1px solid var(--line-strong);
     border-radius: 6px;
     color: var(--faint);
-    background: #0e1113;
+    background: #191919;
     transition: border-color 120ms ease, background-color 120ms ease;
 }
 
@@ -103,13 +106,13 @@
     width: min(424px, calc(38.2vw - 126px));
     height: 30px;
     margin-left: 0;
-    background: #303136;
+    background: #2b2b2b;
     user-select: auto;
 }
 
 .search-field:focus-within {
     border-color: var(--accent);
-    background: #303136;
+    background: #2b2b2b;
 }
 
 .search-field input {
@@ -177,22 +180,22 @@
 .context-menu button:active:not(:disabled) { transform: translateY(1px); }
 
 .button.primary {
-    color: #fff;
-    background: #006bd6;
+    color: #202020;
+    background: #e0e0e0;
 }
 
-.button.primary:hover:not(:disabled) { background: #0874dc; }
+.button.primary:hover:not(:disabled) { background: #f5f5f5; }
 
 .button.secondary {
     border: 1px solid var(--line-strong);
     color: var(--text);
-    background: #34353a;
+    background: #303030;
 }
 
 .button.secondary:hover:not(:disabled) {
-    border-color: #60616b;
+    border-color: #626262;
     color: var(--text);
-    background: #3d3e44;
+    background: #3b3b3b;
 }
 
 .button.danger {
@@ -225,5 +228,5 @@
 .icon-button.subtle:hover:not(:disabled),
 .icon-button.subtle.is-pressed {
     color: var(--text);
-    background: #242a2e;
+    background: #303030;
 }

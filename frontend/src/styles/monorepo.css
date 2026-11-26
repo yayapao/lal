@@ -1,0 +1,62 @@
+.service-browser { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+.service-browser > .pane-heading { flex: 0 0 32px; }
+.service-browser > .services-list { flex: 1; }
+.service-view-bar { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-shrink: 0; min-height: 40px; padding: 0 12px; border-bottom: 1px solid var(--line); background: var(--sidebar); }
+.service-view-switcher { display: flex; align-self: stretch; gap: 18px; }
+.service-view-switcher > button { position: relative; display: flex; align-items: center; gap: 6px; padding: 0; border: 0; color: var(--muted); background: transparent; font-size: 11px; cursor: pointer; }
+.service-view-switcher > button:hover { color: var(--text); }
+.service-view-switcher > button[aria-pressed="true"] { color: var(--text); }
+.service-view-switcher > button[aria-pressed="true"]::after { position: absolute; inset: auto 0 -1px; height: 2px; background: var(--muted); content: ''; }
+.service-view-switcher > button > span { min-width: 16px; padding: 1px 4px; border-radius: 3px; color: var(--muted); background: var(--panel-hover); font-family: var(--mono); font-size: 9px; text-align: center; }
+.service-view-switcher > button[aria-pressed="true"] > span { color: var(--text); background: var(--sidebar-selected); }
+.service-view-switcher > button:disabled { opacity: .45; cursor: default; }
+.monorepo-entry { display: inline-flex; align-items: center; gap: 7px; max-width: 100%; padding: 0; border: 0; color: var(--accent); background: transparent; font-size: 9px; line-height: 17px; cursor: pointer; }
+.monorepo-entry:hover { color: var(--accent-strong); }
+.monorepo-entry-count { color: var(--muted); }
+.monorepo-entry svg { flex-shrink: 0; }
+.services-pane.is-monorepo { grid-template-rows: minmax(0, 1fr); }
+.monorepo-refresh { width: 26px; height: 26px; flex-basis: 26px; }
+.monorepo-pane { display: flex; flex: 1; flex-direction: column; min-width: 0; min-height: 0; background: var(--sidebar); }
+.monorepo-context { position: relative; flex-shrink: 0; margin: 0 12px; padding: 14px 0 13px; border-bottom: 1px solid var(--line); }
+.monorepo-project-line { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.monorepo-project-select { flex: 1; min-width: 0; height: 30px; padding: 0 17px 0 0; border: 0; border-radius: 3px; color: var(--text); background: transparent; font: inherit; font-size: 15px; font-weight: 600; text-overflow: ellipsis; cursor: pointer; }
+.monorepo-project-select option { color: var(--text); background: var(--sidebar-raised); }
+.monorepo-running { margin-top: 4px; color: var(--muted); font-size: 10px; font-variant-numeric: tabular-nums; }
+.monorepo-context .service-error { white-space: normal; overflow-wrap: anywhere; }
+.monorepo-menu { position: relative; flex-shrink: 0; }
+.monorepo-menu > summary { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 4px; color: var(--muted); list-style: none; cursor: pointer; }
+.monorepo-menu > summary::-webkit-details-marker { display: none; }
+.monorepo-menu > summary:hover, .monorepo-menu[open] > summary { color: var(--text); background: var(--panel-hover); }
+.monorepo-menu > summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.monorepo-menu-items { position: absolute; top: 33px; right: 0; z-index: 30; width: 180px; padding: 4px; border: 1px solid var(--line-strong); border-radius: 7px; background: var(--panel-raised); box-shadow: 0 8px 24px #0005; }
+.monorepo-menu-items > button { display: flex; align-items: center; gap: 9px; width: 100%; min-height: 32px; padding: 7px 9px; border: 0; border-radius: 4px; color: var(--text); background: transparent; font-size: 11px; text-align: left; cursor: pointer; }
+.monorepo-menu-items > button:hover:not(:disabled) { color: var(--text); background: var(--panel-hover); }
+.monorepo-menu-items > button:disabled { opacity: .4; cursor: default; }
+.monorepo-menu-items > .monorepo-menu-divider { margin-top: 4px; border-top: 1px solid var(--line); border-radius: 0 0 4px 4px; }
+.monorepo-menu-count { margin-left: auto; color: var(--muted); font-family: var(--mono); font-size: 9px; }
+.monorepo-content { flex: 1; min-height: 0; padding: 8px 8px 16px; overflow-y: auto; }
+.monorepo-all-logs { display: flex; align-items: center; gap: 9px; width: 100%; min-height: 34px; margin-bottom: 4px; padding: 6px 10px; border: 0; border-radius: 4px; color: var(--muted); background: transparent; font-size: 11px; text-align: left; cursor: pointer; }
+.monorepo-all-logs:hover { color: var(--text); background: var(--panel-hover); }
+.monorepo-all-logs[aria-pressed="true"] { color: var(--text); background: var(--sidebar-selected); }
+.launch-target-panel.is-flat { margin: 0; padding: 0; border: 0; }
+.is-flat .target-list { gap: 2px; margin: 0; }
+.is-flat .target-row { gap: 3px; min-height: 44px; padding: 8px 9px; border: 0; border-radius: 4px; background: transparent; box-shadow: none; }
+.is-flat .target-row::before { display: none; }
+.is-flat .target-row:hover { background: var(--panel-hover); }
+.is-flat .target-row.is-selected { background: var(--sidebar-selected); box-shadow: inset 2px 0 var(--muted); }
+.is-flat .target-main { flex-wrap: nowrap; gap: 9px; min-height: 28px; }
+.is-flat .target-identity { display: block; overflow: hidden; font-size: 12px; font-weight: 500; text-overflow: ellipsis; white-space: nowrap; }
+.is-flat .target-status { flex: 0 0 auto; margin-left: 0; }
+.is-flat .target-status .status-label { width: 6px; margin: 0; gap: 0; font-size: 0; }
+.is-flat .target-status .state-failed, .is-flat .target-status .state-unreachable,
+.is-flat .target-status .state-invalid, .is-flat .target-status .state-conflict { width: auto; gap: 4px; font-size: 9px; }
+.is-flat .target-main > .service-url { position: relative; z-index: 2; flex: 0 1 auto; max-width: 45%; overflow: hidden; color: var(--accent); font-size: 10px; text-overflow: ellipsis; white-space: nowrap; pointer-events: auto; }
+.is-flat .target-main .icon-button { width: 25px; height: 25px; flex-basis: 25px; margin-left: 1px; color: var(--muted); background: transparent; }
+.is-flat .target-main .icon-button:hover:not(:disabled) { color: var(--text); background: var(--panel-selected); }
+.is-flat .target-log-hint { display: none; }
+.monorepo-empty { flex: 1; min-height: 0; }
+@media (max-width: 1120px) {
+    .service-view-bar { padding-inline: 10px; gap: 4px; }
+    .service-view-switcher { gap: 12px; }
+    .service-view-bar .workspace-manager-button { padding-inline: 2px; font-size: 9px; }
+}

@@ -4,7 +4,7 @@
     min-width: 0;
     height: 104px;
     border-bottom: 1px solid var(--line);
-    background: #0e1214;
+    background: var(--panel);
     font-family: var(--mono);
 }
 
@@ -100,7 +100,7 @@
 }
 
 .trend-grid line {
-    stroke: #253036;
+    stroke: #303030;
     stroke-width: 0.65;
     vector-effect: non-scaling-stroke;
 }
@@ -116,7 +116,7 @@
 }
 
 .trend-point {
-    fill: #0e1214;
+    fill: var(--panel);
     stroke: currentColor;
     stroke-width: 1.4;
     vector-effect: non-scaling-stroke;

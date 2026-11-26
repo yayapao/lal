@@ -52,6 +52,7 @@ function App() {
     const [cacheTarget, setCacheTarget] = useState<ServiceView | null>(null);
     const [cacheBusyId, setCacheBusyId] = useState('');
     const [rightView, setRightView] = useState<RightView>('logs');
+    const [logTarget, setLogTarget] = useState({serviceId: '', targetId: ''});
     const [operationIssue, setOperationIssue] = useState<OperationIssue | null>(null);
     const [scriptBusyId, setScriptBusyId] = useState('');
     const [toast, setToast] = useState<ToastState | null>(null);
@@ -74,6 +75,11 @@ function App() {
 
     const activeServices = useMemo(() => services.filter(service => moduleOf(service) === activeModule), [activeModule, services]);
     const selectedService = activeServices.find(service => service.id === selectedId) ?? null;
+    const selectedTargetId = logTarget.serviceId === selectedId && selectedService?.targetViews?.some(target => target.id === logTarget.targetId)
+        ? logTarget.targetId : '';
+    const selectService = (id: string, targetId = '') => {
+        setSelectedId(id); setRightView('logs'); setLogTarget({serviceId: id, targetId});
+    };
     const selectedUsage = selectedService ? resourceUsage[selectedService.id] : undefined;
     const selectedResourceHistory = selectedService ? resourceHistory[selectedService.id] ?? [] : [];
     const logBlocks = useMemo(() => groupLogEntries(logs), [logs]);
@@ -103,13 +109,13 @@ function App() {
     const someVisibleChecked = visibleCheckedCount > 0 && !allVisibleChecked;
 
     const serviceActions = useServiceActions({
-        onSelectService: id => { setSelectedId(id); setRightView('logs'); },
+        onSelectService: selectService,
         selectedId, logs, checkedServices, filteredServices, allVisibleChecked, cacheTarget, deleteTarget,
         refreshState, showToast, setBusyIds, setBatchBusy, setOperationIssue, setMenu, setDialog, setDeleteTarget,
         setCacheTarget, setCacheBusyId, setScriptBusyId, setCheckedIds, setLogs, setRefreshing, setDownloadingLogs,
     });
     const changeModule = (next: AppModule) => {
-        setActiveModule(next); setQuery(''); setCheckedIds(new Set()); setRightView('logs');
+        setActiveModule(next); setQuery(''); setCheckedIds(new Set()); setRightView('logs'); setLogTarget({serviceId: '', targetId: ''});
         setSelectedId(services.find(service => moduleOf(service) === next)?.id ?? '');
     };
 
@@ -149,7 +155,10 @@ function App() {
                     onBuild={(game, profileID) => void serviceActions.buildGame(game, profileID)} onModeChange={(game, mode) => void serviceActions.changeGameMode(game, mode)}
                     onReveal={game => void serviceActions.revealService(game)}
                     onOpenURL={game => void serviceActions.openServiceURL(game)} onMenu={(event, game) => serviceActions.openMenu(event, game)}/>
-                : <ServicesPane loading={loading} query={query} total={activeServices.length} selectedId={selectedId}
+                : <ServicesPane loading={loading} query={query} total={activeServices.length} monorepoCount={activeServices.filter(service => service.launchTargets?.length).length} selectedId={selectedId}
+                    refreshing={refreshing} onRefresh={() => void serviceActions.refreshAppState()}
+                    onDefaultsSaved={() => void refreshState()}
+                    selectedTargetId={selectedTargetId} onSelectTarget={selectService}
                     toolbar={<ServiceToolbar total={activeServices.length} running={runningCount} external={activeServices.filter(service => service.port?.matchesProject && !service.port.previewOnly).length} refreshing={refreshing} batchBusy={batchBusy}
                         onRefresh={() => void serviceActions.refreshAppState()} onBatch={action => void serviceActions.runBatch(action)}/>}
                     footer={<NetworkSummary network={network} active={rightView === 'network'} onDetails={() => setRightView('network')} onError={networkError}/>}
@@ -163,7 +172,7 @@ function App() {
                     onClearSelection={() => setCheckedIds(new Set())}
                     onOpenWorkspaceManager={workspaceManager.open}
                     onAdd={() => setDialog({mode: 'create', module: 'service'})}
-                    onSelectService={id => { setSelectedId(id); setRightView('logs'); }}
+                    onSelectService={selectService}
                     onOpenGit={service => { setSelectedId(service.id); setRightView('git'); }}
                     onToggleService={service => void serviceActions.toggleService(service)}
                     onCheckService={serviceActions.toggleChecked}
@@ -174,6 +183,7 @@ function App() {
                 : rightView === 'git' && selectedService ? <GitPane key={`${selectedService.id}:${selectedService.directory}`} service={selectedService}
                     refreshKey={iconRefreshKey} onStatus={git.update} onBack={() => setRightView('logs')}/>
                     : <LogsPane service={selectedService} logs={logs} logBlocks={logBlocks} autoScroll={autoScroll}
+                    selectedTargetId={selectedTargetId} onSelectTarget={targetId => selectService(selectedId, targetId)}
                     gitStatus={selectedService ? git.statuses[selectedService.id] : undefined} onOpenGit={() => setRightView('git')}
                     onToggleAutoScroll={() => setAutoScroll(value => !value)}
                     downloadingLogs={downloadingLogs} onDownloadLogs={() => void serviceActions.downloadSelectedLogs()}

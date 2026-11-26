@@ -1,0 +1,8 @@
+.service-dialog.default-launch-dialog { width: min(380px, calc(100vw - 48px)); }
+.default-launch-hint { margin: 10px 0 0; color: var(--muted); font-size: 11px; line-height: 1.6; }
+.default-launch-options { display: grid; gap: 2px; max-height: min(360px, 50vh); margin: 14px 0 0; padding: 0; overflow-y: auto; border: 0; }
+.default-launch-options > label { display: flex; align-items: center; gap: 10px; min-height: 38px; padding: 8px 9px; border-radius: 4px; color: var(--text); font-size: 12px; cursor: pointer; }
+.default-launch-options > label:hover { background: var(--panel-hover); }
+.default-launch-options > label > span { min-width: 0; overflow-wrap: anywhere; }
+.default-launch-options:disabled > label { opacity: .5; cursor: default; }
+.default-launch-count { margin-right: auto; color: var(--muted); font-size: 10px; }

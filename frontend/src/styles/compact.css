@@ -1,28 +1,28 @@
 .titlebar-add { --wails-draggable: no-drag; height: 30px; margin-left: auto; }
 .titlebar-search kbd { flex-shrink: 0; font: inherit; font-size: 11px; color: var(--faint); }
 .search-field input { font-size: 12px; }
-.service-toolbar { padding: 0 12px; gap: 8px; background: linear-gradient(110deg, #293744, #202a35 72%); border-bottom-color: #3b4856; }
+.service-toolbar { padding: 0 12px; gap: 8px; background: var(--sidebar); border-bottom-color: var(--line); }
 .service-toolbar .summary { gap: 8px; min-width: 0; font-family: inherit; font-size: 11px; }
-.service-library-label { color: #f2f6fa; font-weight: 650; letter-spacing: .04em; }
+.service-library-label { color: #f0f0f0; font-weight: 650; letter-spacing: .04em; }
 .service-toolbar .summary strong { color: #9ce4bc; font-family: var(--mono); font-size: 10px; font-weight: 500; }
 .service-toolbar .batch-start svg { color: #8cebb2; fill: currentColor; }
 .service-toolbar .batch-stop svg { color: #ff9ca6; fill: currentColor; }
-.service-toolbar .button.secondary { border-color: #586c7b66; background: #101a2359; }
-.service-toolbar .button.secondary:hover:not(:disabled) { border-color: #718da3; background: #354757; }
+.service-toolbar .button.secondary { border-color: var(--line-strong); background: var(--sidebar-raised); }
+.service-toolbar .button.secondary:hover:not(:disabled) { border-color: #666666; background: var(--sidebar-selected); }
 .service-toolbar .summary > span { display: inline-flex; align-items: center; gap: 5px; }
 .service-toolbar .summary > span + span { color: var(--muted); font-size: 10px; }
 .service-toolbar .summary .status-dot { width: 5px; height: 5px; background: var(--green); }
 .service-toolbar .toolbar-actions { gap: 6px; }
 .service-toolbar .button { height: 28px; padding: 0 9px; gap: 5px; font-size: 11px; border-radius: 6px; font-weight: 500; }
 .service-toolbar .icon-button { width: 28px; height: 28px; flex-basis: 28px; }
-.pane-heading { border-bottom: 1px solid #343f4b; padding: 0 12px; font-weight: 500; background: #202831; }
+.pane-heading { border-bottom: 1px solid var(--line); padding: 0 12px; font-weight: 500; background: var(--sidebar); }
 .pane-heading-actions { gap: 4px; }
 .workspace-manager-button { color: var(--muted); font-size: 10px; }
-.selection-checkbox { background: transparent; border-color: #71717b; border-radius: 3px; width: 13px; height: 13px; flex-basis: 13px; }
+.selection-checkbox { background: transparent; border-color: #717171; border-radius: 3px; width: 13px; height: 13px; flex-basis: 13px; }
 .log-heading, .git-heading { background: var(--titlebar); min-height: 46px; }
 .git-pane { grid-template-rows: 46px minmax(0, 1fr) 28px; }
 .console-footer, .git-footer { background: var(--panel); color: var(--muted); font-size: 10px; }
-.git-overview, .resource-monitor, .package-panel { background: var(--panel-raised); }
+.git-overview, .resource-monitor, .package-panel { background: var(--panel); }
 .log-git-summary { background: var(--panel); }
 .log-lines { background: var(--console); }
 .log-line { font-size: 11px; }
